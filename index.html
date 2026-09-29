@@ -73,12 +73,6 @@ input,textarea{outline:none}
 }.avatar.sm{width:43px;height:43px}.avatar.xs{width:36px;height:36px}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .account-info{flex:1;min-width:0}.account-info b{font-size:14px}.online{color:var(--green);font-size:10px;margin-top:4px}
-.story-strip{display:flex;gap:12px;overflow:auto;padding:5px 14px 12px;border-bottom:1px solid var(--line)}
-.story{min-width:55px;text-align:center;font-size:9px;color:var(--muted);cursor:pointer}
-.story-ring{
- width:49px;height:49px;padding:2px;margin:0 auto 5px;border-radius:50%;
- border:2px solid var(--blue);display:grid;place-items:center
-}.story-ring .avatar{width:100%;height:100%}
 .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px}
 .tab{
  flex:1;height:41px;background:transparent;color:var(--muted);font-size:11px;position:relative
@@ -126,7 +120,7 @@ input,textarea{outline:none}
 .typing{align-self:flex-start;color:var(--muted);font-size:10px;min-height:14px;padding:0 8px}
 .composer{
  min-height:68px;background:var(--surface);border-top:1px solid var(--line);
- display:flex;align-items:center;gap:7px;padding:9px 13px
+ display:flex;align-items:center;gap:7px;padding:9px 13px 86px
 }
 .compose-box{
  flex:1;min-height:47px;border-radius:24px;background:var(--surface2);
@@ -191,6 +185,46 @@ input,textarea{outline:none}
 }.call-btn.end{background:var(--danger)}
 .file-picker{display:none}
 
+
+/* KHATMIN FLOATING NAV + BRAND */
+.khatmin-title{
+ padding:18px 18px 6px;
+ font-family:Georgia,"Times New Roman",serif;
+ font-size:28px;line-height:1;font-weight:700;
+ letter-spacing:5px;text-align:right;direction:ltr;
+ background:linear-gradient(90deg,#fff 0%,#9edfff 44%,#9a8cff 100%);
+ -webkit-background-clip:text;background-clip:text;color:transparent;
+ text-shadow:0 8px 30px rgba(77,187,255,.15);
+ user-select:none;
+}
+.bottom-nav{
+ position:fixed;z-index:80;left:50%;bottom:18px;
+ transform:translateX(-50%);width:min(500px,calc(100vw - 28px));height:76px;
+ display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:7px;
+ padding:8px;border:1px solid rgba(255,255,255,.14);
+ border-radius:25px;
+ background:rgba(20,30,40,.62);
+ backdrop-filter:blur(24px) saturate(155%);
+ -webkit-backdrop-filter:blur(24px) saturate(155%);
+ box-shadow:0 20px 60px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08);
+ transition:opacity .22s ease,transform .22s ease,visibility .22s ease;
+}
+.bottom-item{
+ width:54px;height:54px;justify-self:center;
+ display:grid;place-items:center;border-radius:18px;
+ background:transparent;color:#91a1ae;font-size:0;
+ transition:background .2s ease,color .2s ease,transform .2s ease,box-shadow .2s ease;
+}
+.bottom-item svg{width:25px;height:25px;fill:currentColor;filter:drop-shadow(0 5px 12px rgba(0,0,0,.18))}
+.bottom-item:hover{background:rgba(255,255,255,.07);color:#dce9f2;transform:translateY(-2px)}
+.bottom-item.active{color:#fff;background:linear-gradient(145deg,rgba(42,171,238,.34),rgba(92,99,216,.28));box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 9px 28px rgba(42,171,238,.16)}
+.app.pv-open .composer{padding-bottom:9px}
+.bottom-nav.chat-hidden{opacity:0;visibility:hidden;transform:translate(-50%,18px);pointer-events:none}
+body.light .bottom-nav{background:rgba(255,255,255,.70);border-color:rgba(30,70,100,.12);box-shadow:0 20px 55px rgba(53,78,100,.20),inset 0 1px 0 rgba(255,255,255,.8)}
+body.light .bottom-item{color:#71818e}
+body.light .bottom-item:hover{background:rgba(30,80,120,.07);color:#294b63}
+body.light .bottom-item.active{color:#fff}
+
 /* MOBILE */
 .mobile-only{display:none}
 @media(max-width:900px){
@@ -203,8 +237,12 @@ input,textarea{outline:none}
 }
 @media(min-width:901px){.chat-head .back{display:none!important}}
 @media(max-width:500px){
- .login-card{padding:29px 22px}.story-strip{padding-left:10px;padding-right:10px}
- .composer{padding-bottom:max(9px,env(safe-area-inset-bottom))}
+ .khatmin-title{font-size:25px;letter-spacing:4px;padding:16px 15px 5px}
+ .bottom-nav{bottom:max(10px,env(safe-area-inset-bottom));height:68px;width:calc(100vw - 20px);border-radius:22px}
+ .bottom-item{width:50px;height:50px;border-radius:16px}
+ .bottom-item svg{width:23px;height:23px}
+ .login-card{padding:29px 22px}
+ .composer{padding-bottom:78px}.app.pv-open .composer{padding-bottom:max(9px,env(safe-area-inset-bottom))}
  .icon-btn{width:40px;height:40px}.avatar{width:50px;height:50px}
  .messages{padding-bottom:10px}
 }
@@ -232,6 +270,7 @@ input,textarea{outline:none}
 
   <!-- SIDEBAR -->
   <aside id="sidebar" class="sidebar">
+   <div class="khatmin-title" aria-label="KHATMIN">KHATMIN</div>
    <div class="topbar">
     <button class="icon-btn" onclick="toggleDrawer()">☰</button>
     <div class="search">⌕<input id="searchInput" placeholder="جستجو" oninput="searchChats()"></div>
@@ -242,14 +281,6 @@ input,textarea{outline:none}
     <div class="avatar sm">A</div>
     <div class="account-info"><b>ARMIN</b><div class="online">● آنلاین</div></div>
     <button class="icon-btn" onclick="settingsModal()">⚙</button>
-   </div>
-
-   <div class="story-strip">
-    <div class="story" onclick="storyModal('استوری شما','A')"><div class="story-ring"><div class="avatar">＋</div></div>استوری شما</div>
-    <div class="story" onclick="storyModal('علی رضایی','ع')"><div class="story-ring"><div class="avatar">ع</div></div>علی</div>
-    <div class="story" onclick="storyModal('سمیه','س')"><div class="story-ring"><div class="avatar">س</div></div>سمیه</div>
-    <div class="story" onclick="storyModal('مریم','م')"><div class="story-ring"><div class="avatar">م</div></div>مریم</div>
-    <div class="story" onclick="storyModal('گروه دوستان','گ')"><div class="story-ring"><div class="avatar">گ</div></div>گروه</div>
    </div>
 
    <div class="tabs">
@@ -309,6 +340,22 @@ input,textarea{outline:none}
     <div class="drawer-item" onclick="logout()"><span class="di">↪</span> خروج</div>
    </div>
   </main>
+
+  <!-- FLOATING NAVIGATION -->
+  <nav id="bottomNav" class="bottom-nav" aria-label="KHATMIN navigation">
+   <button class="bottom-item active" data-tab="chats" aria-label="گفتگوها" title="گفتگوها" onclick="bottomTab('chats')">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+   </button>
+   <button class="bottom-item" data-tab="games" aria-label="گیم" title="گیم" onclick="bottomTab('games')">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6h10a5 5 0 0 1 4.8 6.4l-1.5 5.1a3 3 0 0 1-5.3 1l-2-2.5H11l-2 2.5a3 3 0 0 1-5.3-1l-1.5-5.1A5 5 0 0 1 7 6Zm1 3H6v2H4v2h2v2h2v-2h2v-2H8V9Zm8 1a1.3 1.3 0 1 0 0 2.6A1.3 1.3 0 0 0 16 10Zm2-2a1.3 1.3 0 1 0 0 2.6A1.3 1.3 0 0 0 18 8Z"/></svg>
+   </button>
+   <button class="bottom-item" data-tab="contacts" aria-label="دفترچه" title="دفترچه" onclick="bottomTab('contacts')">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h13a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm0 3a1 1 0 1 0 0 2h2a1 1 0 0 0 0-2H6Zm0 4a1 1 0 1 0 0 2h2a1 1 0 0 0 0-2H6Zm0 4a1 1 0 1 0 0 2h2a1 1 0 0 0 0-2H6Zm6-9h6v2h-6V5Zm0 4h6v2h-6V9Zm0 4h6v2h-6v-2Z"/></svg>
+   </button>
+   <button class="bottom-item" data-tab="settings" aria-label="تنظیمات" title="تنظیمات" onclick="bottomTab('settings')">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13.5.1-1.5-.1-1.5 2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-2.6-1.5L14 2h-4l-.4 3.1A7.7 7.7 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5A8.6 8.6 0 0 0 4.5 12c0 .5.1 1 .1 1.5l-2 1.5 2 3.4 2.4-1A7.7 7.7 0 0 0 9.6 19L10 22h4l.4-3.1a7.7 7.7 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+   </button>
+  </nav>
  </div>
 </section>
 
@@ -365,15 +412,6 @@ input,textarea{outline:none}
   <div class="setting"><span>☎ علی رضایی</span><small style="color:var(--muted)">امروز، 18:30</small></div>
   <div class="setting"><span>▣ سمیه</span><small style="color:var(--muted)">دیروز، 21:12</small></div>
   <div class="setting"><span>☎ مریم</span><small style="color:var(--muted)">دوشنبه، 15:44</small></div>
- </div>
-</div>
-
-<!-- STORY -->
-<div id="storyModal" class="overlay">
- <div class="modal" style="text-align:center">
-  <div class="modal-head"><b id="storyTitle">استوری</b><button class="icon-btn" onclick="closeOverlay('storyModal')">×</button></div>
-  <div id="storyAvatar" class="avatar" style="width:130px;height:130px;margin:15px auto;font-size:45px"></div>
-  <p style="color:var(--muted)">نمایش استوری در نسخه فعلی رابط کاربری</p>
  </div>
 </div>
 
@@ -482,6 +520,7 @@ function init(){
   renderMessages();
   populateContacts();
   buildEmoji();
+  updateBottomNav();
 }
 if(sessionStorage.getItem(SESSION_KEY)){
   $("loginScreen").style.display="none";
@@ -545,7 +584,36 @@ function selectChat(id){
   renderMessages();
   if(innerWidth<=900)$("sidebar").classList.add("mobile-hidden");
 }
-function mobileBack(){$("sidebar").classList.remove("mobile-hidden")}
+function mobileBack(){
+  $("sidebar").classList.remove("mobile-hidden");
+  $("bottomNav").classList.remove("chat-hidden");
+  document.querySelectorAll(".bottom-item").forEach(x=>x.classList.toggle("active",x.dataset.tab==="chats"));
+}
+function updateBottomNav(){
+  const nav=$("bottomNav");
+  const chat=state.chats.find(c=>c.id===selectedChatId);
+  if(!nav || !chat)return;
+  // The floating bar disappears inside a private conversation (PV).
+  const isPrivate=chat.type==="private";
+  nav.classList.toggle("chat-hidden",isPrivate);
+  $("app").classList.toggle("pv-open",isPrivate);
+  if(chat.type!=="private")document.querySelectorAll(".bottom-item").forEach(x=>x.classList.toggle("active",x.dataset.tab==="chats"));
+}
+function bottomTab(tab){
+  document.querySelectorAll(".bottom-item").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
+  if(tab==="chats"){
+    $("bottomNav").classList.remove("chat-hidden");
+    $("app").classList.remove("pv-open");
+    $("sidebar").classList.remove("mobile-hidden");
+    toast("گفتگوها");
+    return;
+  }
+  $("bottomNav").classList.remove("chat-hidden");
+  $("app").classList.remove("pv-open");
+  if(tab==="games")toast("مرکز گیم KHATMIN — آماده توسعه");
+  if(tab==="contacts")contactsModal();
+  if(tab==="settings")settingsModal();
+}
 
 function chatContext(e,id){
   selectedChatId=id;
@@ -715,11 +783,6 @@ function settingsModal(){closeDrawer();$("settingsModal").classList.add("open")}
 function newChatModal(){closeDrawer();$("newChatModal").classList.add("open");setTimeout(()=>$("newChatName").focus(),100)}
 function contactsModal(){closeDrawer();$("contactsModal").classList.add("open")}
 function callsModal(){closeDrawer();$("callsModal").classList.add("open")}
-function storyModal(name,avatar){
-  $("storyTitle").textContent=name;
-  $("storyAvatar").textContent=avatar;
-  $("storyModal").classList.add("open");
-}
 function populateContacts(){
   const list=$("contactsList");list.innerHTML="";
   [["علی رضایی","ع"],["سمیه","س"],["مریم","م"],["حسین","ح"],["گروه دوستان","گ"]].forEach(([n,a])=>{
