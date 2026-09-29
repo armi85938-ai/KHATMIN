@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KHATMIN — پیام‌رسان</title>
+<style>
+:root{
+  --bg:#0e1621; --panel:#17212b; --panel2:#202b36; --line:#263442;
+  --text:#e8eef4; --muted:#8b9aaa; --accent:#2aabee; --accent2:#229ed9;
+  --bubble:#182533; --bubble-me:#2b5278; --white:#fff; --danger:#ff5d67;
+}
+*{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;font-family:Tahoma,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+button,input{font:inherit} button{border:0;cursor:pointer}
+.app{height:100vh;display:none;overflow:hidden}
+.login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:
+ radial-gradient(circle at 20% 10%,#1d4e68 0,transparent 32%),
+ radial-gradient(circle at 90% 80%,#173d5a 0,transparent 35%),#0b141d}
+.login-card{width:min(420px,92vw);background:rgba(23,33,43,.94);border:1px solid #314252;border-radius:22px;padding:36px;box-shadow:0 25px 80px #0008;backdrop-filter:blur(20px);text-align:center}
+.logo{width:82px;height:82px;border-radius:50%;margin:0 auto 18px;background:linear-gradient(145deg,#32b5ee,#168bd0);display:grid;place-items:center;box-shadow:0 12px 30px #169bd655}
+.logo svg{width:48px;height:48px;fill:#fff}
+.login h1{margin:0 0 8px;font-size:30px}.login p{color:var(--muted);margin:0 0 28px}
+.field{text-align:right;margin:14px 0}.field label{display:block;color:#aebbc8;font-size:13px;margin:0 4px 7px}
+.field input{width:100%;height:52px;border-radius:12px;border:1px solid #344656;background:#111b24;color:#fff;padding:0 15px;outline:none;transition:.2s}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2aabee20}
+.login-btn{width:100%;height:52px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;margin-top:12px;transition:.2s}
+.login-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.error{height:20px;color:#ff7b82;font-size:13px;margin-top:8px}
+.hint{font-size:12px;color:#667889;margin-top:20px}
+
+.layout{height:100%;display:grid;grid-template-columns:380px 1fr;direction:ltr}
+.sidebar{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;direction:rtl;min-width:0}
+.side-top{height:64px;display:flex;align-items:center;gap:10px;padding:10px 14px}
+.icon-btn{width:42px;height:42px;border-radius:50%;background:transparent;color:#aebbc8;font-size:21px;display:grid;place-items:center}
+.icon-btn:hover{background:#263441;color:#fff}
+.search{height:42px;flex:1;border-radius:22px;background:#202b36;display:flex;align-items:center;padding:0 13px;gap:8px;color:#8293a3}
+.search input{background:transparent;border:0;outline:0;color:#fff;width:100%}
+.tabs{display:flex;padding:0 10px;border-bottom:1px solid var(--line)}
+.tab{flex:1;height:42px;background:transparent;color:#8091a0;font-size:13px;position:relative}
+.tab.active{color:#46baf0}.tab.active:after{content:"";position:absolute;bottom:-1px;left:15%;right:15%;height:3px;border-radius:3px;background:#2aabee}
+.chat-list{overflow:auto;flex:1;padding:6px}
+.chat{height:74px;border-radius:10px;display:flex;align-items:center;gap:12px;padding:8px 10px;cursor:pointer;direction:rtl}
+.chat:hover{background:#202d39}.chat.active{background:#2b5278}
+.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(145deg,#2aabee,#4f6bdc);display:grid;place-items:center;color:#fff;font-weight:700;flex:none;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.chat-info{min-width:0;flex:1}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.time{font-size:11px;color:#81909e;flex:none}.preview{font-size:12px;color:#82909d;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{min-width:21px;height:21px;border-radius:11px;background:#2aabee;color:white;font-size:11px;display:grid;place-items:center;padding:0 5px}
+
+.main{direction:rtl;display:flex;flex-direction:column;min-width:0;background:#0e1621}
+.chat-head{height:64px;background:#17212b;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:8px 18px;gap:12px}
+.head-info{flex:1}.head-name{font-weight:700}.head-status{font-size:11px;color:#7f93a5;margin-top:4px}
+.head-actions{display:flex;gap:2px}
+.messages{flex:1;overflow:auto;padding:22px max(5%,60px);display:flex;flex-direction:column;gap:7px;background:
+linear-gradient(#0e1621cc,#0e1621cc),radial-gradient(circle at 20% 30%,#182735 0,transparent 30%),radial-gradient(circle at 80% 70%,#152331 0,transparent 30%)}
+.day{align-self:center;background:#253341;color:#b8c5d0;border-radius:12px;padding:5px 12px;font-size:11px;margin:4px 0 10px}
+.msg{max-width:min(620px,78%);padding:8px 11px 7px;border-radius:12px;background:var(--bubble);align-self:flex-start;box-shadow:0 1px 1px #0002;position:relative}
+.msg.me{align-self:flex-end;background:var(--bubble-me);border-bottom-right-radius:4px}.msg:not(.me){border-bottom-left-radius:4px}
+.msg .meta{float:left;color:#8fa3b3;font-size:10px;margin:5px 0 0 8px}.msg.me .meta{color:#b7d2e6}
+.composer{min-height:68px;background:#17212b;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 16px}
+.compose-box{flex:1;min-height:46px;border-radius:24px;background:#202b36;display:flex;align-items:center;padding:0 10px}
+.compose-box input{width:100%;border:0;background:transparent;outline:0;color:#fff;padding:0 8px}
+.send{width:46px;height:46px;border-radius:50%;background:#2aabee;color:#fff;font-size:19px;display:grid;place-items:center}
+.send:hover{background:#229ed9}
+
+.empty{margin:auto;text-align:center;color:#718394}.empty h2{color:#b9c5ce}.empty-icon{font-size:55px;margin-bottom:8px}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:20}
+.modal-card{width:min(480px,92vw);background:#17212b;border:1px solid #344452;border-radius:18px;padding:22px;box-shadow:0 25px 80px #0009}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.profile{display:flex;align-items:center;gap:14px;padding:10px 0 20px}.big-avatar{width:76px;height:76px;border-radius:50%;background:linear-gradient(145deg,#2aabee,#4f6bdc);display:grid;place-items:center;font-size:28px;font-weight:700}
+.setting{display:flex;align-items:center;justify-content:space-between;padding:15px 8px;border-top:1px solid #273642;color:#cbd5dd}
+.switch{width:44px;height:24px;border-radius:14px;background:#40505e;position:relative}.switch.on{background:#2aabee}.switch:after{content:"";width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;right:3px;transition:.2s}.switch.on:after{right:23px}
+.menu{position:fixed;top:55px;right:15px;background:#202b36;border:1px solid #334350;border-radius:12px;padding:6px;display:none;z-index:15;min-width:180px;box-shadow:0 15px 35px #0008}
+.menu button{display:block;width:100%;text-align:right;padding:10px 12px;background:transparent;color:#dce5eb;border-radius:8px}.menu button:hover{background:#2b3945}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}.sidebar{position:absolute;inset:0 0 0 auto;width:100%;z-index:5;transform:translateX(0);transition:.25s}.sidebar.hidden{transform:translateX(100%)}.main{position:absolute;inset:0}
+ .chat-head .back{display:grid}.messages{padding:18px 4%}.msg{max-width:88%}
+}
+@media(min-width:801px){.chat-head .back{display:none}}
+</style>
+</head>
+<body>
+
+<section class="login" id="login">
+  <div class="login-card">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M21.8 3.2 18.6 20c-.24 1.2-.9 1.5-1.82.94l-5.03-3.7-2.43 2.34c-.27.27-.5.5-1.02.5l.36-5.12 9.32-8.42c.4-.36-.09-.56-.62-.2L5.83 13.7.85 12.14c-1.08-.34-1.1-1.08.23-1.57L20.5 3.06c.9-.34 1.69.2 1.3.14Z"/></svg></div>
+    <h1>KHATMIN</h1>
+    <p>پیام‌رسان سریع و مدرن شما</p>
+    <div class="field"><label>ایمیل / نام کاربری</label><input id="user" autocomplete="username" placeholder="ایمیل یا نام کاربری"></div>
+    <div class="field"><label>رمز عبور</label><input id="pass" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
+    <button class="login-btn" onclick="login()">ورود به KHATMIN</button>
+    <div class="error" id="error"></div>
+    <div class="hint">نسخه نمایشی — اتصال به دیتابیس در مرحله بعد</div>
+  </div>
+</section>
+
+<section class="app" id="app">
+ <div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-top">
+      <button class="icon-btn" onclick="toggleMenu()" title="منو">☰</button>
+      <div class="search">⌕ <input id="search" placeholder="جستجو" oninput="filterChats()"></div>
+    </div>
+    <div class="tabs"><button class="tab active">همه</button><button class="tab">خوانده‌نشده</button><button class="tab">گروه‌ها</button></div>
+    <div class="chat-list" id="chatList">
+      <div class="chat active" data-name="KHATMIN" onclick="openChat('KHATMIN','کانال رسمی KHATMIN','👑')">
+        <div class="avatar">K</div><div class="chat-info"><div class="row"><span class="name">KHATMIN</span><span class="time">19:42</span></div><div class="preview">به KHATMIN خوش آمدید 👋</div></div>
+      </div>
+      <div class="chat" data-name="علی رضایی" onclick="openChat('علی رضایی','آنلاین','ع')">
+        <div class="avatar">ع</div><div class="chat-info"><div class="row"><span class="name">علی رضایی</span><span class="time">18:20</span></div><div class="preview">سلام! پروژه چطور پیش رفت؟</div></div><span class="badge">2</span>
+      </div>
+      <div class="chat" data-name="گروه دوستان" onclick="openChat('گروه دوستان','5 عضو آنلاین','گ')">
+        <div class="avatar">گ</div><div class="chat-info"><div class="row"><span class="name">گروه دوستان</span><span class="time">17:05</span></div><div class="preview">مریم: فردا ساعت 8؟</div></div>
+      </div>
+      <div class="chat" data-name="سمیه" onclick="openChat('سمیه','آخرین بازدید امروز 16:48','س')">
+        <div class="avatar">س</div><div class="chat-info"><div class="row"><span class="name">سمیه</span><span class="time">16:48</span></div><div class="preview">فایل رو برات فرستادم.</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="chat-head">
+      <button class="icon-btn back" onclick="showSidebar()">‹</button>
+      <div class="avatar" id="headAvatar" style="width:44px;height:44px">K</div>
+      <div class="head-info"><div class="head-name" id="headName">KHATMIN</div><div class="head-status" id="headStatus">کانال رسمی KHATMIN</div></div>
+      <div class="head-actions">
+        <button class="icon-btn" title="جستجو">⌕</button>
+        <button class="icon-btn" title="تماس">☎</button>
+        <button class="icon-btn" onclick="toggleMenu()" title="بیشتر">⋮</button>
+      </div>
+    </header>
+    <div class="messages" id="messages">
+      <div class="day">امروز</div>
+      <div class="msg">به KHATMIN خوش آمدید! این نسخه‌ی اولیه رابط پیام‌رسان است. <span class="meta">19:40 ✓✓</span></div>
+      <div class="msg me">سلام! آماده‌ام برای شروع 🚀 <span class="meta">19:41 ✓✓</span></div>
+      <div class="msg">فعلاً ورود و رابط کاربری در مرورگر کار می‌کند؛ بعداً می‌توانیم دیتابیس، کاربران واقعی، پیام‌رسانی آنلاین، فایل‌ها و اعلان‌ها را وصل کنیم. <span class="meta">19:42 ✓✓</span></div>
+    </div>
+    <div class="composer">
+      <button class="icon-btn" title="پیوست">📎</button>
+      <div class="compose-box"><input id="messageInput" placeholder="پیام..." onkeydown="if(event.key==='Enter') sendMessage()"><button class="icon-btn" title="ایموجی">☺</button></div>
+      <button class="send" onclick="sendMessage()">➤</button>
+    </div>
+  </main>
+ </div>
+</section>
+
+<div class="menu" id="menu">
+  <button onclick="openSettings()">⚙️ تنظیمات</button>
+  <button onclick="alert('در نسخه بعدی: تماس صوتی و تصویری')">📞 تماس‌ها</button>
+  <button onclick="alert('در نسخه بعدی: مخاطبین و دعوت دوستان')">👥 مخاطبین</button>
+  <button onclick="logout()">↪ خروج</button>
+</div>
+
+<div class="modal" id="settings">
+ <div class="modal-card">
+  <div class="modal-head"><b>تنظیمات KHATMIN</b><button class="icon-btn" onclick="closeSettings()">×</button></div>
+  <div class="profile"><div class="big-avatar">A</div><div><b>ARMIN</b><div style="color:#8b9aaa;font-size:12px;margin-top:5px">حساب نمایشی</div></div></div>
+  <div class="setting"><span>حالت شب</span><span class="switch on"></span></div>
+  <div class="setting"><span>پخش خودکار رسانه</span><span class="switch on"></span></div>
+  <div class="setting"><span>اعلان‌ها</span><span class="switch on"></span></div>
+ </div>
+</div>
+
+<script>
+const login = () => {
+  const u=document.getElementById('user').value.trim();
+  const p=document.getElementById('pass').value;
+  const e=document.getElementById('error');
+  if(u==='ARMIN' && p==='123'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    sessionStorage.setItem('khatminLogged','1');
+  }else e.textContent='نام کاربری یا رمز عبور صحیح نیست.';
+};
+document.addEventListener('keydown',e=>{if(e.key==='Enter' && document.getElementById('login').style.display!=='none') login()});
+function logout(){sessionStorage.removeItem('khatminLogged');location.reload()}
+function toggleMenu(){const m=document.getElementById('menu');m.style.display=m.style.display==='block'?'none':'block'}
+function openSettings(){document.getElementById('menu').style.display='none';document.getElementById('settings').style.display='flex'}
+function closeSettings(){document.getElementById('settings').style.display='none'}
+function openChat(name,status,letter){
+ document.querySelectorAll('.chat').forEach(x=>x.classList.remove('active'));
+ const c=[...document.querySelectorAll('.chat')].find(x=>x.dataset.name===name);if(c)c.classList.add('active');
+ document.getElementById('headName').textContent=name;document.getElementById('headStatus').textContent=status;document.getElementById('headAvatar').textContent=letter;
+ if(innerWidth<=800) document.getElementById('sidebar').classList.add('hidden');
+}
+function showSidebar(){document.getElementById('sidebar').classList.remove('hidden')}
+function filterChats(){
+ const q=document.getElementById('search').value.trim().toLowerCase();
+ document.querySelectorAll('.chat').forEach(c=>c.style.display=c.dataset.name.toLowerCase().includes(q)?'flex':'none')
+}
+function sendMessage(){
+ const i=document.getElementById('messageInput'), t=i.value.trim();if(!t)return;
+ const m=document.createElement('div');m.className='msg me';m.innerHTML=escapeHtml(t)+' <span class="meta">'+new Date().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})+' ✓✓</span>';
+ document.getElementById('messages').appendChild(m);i.value='';m.scrollIntoView({behavior:'smooth',block:'end'});
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+if(sessionStorage.getItem('khatminLogged')==='1'){document.getElementById('login').style.display='none';document.getElementById('app').style.display='block'}
+document.addEventListener('click',e=>{if(!e.target.closest('#menu')&&!e.target.closest('.head-actions')&&!e.target.closest('.side-top'))document.getElementById('menu').style.display='none'})
+</script>
+</body>
+</html>
