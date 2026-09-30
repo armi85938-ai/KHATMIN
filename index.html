@@ -241,6 +241,23 @@ h1{font-size:25px;text-align:center;margin:0 0 8px}
   transition:transform .16s ease;
 }
 .send:active{transform:scale(.93)}
+.composer-action{width:46px;height:46px;flex:0 0 46px;border:0;border-radius:16px;display:grid;place-items:center;background:rgba(255,255,255,.58);color:#24232a;cursor:pointer;transition:transform .16s ease,background .16s ease,color .16s ease,box-shadow .16s ease;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.composer-action svg{width:22px;height:22px;transition:transform .16s ease,opacity .16s ease}
+.composer-action:hover{background:rgba(255,255,255,.82)}
+.composer-action:active{transform:scale(.92)}
+.composer-action.is-voice{background:rgba(255,255,255,.66)}
+.composer-action.is-send{background:#fff;color:#08090c}
+.composer-action.voice-recording{background:#fff;color:#0a0b0d;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.composer-action.voice-recording svg{transform:scale(1.02)}
+.voice-recorder-ui{min-width:0;flex:1;display:none;align-items:center;justify-content:flex-end;gap:9px;padding:0 10px;direction:rtl;user-select:none}
+.voice-recorder-ui.show{display:flex}
+.voice-recorder-dot{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#ff2638;box-shadow:0 0 0 0 rgba(255,38,56,.38);animation:voiceDotBlink .9s ease-in-out infinite}
+.voice-recorder-time{min-width:48px;color:#fff;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.04em;text-align:center;direction:ltr}
+.voice-recorder-label{color:#aeb0b8;font-size:11px;white-space:nowrap}
+@keyframes voiceDotBlink{0%,100%{opacity:.35;transform:scale(.82);box-shadow:0 0 0 0 rgba(255,38,56,.34)}50%{opacity:1;transform:scale(1);box-shadow:0 0 0 6px rgba(255,38,56,.08)}}
+.composer.recording .voice-recorder-ui{display:flex}
+.composer.recording #messageInput{display:none}
+
 @keyframes msgIn{
   from{opacity:0;transform:translateY(5px)}
   to{opacity:1;transform:translateY(0)}
@@ -849,29 +866,31 @@ body{
   content:"";
   position:absolute;
   z-index:1;
-  left:var(--jelly-left,50%);
+  left:var(--nav-x,50%);
   top:50%;
-  width:0;
-  height:0;
+  width:68px;
+  height:50px;
   transform:translate(-50%,-50%);
-  transform-origin:center;
-  border-radius:46% 54% 50% 50% / 44% 45% 55% 56%;
+  border-radius:17px;
   pointer-events:none;
   opacity:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.045)),rgba(13,14,18,.82);
-  border:1px solid rgba(255,255,255,.15);
-  box-shadow:0 18px 34px rgba(0,0,0,.42),inset 0 1px 2px rgba(255,255,255,.55),inset 0 -8px 16px rgba(0,0,0,.12);
-  backdrop-filter:blur(22px) saturate(145%);
-  -webkit-backdrop-filter:blur(22px) saturate(145%);
+  background:
+    linear-gradient(115deg,transparent 8%,rgba(255,255,255,.13) 42%,rgba(255,255,255,.34) 50%,rgba(255,255,255,.08) 58%,transparent 92%),
+    linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -1px 0 rgba(255,255,255,.045);
+  backdrop-filter:blur(16px) saturate(150%);
+  -webkit-backdrop-filter:blur(16px) saturate(150%);
+  will-change:left,transform,opacity,box-shadow;
 }
-.bottom-nav.jelly-pulse::before{opacity:1}
-.bottom-nav.jelly-pulse::after{animation:jellyMorph .38s cubic-bezier(.16,1,.3,1) both}
-@keyframes jellyMorph{
-  0%{opacity:0;width:0;height:0;border-radius:50%;transform:translate(-50%,-50%) scale(.55)}
-  18%{opacity:1;width:calc(var(--jelly-size,68px) * 1.55);height:calc(var(--jelly-size,68px) * .92);border-radius:42% 58% 52% 48% / 48% 42% 58% 52%;transform:translate(-50%,-50%) scale(1.05)}
-  48%{opacity:1;width:calc(var(--jelly-size,68px) * 2.05);height:calc(var(--jelly-size,68px) * 1.12);border-radius:38% 62% 46% 54% / 56% 43% 57% 44%;transform:translate(-50%,-50%) scale(1)}
-  72%{opacity:.92;width:calc(var(--jelly-size,68px) * 1.65);height:calc(var(--jelly-size,68px) * .98);border-radius:55% 45% 58% 42% / 45% 58% 42% 55%;transform:translate(-50%,-50%) scale(.98)}
-  100%{opacity:0;width:calc(var(--jelly-size,68px) * 1.12);height:calc(var(--jelly-size,68px) * .82);border-radius:50%;transform:translate(-50%,-50%) scale(.96)}
+.bottom-nav.nav-transition::after{animation:navIndicatorGlide .12s cubic-bezier(.22,.8,.2,1) both}
+.bottom-nav.nav-transition::before{opacity:1}
+@keyframes navIndicatorGlide{
+  0%{left:var(--nav-from-x,var(--nav-x,50%));opacity:.72;transform:translate(-50%,-50%) scale(.94)}
+  100%{left:var(--nav-x,50%);opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
 .bottom-nav .nav-btn{
   position:relative;
@@ -928,19 +947,21 @@ body{
   stroke-width:2.05 !important;
   filter:drop-shadow(0 3px 5px rgba(0,0,0,.42)) drop-shadow(0 0 10px rgba(255,255,255,.20));
 }
-.bottom-nav .nav-btn.jelly-target{z-index:3;animation:iconJelly .38s cubic-bezier(.16,1,.3,1) both}
-@keyframes iconJelly{
+.bottom-nav .nav-btn.nav-target{z-index:3;animation:navIconLift .16s cubic-bezier(.22,.85,.25,1) both}
+@keyframes navIconLift{
   0%{transform:translateY(0) scale(1)}
-  22%{transform:translateY(-5px) scale(1.06,1.13)}
-  48%{transform:translateY(-7px) scale(1.16,.94)}
-  70%{transform:translateY(-2px) scale(.98,1.05)}
+  38%{transform:translateY(-4px) scale(1.055)}
+  68%{transform:translateY(-2px) scale(1.025)}
   100%{transform:translateY(0) scale(1)}
 }
 @media(max-width:480px){
-  .bottom-nav{width:calc(100% - 22px);bottom:12px;height:68px;border-radius:27px}
-  .bottom-nav .nav-btn{height:52px !important}
+  .bottom-nav{width:calc(100% - 42px);bottom:12px;height:62px;border-radius:31px;padding:5px !important}
+  .bottom-nav .nav-btn{height:50px !important}
   .bottom-nav .nav-btn svg{width:25px !important;height:25px !important}
   .bottom-nav .nav-btn.active svg{width:29px !important;height:29px !important}
+}
+@media(max-width:390px){
+  .bottom-nav{width:calc(100% - 50px);height:60px;border-radius:30px}
 }
 @media (prefers-reduced-motion:reduce){
   .bottom-nav,.bottom-nav::before,.bottom-nav::after,.bottom-nav .nav-btn,.bottom-nav .nav-btn::before,.bottom-nav .nav-btn svg{animation:none !important;transition:none !important}
@@ -1241,6 +1262,122 @@ body{
 @media(max-width:600px){
   .chat-word-reaction{font-size:13px;padding:14px 17px;border-radius:19px}
 }
+
+/* Water-drop page transition */
+.water-transition{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  pointer-events:none;
+  overflow:hidden;
+  opacity:1;
+}
+.water-transition__veil{
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at var(--water-x) var(--water-y),rgba(170,220,255,.075),transparent 18%,rgba(0,0,0,0) 48%);
+  opacity:0;
+  animation:waterVeil .72s ease-out forwards;
+}
+.water-transition__drop{
+  position:absolute;
+  left:var(--water-x);
+  top:-92px;
+  width:32px;
+  height:48px;
+  transform:translateX(-50%) rotate(45deg);
+  border-radius:58% 42% 62% 38% / 58% 48% 52% 42%;
+  background:linear-gradient(135deg,rgba(255,255,255,.82) 0%,rgba(215,244,255,.42) 24%,rgba(110,195,235,.20) 55%,rgba(255,255,255,.12) 78%,rgba(255,255,255,.42) 100%);
+  border:1px solid rgba(255,255,255,.58);
+  box-shadow:inset -5px -7px 10px rgba(52,154,207,.10),inset 5px 4px 8px rgba(255,255,255,.52),0 12px 24px rgba(75,176,224,.18);
+  backdrop-filter:blur(3px) saturate(145%);
+  -webkit-backdrop-filter:blur(3px) saturate(145%);
+  filter:url(#waterGlass);
+  opacity:0;
+  animation:waterDropFall .58s cubic-bezier(.18,.76,.22,1) forwards;
+}
+.water-transition__drop::before{
+  content:"";
+  position:absolute;
+  width:7px;
+  height:16px;
+  left:8px;
+  top:7px;
+  border-radius:70% 45% 70% 45%;
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,0));
+  transform:rotate(-8deg);
+  filter:blur(.2px);
+}
+.water-transition__drop::after{
+  content:"";
+  position:absolute;
+  width:9px;
+  height:5px;
+  right:3px;
+  bottom:8px;
+  border-radius:50%;
+  background:rgba(255,255,255,.28);
+  filter:blur(2px);
+}
+.water-transition__impact{
+  position:absolute;
+  left:var(--water-x);
+  top:var(--water-y);
+  width:10px;
+  height:10px;
+  transform:translate(-50%,-50%) scale(.1);
+  border-radius:50%;
+  border:1px solid rgba(210,247,255,.72);
+  box-shadow:0 0 18px rgba(135,220,255,.28),inset 0 0 8px rgba(255,255,255,.32);
+  opacity:0;
+  animation:waterImpact .7s .48s cubic-bezier(.16,.75,.22,1) forwards;
+}
+.water-transition__ripple,
+.water-transition__ripple::before,
+.water-transition__ripple::after{
+  position:absolute;
+  left:var(--water-x);
+  top:var(--water-y);
+  width:26px;
+  height:9px;
+  border-radius:50%;
+  border:1px solid rgba(190,239,255,.62);
+  box-shadow:0 0 15px rgba(101,198,236,.16),inset 0 0 7px rgba(255,255,255,.12);
+  transform:translate(-50%,-50%) scale(.15);
+  opacity:0;
+  content:"";
+}
+.water-transition__ripple{animation:waterRipple .82s .53s cubic-bezier(.1,.68,.18,1) forwards}
+.water-transition__ripple::before{animation:waterRipple .82s .11s cubic-bezier(.1,.68,.18,1) forwards}
+.water-transition__ripple::after{animation:waterRipple .82s .22s cubic-bezier(.1,.68,.18,1) forwards}
+@keyframes waterDropFall{
+  0%{top:-92px;opacity:0;transform:translateX(-50%) rotate(45deg) scale(.72)}
+  10%{opacity:.96}
+  82%{top:calc(var(--water-y) - 22px);opacity:.98;transform:translateX(-50%) rotate(45deg) scale(1)}
+  94%{top:calc(var(--water-y) - 4px);opacity:.88;transform:translateX(-50%) rotate(45deg) scale(.92,1.12)}
+  100%{top:var(--water-y);opacity:0;transform:translateX(-50%) rotate(45deg) scale(.55,.78)}
+}
+@keyframes waterImpact{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.1)}
+  12%{opacity:.9}
+  42%{opacity:.72;transform:translate(-50%,-50%) scale(2.2,.55)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(5.8,.8)}
+}
+@keyframes waterRipple{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.15)}
+  12%{opacity:.76}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(11.5,3.7)}
+}
+@keyframes waterVeil{
+  0%{opacity:0}
+  30%{opacity:.42}
+  100%{opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .water-transition__drop,.water-transition__impact,.water-transition__ripple,.water-transition__ripple::before,.water-transition__ripple::after,.water-transition__veil{animation-duration:.01ms !important;animation-delay:0ms !important}
+}
+
+.voice-message-player{display:flex;align-items:center;gap:9px;min-width:190px;padding:3px 0}.voice-message-player audio{width:190px;height:34px;filter:brightness(.96)}.voice-message-player audio::-webkit-media-controls-panel{background:rgba(255,255,255,.55)}
 </style>
 
 <style>
@@ -1505,6 +1642,7 @@ const icons={
  back:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.55 4.55 0 0 1 7.75 4.2c1.7 0 3.35.88 4.25 2.25.9-1.37 2.55-2.25 4.25-2.25A4.55 4.55 0 0 1 20.8 8.8Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  send:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 4 16 8-16 8 3.2-8L4 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.2 12H20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+ voiceMic:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.1" y="3.3" width="7.8" height="11.6" rx="3.9" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 11.7a6.2 6.2 0 0 0 12.4 0M12 18v3M8.8 21h6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
  logout:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H6.8A1.8 1.8 0 0 0 5 5.8v12.4A1.8 1.8 0 0 0 6.8 20H10M14 16l4-4-4-4M18 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
 
@@ -1985,7 +2123,12 @@ async function openChat(partner){
       </div>
       <form id="composer" class="composer">
         <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="پیامت را بنویس...">
-        <button id="sendButton" class="send" type="submit">${icons.send}</button>
+        <div id="voiceRecorderUI" class="voice-recorder-ui" aria-live="polite" aria-hidden="true">
+          <span class="voice-recorder-dot" aria-hidden="true"></span>
+          <span id="voiceRecorderTime" class="voice-recorder-time">00:00</span>
+          <span class="voice-recorder-label">در حال ضبط ویس</span>
+        </div>
+        <button id="sendButton" class="composer-action is-voice" type="button" aria-label="ضبط ویس">${icons.voiceMic}</button>
       </form>
 
       <div id="chatWordReaction" class="chat-word-reaction" aria-live="polite" aria-hidden="true">میشه ارسالش نکنی! حالم ازش بهم میخوره</div>
@@ -2014,6 +2157,12 @@ async function openChat(partner){
   document.getElementById("composer").addEventListener("submit",sendMessage);
   messageInput.addEventListener("input",handleTypingInput);
   messageInput.addEventListener("blur",stopTyping);
+  document.getElementById("sendButton")?.addEventListener("click",e=>{
+    if(voiceRecording){e.preventDefault();e.stopPropagation();toggleVoiceRecording();return;}
+    if(String(document.getElementById("messageInput")?.value||"").trim()){return;}
+    e.preventDefault();e.stopPropagation();toggleVoiceRecording();
+  });
+  updateComposerAction();
   lastChatReactionWord="";
   clearTimeout(chatReactionTimer);
   document.getElementById("messageInput").addEventListener("keydown",e=>{ if(e.key==="Escape"){ stopTyping(); closeDeleteConfirm(); closeMessageSheet(); } });
@@ -2119,7 +2268,12 @@ function renderMessage(m){
   const reactionBadge=(!deleted && reaction?.reaction)
     ? `<span class="msg-reaction-badge" title="واکنش">${esc(reaction.reaction)}</span>`
     : "";
-  const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):`${replyPreviewHtml(m)}${esc(m.content||"")}`}${reactionBadge}${footer}</span>`;
+  const isVoice=!deleted && typeof m.content==="string" && m.content.startsWith("__KHATMIN_VOICE__");
+  const voiceSrc=isVoice?m.content.slice("__KHATMIN_VOICE__".length):"";
+  const contentHtml=isVoice
+    ? `${replyPreviewHtml(m)}<div class="voice-message-player"><audio controls preload="metadata" src="${esc(voiceSrc)}"></audio></div>`
+    : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
+  const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
 
@@ -2198,6 +2352,7 @@ function checkChatReactionWords(){
 
 function handleTypingInput(){
   const input=document.getElementById("messageInput");
+  updateComposerAction();
   if(!input || !input.value.length){stopTyping();checkChatReactionWords();return;}
   checkChatReactionWords();
   if(!isLocalTyping){isLocalTyping=true;broadcastTyping(true)}
@@ -2527,10 +2682,159 @@ function subscribeMessages(){
 }
 
 async function closeChatAndHome(){
+  if(voiceRecording)stopVoiceRecording(false);
   stopTyping();clearTypingState();clearMessagePress();closeMessageSheet();cancelMessageMode();
   if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
   if(typingChannel){try{await supabaseClient.removeChannel(typingChannel)}catch(e){}typingChannel=null}
   chatPartner=null;messageCache.clear();hiddenMessageIds.clear();await renderHome();
+}
+
+let voiceRecorder=null;
+let voiceChunks=[];
+let voiceRecording=false;
+let voiceTimer=null;
+let voiceStartedAt=0;
+let voiceShouldSend=false;
+
+function formatVoiceDuration(seconds){
+  const total=Math.max(0,Math.floor(Number(seconds)||0));
+  const mins=Math.floor(total/60);
+  const secs=total%60;
+  return `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+}
+
+function updateVoiceTimer(){
+  const el=document.getElementById("voiceRecorderTime");
+  if(!el)return;
+  el.textContent=formatVoiceDuration((Date.now()-voiceStartedAt)/1000);
+}
+
+function startVoiceTimer(){
+  clearInterval(voiceTimer);
+  voiceStartedAt=Date.now();
+  updateVoiceTimer();
+  voiceTimer=setInterval(updateVoiceTimer,250);
+}
+
+function stopVoiceTimer(){
+  clearInterval(voiceTimer);
+  voiceTimer=null;
+}
+
+function setVoiceComposerState(recording){
+  const composer=document.getElementById("composer");
+  const input=document.getElementById("messageInput");
+  const ui=document.getElementById("voiceRecorderUI");
+  if(!composer)return;
+  composer.classList.toggle("recording",!!recording);
+  if(ui)ui.classList.toggle("show",!!recording);
+  if(ui)ui.setAttribute("aria-hidden",recording?"false":"true");
+  if(input){
+    input.setAttribute("aria-hidden",recording?"true":"false");
+    if(recording)input.blur();
+  }
+}
+
+function updateComposerAction(){
+  const input=document.getElementById("messageInput");
+  const button=document.getElementById("sendButton");
+  if(!input||!button)return;
+  const hasText=!!String(input.value||"").trim();
+  if(voiceRecording){
+    setVoiceComposerState(true);
+    button.className="composer-action is-send voice-recording";
+    button.type="button";
+    button.setAttribute("aria-label","ارسال ویس");
+    button.title="ارسال ویس";
+    button.innerHTML=icons.send;
+    return;
+  }
+  setVoiceComposerState(false);
+  button.title=hasText?"ارسال پیام":"ضبط ویس";
+  if(hasText){
+    button.className="composer-action is-send";
+    button.type="submit";
+    button.setAttribute("aria-label","ارسال");
+    button.innerHTML=icons.send;
+  }else{
+    button.className="composer-action is-voice";
+    button.type="button";
+    button.setAttribute("aria-label","ضبط ویس");
+    button.innerHTML=icons.voiceMic;
+  }
+}
+
+async function toggleVoiceRecording(){
+  const input=document.getElementById("messageInput");
+  if(!input)return;
+  if(voiceRecording){
+    voiceShouldSend=true;
+    stopVoiceRecording(true);
+    return;
+  }
+  if(String(input.value||"").trim())return;
+  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){
+    alert("مرورگر این دستگاه ضبط ویس را پشتیبانی نمی‌کند.");return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(x=>MediaRecorder.isTypeSupported?.(x));
+    voiceChunks=[];
+    voiceShouldSend=false;
+    voiceRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+    voiceRecorder.ondataavailable=e=>{if(e.data?.size)voiceChunks.push(e.data)};
+    voiceRecorder.onstop=()=>{
+      const rec=voiceRecorder;
+      stream.getTracks().forEach(t=>t.stop());
+      const shouldSend=voiceShouldSend;
+      voiceRecorder=null;
+      voiceRecording=false;
+      stopVoiceTimer();
+      const duration=Math.max(0,Math.floor((Date.now()-voiceStartedAt)/1000));
+      const timeEl=document.getElementById("voiceRecorderTime");
+      if(timeEl)timeEl.textContent=formatVoiceDuration(duration);
+      setVoiceComposerState(false);
+      updateComposerAction();
+      const blob=new Blob(voiceChunks,{type:rec?.mimeType||'audio/webm'});
+      voiceChunks=[];
+      if(!shouldSend || blob.size<700)return;
+      if(blob.size>8*1024*1024){alert("ویس خیلی حجیم است؛ لطفاً کوتاه‌تر ضبط کنید.");return;}
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        const ok=await sendRawMessage("__KHATMIN_VOICE__"+reader.result);
+        if(ok)document.getElementById("messageInput")?.focus();
+      };
+      reader.readAsDataURL(blob);
+    };
+    voiceRecorder.start(180);
+    voiceRecording=true;
+    setVoiceComposerState(true);
+    startVoiceTimer();
+    updateComposerAction();
+  }catch(err){
+    voiceRecorder=null;voiceRecording=false;voiceShouldSend=false;voiceChunks=[];
+    stopVoiceTimer();setVoiceComposerState(false);updateComposerAction();
+    alert("اجازه دسترسی به میکروفون داده نشد.");
+  }
+}
+
+function stopVoiceRecording(send=true){
+  if(!voiceRecorder)return;
+  voiceShouldSend=!!send;
+  try{voiceRecorder.stop()}catch(e){}
+}
+
+async function sendRawMessage(content){
+  if(!content||!chatPartner||!currentUser)return false;
+  try{
+    const row={sender_id:currentUser.id,receiver_id:chatPartner.id,content};
+    const {data,error}=await supabaseClient.from("messages").insert(row).select("*").single();
+    if(error)throw error;
+    if(data){messageCache.set(String(data.id),data);await cacheMessages([data]);}
+    const box=document.getElementById("messages");
+    if(box){box.querySelector(".empty")?.remove();if(data&&!box.querySelector(`[data-msg-id="${CSS.escape(String(data.id))}"]`)){box.insertAdjacentHTML("beforeend",renderMessage(data));attachMessageGestures();box.scrollTop=box.scrollHeight;}}
+    return true;
+  }catch(err){alert("ویس ارسال نشد: "+(err?.message||"خطای اتصال"));return false;}
 }
 
 async function sendMessage(e){
@@ -2621,7 +2925,7 @@ async function sendMessage(e){
       box.scrollTop=box.scrollHeight;
     }
 
-    input.value="";
+    input.value="";updateComposerAction();
     replyingToMessage=null;
     document.getElementById("replyBar")?.classList.remove("show");
     const icon=document.getElementById("replyBarIcon");
@@ -2639,35 +2943,81 @@ async function sendMessage(e){
   }
 }
 
+function playWaterTransition(fromRect,toRect){
+  const old=document.querySelector('.nav-liquid-flight');
+  if(old) old.remove();
+
+  const orb=document.createElement('div');
+  orb.className='nav-liquid-flight';
+  orb.innerHTML='<span class="flight-ring"></span><span class="flight-drop"></span><span class="flight-splash splash-a"></span><span class="flight-splash splash-b"></span><span class="flight-splash splash-c"></span><span class="flight-splash splash-d"></span><span class="flight-splash splash-e"></span>';
+  document.body.appendChild(orb);
+
+  const sx=fromRect.left+fromRect.width/2;
+  const sy=fromRect.top+fromRect.height*0.12;
+  const ex=toRect.left+toRect.width/2;
+  const ey=toRect.top+toRect.height*0.18;
+  const dx=ex-sx;
+  const distance=Math.abs(dx);
+  const arc=Math.max(58,Math.min(118,58+distance*.18));
+  const mx=(sx+ex)/2;
+  const my=Math.min(sy,ey)-arc;
+
+  orb.style.left=sx+'px';
+  orb.style.top=sy+'px';
+
+  const animation=orb.animate([
+    {left:sx+'px',top:sy+'px',opacity:0,transform:'translate(-50%,-50%) scale(.42,.68) rotate(-8deg)'},
+    {left:sx+'px',top:(sy-13)+'px',opacity:1,transform:'translate(-50%,-50%) scale(.82,1.06) rotate(2deg)',offset:.10},
+    {left:(sx+(mx-sx)*.42)+'px',top:(sy+(my-sy)*.42)+'px',opacity:1,transform:'translate(-50%,-50%) scale(1,.94) rotate(-4deg)',offset:.34},
+    {left:mx+'px',top:my+'px',opacity:.96,transform:'translate(-50%,-50%) scale(.92,1.08) rotate(4deg)',offset:.56},
+    {left:(ex+(mx-ex)*.32)+'px',top:(ey+(my-ey)*.32)+'px',opacity:1,transform:'translate(-50%,-50%) scale(.88,1.12) rotate(9deg)',offset:.82},
+    {left:ex+'px',top:ey+'px',opacity:1,transform:'translate(-50%,-50%) scale(1.08,.72) rotate(0deg)'}
+  ],{
+    duration:420,
+    easing:'cubic-bezier(.18,.78,.22,1)',
+    fill:'forwards'
+  });
+
+  animation.finished.then(()=>{
+    orb.classList.add('is-impact');
+    orb.animate([
+      {transform:'translate(-50%,-50%) scale(1.08,.72)',opacity:1},
+      {transform:'translate(-50%,-50%) scale(1.55,.48)',opacity:.72,offset:.22},
+      {transform:'translate(-50%,-50%) scale(.35,.24)',opacity:0}
+    ],{duration:240,easing:'cubic-bezier(.16,.82,.2,1)',fill:'forwards'}).finished.then(()=>orb.remove());
+  }).catch(()=>orb.remove());
+}
+
 function navPulse(btn,action){
-  const nav=btn?.closest(".bottom-nav");
+  const nav=btn?.closest('.bottom-nav');
   if(!nav)return;
 
-  nav.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("jelly-target"));
-  nav.classList.remove("jelly-pulse");
-  void nav.offsetWidth;
+  const current=nav.querySelector('.nav-btn.active') || btn;
+  const fromRect=current.getBoundingClientRect();
+  const toRect=btn.getBoundingClientRect();
 
-  const rect=btn.getBoundingClientRect();
-  const navRect=nav.getBoundingClientRect();
-  const x=rect.left+rect.width/2-navRect.left;
-  const size=Math.max(rect.width,rect.height);
+  if(current!==btn){
+    const navWidth=nav.getBoundingClientRect().width||1;
+    const fromX=fromRect.left+fromRect.width/2-nav.getBoundingClientRect().left;
+    const toX=toRect.left+toRect.width/2-nav.getBoundingClientRect().left;
+    nav.style.setProperty('--nav-from-x',`${(fromX/navWidth)*100}%`);
+    nav.style.setProperty('--nav-x',`${(toX/navWidth)*100}%`);
+    nav.classList.remove('nav-transition');
+    void nav.offsetWidth;
+    nav.classList.add('nav-transition');
+  }
 
-  nav.style.setProperty("--jelly-x",`${x}px`);
-  nav.style.setProperty("--jelly-left",`${x}px`);
-  nav.style.setProperty("--jelly-size",`${size}px`);
-  nav.classList.add("jelly-pulse");
-  btn.classList.add("jelly-target");
+  nav.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('nav-target'));
+  btn.classList.add('nav-target');
 
-  window.setTimeout(()=>{
-    if(action==="chat")renderHome();
-    else if(action==="game"||action==="book")soon();
-    else if(action==="settings")renderSettings();
-  },390);
-
-  window.setTimeout(()=>{
-    nav.classList.remove("jelly-pulse");
-    btn.classList.remove("jelly-target");
-  },450);
+  if(action==='settings'){
+    window.setTimeout(()=>renderSettings(),90);
+  }else{
+    window.setTimeout(()=>{
+      if(action==='chat')renderHome();
+      else if(action==='game'||action==='book')soon();
+    },90);
+  }
 }
 
 function soon(){alert("این بخش به‌زودی فعال می‌شود ♡")}
@@ -2724,5 +3074,105 @@ async function logout(){
   document.getElementById("loginScreen").classList.remove("hidden");
 })();
 </script>
+
+<style>
+/* ===== Tiny clear water drop tab transition ===== */
+.nav-liquid-flight{
+  position:fixed;
+  z-index:99999;
+  width:20px;
+  height:26px;
+  border-radius:50% 50% 55% 55% / 46% 46% 70% 70%;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  overflow:visible;
+  background:
+    radial-gradient(circle at 34% 23%,rgba(255,255,255,.92) 0 8%,rgba(255,255,255,.32) 19%,transparent 36%),
+    linear-gradient(145deg,rgba(255,255,255,.30),rgba(183,230,255,.10) 48%,rgba(255,255,255,.04));
+  border:1px solid rgba(255,255,255,.62);
+  box-shadow:
+    inset 3px 4px 7px rgba(255,255,255,.34),
+    inset -3px -5px 7px rgba(65,155,210,.10),
+    0 5px 14px rgba(130,210,255,.16);
+  backdrop-filter:blur(4px) saturate(160%);
+  -webkit-backdrop-filter:blur(4px) saturate(160%);
+  will-change:left,top,transform,opacity;
+}
+.nav-liquid-flight::before{
+  content:"";
+  position:absolute;
+  width:6px;height:9px;
+  left:4px;top:4px;
+  border-radius:70% 50% 70% 50%;
+  background:rgba(255,255,255,.72);
+  filter:blur(1px);
+  transform:rotate(-20deg);
+}
+.nav-liquid-flight::after{
+  content:"";
+  position:absolute;
+  left:50%;top:50%;
+  width:8px;height:3px;
+  border-radius:50%;
+  border:1px solid rgba(215,247,255,.46);
+  transform:translate(-50%,-50%) scale(.4);
+  opacity:0;
+}
+.nav-liquid-flight .flight-drop{
+  position:absolute;
+  left:50%;top:-5px;
+  width:5px;height:8px;
+  border-radius:60% 60% 70% 70%;
+  background:rgba(255,255,255,.20);
+  filter:blur(.4px);
+  transform:translateX(-50%);
+}
+.nav-liquid-flight .flight-splash{
+  position:absolute;
+  left:50%;top:50%;
+  width:3px;height:9px;
+  border-radius:70% 70% 55% 55%;
+  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(165,225,255,.18));
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 1px 5px rgba(115,205,245,.18);
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.2);
+  transform-origin:50% 100%;
+}
+.nav-liquid-flight.is-impact .flight-ring{
+  animation:flightImpactRing .48s cubic-bezier(.08,.72,.18,1) forwards;
+}
+.nav-liquid-flight.is-impact::after{
+  animation:flightSurface .46s cubic-bezier(.08,.72,.18,1) forwards;
+}
+.nav-liquid-flight.is-impact .flight-splash{
+  animation:flightSplash .48s cubic-bezier(.12,.72,.2,1) forwards;
+}
+.nav-liquid-flight.is-impact .splash-a{--sx:-18px;--sy:-13px;--rot:-42deg;animation-delay:0ms}
+.nav-liquid-flight.is-impact .splash-b{--sx:18px;--sy:-12px;--rot:42deg;animation-delay:.025s}
+.nav-liquid-flight.is-impact .splash-c{--sx:-24px;--sy:2px;--rot:-74deg;animation-delay:.04s}
+.nav-liquid-flight.is-impact .splash-d{--sx:24px;--sy:3px;--rot:74deg;animation-delay:.055s}
+.nav-liquid-flight.is-impact .splash-e{--sx:0px;--sy:-19px;--rot:0deg;animation-delay:.015s}
+@keyframes flightImpactRing{
+  0%{transform:translate(-50%,-50%) scale(.18,.18);opacity:.82}
+  30%{opacity:.62}
+  100%{transform:translate(-50%,-50%) scale(4.2,1.22);opacity:0}
+}
+@keyframes flightSurface{
+  0%{transform:translate(-50%,-50%) scale(.25,.25);opacity:.78}
+  32%{transform:translate(-50%,-50%) scale(1.35,.5);opacity:.48}
+  100%{transform:translate(-50%,-50%) scale(4.8,1.25);opacity:0}
+}
+@keyframes flightSplash{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(0deg)}
+  12%{opacity:.9}
+  48%{opacity:.66;transform:translate(calc(-50% + var(--sx)*.62),calc(-50% + var(--sy)*.62)) scale(.9) rotate(var(--rot))}
+  100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(.34) rotate(var(--rot))}
+}
+@media(prefers-reduced-motion:reduce){
+  .nav-liquid-flight{animation-duration:.01ms !important}
+}
+
+</style>
 </body>
 </html>
