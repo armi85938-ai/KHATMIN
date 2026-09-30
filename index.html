@@ -2247,6 +2247,7 @@ async function syncChatExtras(messages){
 
 function messageDisplayText(m){
   if(m.deleted_for_everyone) return "این پیام حذف شد";
+  if(typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__"))) return "🎙️ ویس";
   return m.content||"";
 }
 
@@ -2268,8 +2269,10 @@ function renderMessage(m){
   const reactionBadge=(!deleted && reaction?.reaction)
     ? `<span class="msg-reaction-badge" title="واکنش">${esc(reaction.reaction)}</span>`
     : "";
-  const isVoice=!deleted && typeof m.content==="string" && m.content.startsWith("__KHATMIN_VOICE__");
-  const voiceSrc=isVoice?m.content.slice("__KHATMIN_VOICE__".length):"";
+  const isVoice=!deleted && typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__"));
+  const voiceSrc=isVoice
+    ? (m.content.startsWith("__KHATMIN_VOICE_URL__") ? m.content.slice("__KHATMIN_VOICE_URL__".length) : m.content.slice("__KHATMIN_VOICE__".length))
+    : "";
   const contentHtml=isVoice
     ? `${replyPreviewHtml(m)}<div class="voice-message-player"><audio controls preload="metadata" src="${esc(voiceSrc)}"></audio></div>`
     : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
@@ -2783,7 +2786,7 @@ async function toggleVoiceRecording(){
     voiceShouldSend=false;
     voiceRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
     voiceRecorder.ondataavailable=e=>{if(e.data?.size)voiceChunks.push(e.data)};
-    voiceRecorder.onstop=()=>{
+    voiceRecorder.onstop=async()=>{
       const rec=voiceRecorder;
       stream.getTracks().forEach(t=>t.stop());
       const shouldSend=voiceShouldSend;
@@ -2799,12 +2802,38 @@ async function toggleVoiceRecording(){
       voiceChunks=[];
       if(!shouldSend || blob.size<700)return;
       if(blob.size>8*1024*1024){alert("ویس خیلی حجیم است؛ لطفاً کوتاه‌تر ضبط کنید.");return;}
-      const reader=new FileReader();
-      reader.onload=async()=>{
-        const ok=await sendRawMessage("__KHATMIN_VOICE__"+reader.result);
-        if(ok)document.getElementById("messageInput")?.focus();
-      };
-      reader.readAsDataURL(blob);
+      try{
+        const ext=(rec?.mimeType||blob.type||"audio/webm").includes("ogg")?"ogg":(rec?.mimeType||blob.type||"").includes("mp4")?"m4a":"webm";
+        const path=`${String(currentUser.id)}/${Date.now()}-${crypto.randomUUID?.()||Math.random().toString(36).slice(2)}.${ext}`;
+        const {error:uploadError}=await supabaseClient.storage
+          .from("voice-messages")
+          .upload(path,blob,{
+            contentType:rec?.mimeType||blob.type||"audio/webm",
+            cacheControl:"3600",
+            upsert:false
+          });
+        if(uploadError){
+          console.error("VOICE UPLOAD ERROR:",uploadError);
+          alert("ویس آپلود نشد:\n"+(uploadError.message||"خطای ناشناخته"));
+          return;
+        }
+        const {data:urlData}=supabaseClient.storage.from("voice-messages").getPublicUrl(path);
+        const voiceUrl=urlData?.publicUrl||"";
+        if(!voiceUrl){
+          alert("آدرس ویس ساخته نشد. لطفاً دوباره تلاش کنید.");
+          return;
+        }
+        const ok=await sendRawMessage("__KHATMIN_VOICE_URL__"+voiceUrl);
+        if(!ok){
+          // اگر درج پیام در دیتابیس شکست خورد، فایل بی‌استفاده را هم پاک می‌کنیم.
+          await supabaseClient.storage.from("voice-messages").remove([path]).catch(()=>{});
+          return;
+        }
+        document.getElementById("messageInput")?.focus();
+      }catch(uploadErr){
+        console.error("VOICE UPLOAD UNEXPECTED ERROR:",uploadErr);
+        alert("خطا در ارسال ویس:\n"+(uploadErr?.message||"خطای ناشناخته"));
+      }
     };
     voiceRecorder.start(180);
     voiceRecording=true;
