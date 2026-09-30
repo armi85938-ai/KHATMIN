@@ -526,37 +526,51 @@ body{
   align-items:center;
   gap:10px;
   background:transparent !important;
+  background-color:transparent !important;
   border:0 !important;
   box-shadow:none !important;
-  position:relative;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
   z-index:20;
+  pointer-events:none;
 }
-/* Three independent liquid-glass panels — no enclosing glass bar */
+.chat-header::before,.chat-header::after{
+  content:none !important;
+  display:none !important;
+}
+.chat-header > *{pointer-events:auto}
+/* Three completely independent floating liquid-glass surfaces.
+   The header itself has ZERO visual surface behind them. */
 .chat-header > .chat-head-side,
 .chat-header > .chat-profile{
   position:relative;
   overflow:hidden;
   isolation:isolate;
-  border:1px solid rgba(255,255,255,.16);
-  background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.035) 52%,rgba(255,255,255,.075));
+  border:1px solid rgba(255,255,255,.14);
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 52%,rgba(255,255,255,.055));
   box-shadow:
-    0 10px 28px rgba(0,0,0,.16),
-    inset 0 1px 0 rgba(255,255,255,.18),
-    inset 0 -1px 0 rgba(255,255,255,.035);
-  backdrop-filter:blur(24px) saturate(155%);
-  -webkit-backdrop-filter:blur(24px) saturate(155%);
+    0 12px 34px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(255,255,255,.025);
+  backdrop-filter:blur(22px) saturate(165%);
+  -webkit-backdrop-filter:blur(22px) saturate(165%);
 }
 .chat-header > .chat-head-side::before,
 .chat-header > .chat-profile::before{
   content:"";
   position:absolute;
-  inset:-45% -20%;
+  inset:-55% -25%;
   z-index:-1;
   background:
-    radial-gradient(circle at 18% 18%,rgba(255,255,255,.24),transparent 24%),
-    radial-gradient(circle at 82% 82%,rgba(210,190,255,.10),transparent 30%),
-    linear-gradient(120deg,transparent 28%,rgba(255,255,255,.08) 48%,transparent 67%);
-  filter:blur(8px);
+    radial-gradient(circle at 18% 18%,rgba(255,255,255,.20),transparent 24%),
+    radial-gradient(circle at 82% 82%,rgba(210,190,255,.075),transparent 30%),
+    linear-gradient(120deg,transparent 28%,rgba(255,255,255,.055) 48%,transparent 67%);
+  filter:blur(10px);
   transform:rotate(-8deg);
   pointer-events:none;
 }
@@ -576,17 +590,20 @@ body{
 .chat-user-meta{
   position:relative;
   min-width:0;
-  height:42px;
+  width:auto;
+  flex:1 1 auto;
+  height:48px;
   display:flex;
   flex-direction:column;
-  align-items:center;
+  align-items:flex-start;
   justify-content:center;
   gap:0;
+  padding:0 2px;
 }
 .chat-title{
   color:#fff;
   width:100%;
-  text-align:center;
+  text-align:right;
   font-family:"Playfair Display",Caveat,Vazirmatn,serif;
   white-space:nowrap;
   overflow:hidden;
@@ -600,14 +617,17 @@ body{
 }
 .chat-typing{
   position:absolute;
-  left:50%;
+  left:2px;
   right:auto;
-  bottom:-1px;
-  transform:translate(-50%,8px);
+  top:28px;
+  bottom:auto;
+  transform:translateY(5px);
   min-height:15px;
   display:flex;
   align-items:center;
+  justify-content:flex-start;
   gap:5px;
+  white-space:nowrap;
   color:#aeb0b8;
   font-size:10px;
   font-weight:500;
@@ -617,7 +637,7 @@ body{
   pointer-events:none;
 }
 .chat-user-meta.typing-active .chat-title{transform:translateY(-5px)}
-.chat-typing.show{opacity:1;transform:translate(-50%,0)}
+.chat-typing.show{opacity:1;transform:translateY(0)}
 .typing-dots{display:inline-flex;align-items:center;gap:3px;height:12px}
 .typing-dots i{
   width:4px;height:4px;border-radius:50%;background:#bfc1c9;
@@ -638,7 +658,7 @@ body{
   overflow-x:hidden;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
-  padding:18px 13px 110px;
+  padding:92px 13px 110px;
   display:flex;
   flex-direction:column;
   gap:8px;
@@ -679,10 +699,20 @@ body{
 .composer input{color:#fff;text-align:right;direction:rtl}
 .composer input::placeholder{color:#686a73}
 .send{
-  background:#fff;
-  box-shadow:0 8px 20px rgba(0,0,0,.28);
+  width:42px!important;
+  height:42px!important;
+  min-width:42px;
+  border-radius:50%;
+  background:#050608!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.28)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.10);
+  display:grid;
+  place-items:center;
 }
-.send svg{stroke:#0a0b0d}
+.send:hover{background:#fff!important;color:#08090c!important}
+.send:active{transform:scale(.92)}
+.send svg{stroke:currentColor!important}
 
 .login-brand{
   margin:8px 0 28px;
@@ -1095,6 +1125,13 @@ async function renderHome(){
   await renderChats();
 }
 
+function getReadKey(partnerId){return `khatmin-chat-read-${currentUser?.id||""}-${partnerId}`;}
+function getLastReadAt(partnerId){return localStorage.getItem(getReadKey(partnerId))||"1970-01-01T00:00:00.000Z";}
+function markChatRead(partnerId,latestCreatedAt){
+  if(!partnerId)return;
+  localStorage.setItem(getReadKey(partnerId),latestCreatedAt||new Date().toISOString());
+}
+
 async function renderChats(){
   const list=document.getElementById("chatList");
   const {data:profiles,error:pErr}=await supabaseClient
@@ -1122,7 +1159,16 @@ async function renderChats(){
       .order("created_at",{ascending:false})
       .limit(1);
 
+    const readAt=getLastReadAt(p.id);
+    const {count:unreadCount}=await supabaseClient
+      .from("messages")
+      .select("id",{count:"exact",head:true})
+      .eq("sender_id",p.id)
+      .eq("receiver_id",currentUser.id)
+      .gt("created_at",readAt);
+
     const m=last?.[0];
+    const unread=Number(unreadCount||0);
     cards.push(`
       <button class="chat-card" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
         <div class="avatar">${esc((p.display_name||p.username).slice(0,1))}</div>
@@ -1132,7 +1178,7 @@ async function renderChats(){
         </div>
         <div class="chat-meta">
           <div class="chat-time">${m?faTime(m.created_at):""}</div>
-
+          ${unread>0?`<div class="unread-badge">${unread>99?"99+":unread}</div>`:""}
         </div>
       </button>`);
   }
@@ -1141,6 +1187,15 @@ async function renderChats(){
 
 async function openChat(partner){
   chatPartner=partner;
+  // Opening a conversation marks its current incoming messages as read.
+  const {data:latestIncoming}=await supabaseClient
+    .from("messages")
+    .select("created_at")
+    .eq("sender_id",partner.id)
+    .eq("receiver_id",currentUser.id)
+    .order("created_at",{ascending:false})
+    .limit(1);
+  if(latestIncoming?.[0]?.created_at) markChatRead(partner.id,latestIncoming[0].created_at);
   messageCache=new Map();
   hiddenMessageIds=new Set();
   activeMessageId=null;
