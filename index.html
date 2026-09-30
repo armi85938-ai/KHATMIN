@@ -516,7 +516,7 @@ body{
   overflow:hidden;
 }
 .chat-header{
-  direction:rtl;
+  direction:ltr;
   flex:none;
   height:78px;
   min-height:78px;
@@ -543,9 +543,6 @@ body{
   display:none !important;
 }
 .chat-header > *{pointer-events:auto}
-.chat-header > .chat-head-side:first-child{grid-column:1}
-.chat-header > .chat-profile{grid-column:2}
-.chat-header > .chat-head-side:last-child{grid-column:3}
 /* Three completely independent floating liquid-glass surfaces.
    The header itself has ZERO visual surface behind them. */
 .chat-header > .chat-head-side,
@@ -950,15 +947,6 @@ body{
 }
 
 
-/* ===== Final conversation-list alignment ===== */
-.chat-list{direction:rtl !important}
-.chat-card{direction:rtl !important;display:flex !important;align-items:center !important;gap:12px !important;text-align:right !important}
-.chat-card .avatar{flex:0 0 54px !important;order:0 !important}
-.chat-card .chat-main{flex:1 1 auto !important;min-width:0 !important;text-align:right !important;order:1 !important}
-.chat-card .chat-name,.chat-card .chat-last{text-align:right !important;direction:rtl !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-card .chat-meta{flex:0 0 auto !important;min-width:48px !important;margin-inline-start:auto !important;margin-inline-end:0 !important;align-self:stretch !important;display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:center !important;gap:7px !important;order:2 !important;text-align:left !important}
-.chat-card .chat-time{margin:0 !important;align-self:flex-start !important;white-space:nowrap !important}
-.chat-card .unread-badge{margin:0 !important;align-self:flex-start !important}
 /* ===== Final chat message alignment + footer ===== */
 .msg-wrap.mine{
   align-items:flex-end !important;
@@ -1166,7 +1154,7 @@ body{
 .settings-save{border:0;border-radius:15px;padding:12px 16px;background:#fff;color:#090a0d;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.25);transition:transform .18s,opacity .18s}
 .settings-save:active{transform:scale(.98)}
 .settings-menu-card{border-radius:27px;padding:7px}
-.settings-menu-item{width:100%;max-width:100%;box-sizing:border-box;min-width:0;border:0;background:transparent;color:#fff;display:grid;grid-template-columns:46px minmax(0,1fr) 24px;align-items:center;gap:12px;text-align:right;padding:14px 10px;border-radius:20px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s}
+.settings-menu-item{width:100%;border:0;background:transparent;color:#fff;display:grid;grid-template-columns:46px minmax(0,1fr) 24px;align-items:center;gap:12px;text-align:right;padding:14px 10px;border-radius:20px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s}
 .settings-menu-item:hover{background:rgba(255,255,255,.055)}
 .settings-menu-item:active{transform:scale(.99)}
 .settings-menu-item>span:nth-child(2){min-width:0}
@@ -1179,149 +1167,48 @@ body{
 .settings-menu-separator{height:1px;background:rgba(255,255,255,.07);margin:2px 12px}
 .settings-menu-item.logout-item b{color:#ff9aa6}
 @media(max-width:600px){
-  /* Android/mobile: keep the settings page inside the content viewport. */
-  .settings-page{
-    width:100%;
-    max-width:100%;
-    box-sizing:border-box;
-    min-width:0;
-    padding-left:12px;
-    padding-right:12px;
-    touch-action:pan-y;
-    overscroll-behavior-x:none;
-    overflow-x:hidden;
-  }
-  .settings-page-head,
-  .settings-profile-card,
-  .settings-menu-card{
-    max-width:100%;
-    min-width:0;
-    box-sizing:border-box;
-  }
-  .settings-page-head{gap:10px;}
-  .settings-page-head > div:first-child{min-width:0;}
-  .settings-page-head h1,
-  .settings-page-head p{overflow-wrap:anywhere;}
-  .settings-profile-card{padding:22px 16px 18px;border-radius:26px}
+  .settings-page{padding-left:12px;padding-right:12px}
   .settings-profile-card{padding:22px 16px 18px;border-radius:26px}
   .settings-avatar-picker{width:124px;height:124px}
   .settings-page-head h1{font-size:25px}
-
-  /* Android: keep the profile crop dialog completely inside the viewport. */
-  .avatar-crop-backdrop{
-    align-items:flex-start;
-    justify-content:center;
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding:12px;
-    padding-top:max(12px,env(safe-area-inset-top));
-    padding-bottom:max(12px,env(safe-area-inset-bottom));
-    overscroll-behavior:contain;
-  }
-  .avatar-crop-modal{
-    width:min(430px,calc(100vw - 24px));
-    max-width:100%;
-    max-height:calc(100dvh - 24px);
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding:14px;
-    border-radius:24px;
-    margin:auto 0;
-  }
-  .avatar-crop-stage{
-    width:min(330px,calc(100vw - 64px),58dvh);
-    max-width:100%;
-  }
-  .avatar-crop-controls{margin:14px 2px 10px;gap:8px}
-  .avatar-crop-actions button{height:42px;min-width:0}
 }
 
 
-/* ===== Beautiful chat profile preview ===== */
-.chat-profile-button{
-  appearance:none;
-  -webkit-appearance:none;
-  font:inherit;
-  color:inherit;
-  text-align:inherit;
-  cursor:pointer;
-  width:100%;
-  border:1px solid rgba(255,255,255,.14);
-}
-.chat-profile-button:focus-visible{outline:2px solid rgba(255,255,255,.45);outline-offset:3px}
-.profile-preview-backdrop{
+/* ===== Chat word reaction ===== */
+.chat-word-reaction{
   position:fixed;
-  inset:0;
-  z-index:120;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:22px;
-  background:rgba(3,4,7,.62);
-  backdrop-filter:blur(18px) saturate(135%);
-  -webkit-backdrop-filter:blur(18px) saturate(135%);
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-  transition:opacity .28s ease,visibility .28s ease;
-}
-.profile-preview-backdrop.show{opacity:1;visibility:visible;pointer-events:auto}
-.profile-preview{
-  position:relative;
-  width:min(390px,100%);
-  min-height:300px;
-  padding:42px 26px 28px;
-  overflow:hidden;
-  isolation:isolate;
+  left:50%;
+  top:50%;
+  z-index:9999;
+  width:min(330px,calc(100vw - 32px));
+  padding:16px 20px;
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:22px;
+  background:rgba(255,248,252,.88);
+  box-shadow:0 18px 55px rgba(125,82,111,.22),0 4px 18px rgba(255,255,255,.65) inset;
+  backdrop-filter:blur(20px) saturate(1.25);
+  -webkit-backdrop-filter:blur(20px) saturate(1.25);
+  color:#654957;
   text-align:center;
-  direction:rtl;
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:32px;
-  background:linear-gradient(145deg,rgba(29,31,38,.92),rgba(10,11,15,.94));
-  box-shadow:0 30px 90px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,255,255,.13),inset 0 -1px 0 rgba(255,255,255,.025);
-  transform:translateY(18px) scale(.94);
-  transition:transform .42s cubic-bezier(.16,1,.3,1);
+  font-weight:700;
+  font-size:14px;
+  line-height:1.8;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,-42%) scale(.82);
+  transition:opacity .22s ease,transform .32s cubic-bezier(.2,1.35,.35,1);
 }
-.profile-preview-backdrop.show .profile-preview{transform:translateY(0) scale(1)}
-.profile-preview::before{
-  content:"";position:absolute;inset:-35%;z-index:-2;
-  background:radial-gradient(circle at 50% 22%,rgba(255,255,255,.13),transparent 24%),radial-gradient(circle at 20% 85%,rgba(194,164,255,.08),transparent 30%),radial-gradient(circle at 85% 70%,rgba(255,255,255,.06),transparent 28%);
-  filter:blur(24px);
+.chat-word-reaction.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.chat-word-reaction::before{
+  content:"♡";
+  display:block;
+  font-size:22px;
+  line-height:1;
+  margin-bottom:4px;
+  color:#c985a7;
 }
-.profile-preview-aura{
-  position:absolute;z-index:-1;left:50%;top:16px;width:190px;height:190px;transform:translateX(-50%);
-  border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.12),rgba(190,170,255,.035) 42%,transparent 70%);filter:blur(4px);
-}
-.profile-preview-close{
-  position:absolute;top:13px;right:14px;width:36px;height:36px;border:1px solid rgba(255,255,255,.12);
-  border-radius:50%;background:rgba(255,255,255,.055);color:#fff;font-size:25px;line-height:1;cursor:pointer;
-  display:grid;place-items:center;transition:transform .2s ease,background .2s ease;z-index:4;
-}
-.profile-preview-close:hover{transform:rotate(90deg) scale(1.05);background:rgba(255,255,255,.11)}
-.profile-preview-avatar{
-  width:108px;height:108px;margin:0 auto 17px;border-radius:50%;display:grid;place-items:center;overflow:hidden;
-  color:#fff;font-size:38px;font-weight:600;background:linear-gradient(145deg,#282b33,#12141a);
-  border:2px solid rgba(255,255,255,.18);box-shadow:0 16px 40px rgba(0,0,0,.38),0 0 0 8px rgba(255,255,255,.025);
-  animation:profileAvatarIn .55s cubic-bezier(.16,1,.3,1) both;
-}
-.profile-preview-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-@keyframes profileAvatarIn{from{opacity:0;transform:scale(.72)}to{opacity:1;transform:scale(1)}}
-.profile-preview-name{color:#fff;font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.1px}
-.profile-preview-username{margin-top:5px;color:#8f929c;font-size:12px;direction:ltr;min-height:16px}
-.profile-preview-bio-wrap{
-  margin:23px auto 0;padding:15px 17px;max-width:315px;display:flex;align-items:flex-start;gap:10px;text-align:right;
-  border:1px solid rgba(255,255,255,.09);border-radius:20px;background:rgba(255,255,255,.045);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-  animation:profileBioIn .45s .08s both;
-}
-.profile-preview-bio-wrap[hidden]{display:none!important}
-.profile-preview-bio-icon{width:27px;height:27px;flex:0 0 27px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.08);color:#fff;font-size:14px}
-.profile-preview-bio{margin:0;color:#d7d8de;font-size:13px;line-height:1.9;white-space:pre-wrap;word-break:break-word}
-@keyframes profileBioIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:480px){
-  .profile-preview-backdrop{padding:16px}
-  .profile-preview{border-radius:28px;padding:39px 19px 24px}
-  .profile-preview-avatar{width:94px;height:94px}
+@media(max-width:600px){
+  .chat-word-reaction{font-size:13px;padding:14px 17px;border-radius:19px}
 }
 </style>
 
@@ -1630,12 +1517,11 @@ async function loadApp(){
 }
 
 function shell(content,active="chat"){
-  const showKhatmin=active!=="settings";
   return `
   <div class="app">
     <div class="top">
       <div>
-        ${showKhatmin ? '<div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>' : ''}
+        <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
       </div>
 
     </div>
@@ -1735,14 +1621,6 @@ function updateAvatarCropPreview(){if(!avatarCropState)return;const preview=docu
 function closeAvatarCrop(e){if(e&&e.target!==e.currentTarget)return;document.getElementById("avatarCropBackdrop")?.classList.remove("show");if(avatarCropState?.input)avatarCropState.input.value="";avatarCropState=null}
 function applyAvatarCrop(){if(!avatarCropState)return;const stage=document.getElementById("avatarCropStage");if(!stage)return;const r=stage.getBoundingClientRect(),out=420,sourceScale=avatarCropState.base*avatarCropState.scale,crop=r.width,sw=crop/sourceScale,sx=avatarCropState.img.width/2-(crop/2+avatarCropState.x)/sourceScale,sy=avatarCropState.img.height/2-(crop/2+avatarCropState.y)/sourceScale,canvas=document.createElement("canvas");canvas.width=out;canvas.height=out;canvas.getContext("2d").drawImage(avatarCropState.img,sx,sy,sw,sw,0,0,out,out);pendingSettingsAvatar=canvas.toDataURL("image/jpeg",.84);const picker=document.querySelector(".settings-avatar-picker");if(picker)picker.innerHTML=`<img src="${pendingSettingsAvatar}" alt="عکس پروفایل" class="settings-avatar-image"><span class="settings-avatar-camera">${icons.plus}</span>`;closeAvatarCrop()}
 function initAvatarCropInteractions(){const stage=document.getElementById("avatarCropStage"),zoom=document.getElementById("avatarCropZoom");if(!stage||!zoom)return;zoom.oninput=()=>{if(avatarCropState){avatarCropState.scale=Number(zoom.value);updateAvatarCropPreview()}};let drag=false,lx=0,ly=0;stage.onpointerdown=e=>{drag=true;lx=e.clientX;ly=e.clientY;stage.setPointerCapture?.(e.pointerId)};stage.onpointermove=e=>{if(!drag||!avatarCropState)return;avatarCropState.x+=e.clientX-lx;avatarCropState.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;updateAvatarCropPreview()};stage.onpointerup=stage.onpointercancel=()=>drag=false}
-
-/* Android settings: allow vertical scrolling, but block pinch/gesture zoom. */
-function preventSettingsZoom(e){
-  if(!document.querySelector('.settings-page'))return;
-  if(e.touches && e.touches.length>1)e.preventDefault();
-}
-document.addEventListener('touchmove',preventSettingsZoom,{passive:false});
-document.addEventListener('gesturestart',e=>{if(document.querySelector('.settings-page'))e.preventDefault()},{passive:false});
 document.addEventListener("DOMContentLoaded",initAvatarCropInteractions);
 async function saveSettingsProfile(){
   if(!currentUser?.id)return;
@@ -1947,8 +1825,8 @@ async function openChat(partner){
   document.getElementById("app").innerHTML=`
     <div class="chat-view">
       <header class="chat-header">
-        <button class="chat-head-side" type="button" aria-label="قلب">${icons.heart}</button>
-        <button class="chat-profile chat-profile-button" type="button" onclick="openProfilePreview()" aria-label="نمایش پروفایل">
+        <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
+        <div class="chat-profile">
           <div class="avatar">${partner.avatar_url ? `<img src="${esc(partner.avatar_url)}" alt="" class="chat-avatar-image">` : esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
           <div class="chat-user-meta">
             <div class="chat-title">${esc(partner.display_name)}</div>
@@ -1957,22 +1835,9 @@ async function openChat(partner){
               <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
             </div>
           </div>
-        </button>
-        <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
+        </div>
+        <button class="chat-head-side" type="button" aria-label="قلب">${icons.heart}</button>
       </header>
-      <div id="profilePreviewBackdrop" class="profile-preview-backdrop" onclick="closeProfilePreview(event)" aria-hidden="true">
-        <section id="profilePreview" class="profile-preview" role="dialog" aria-modal="true" aria-label="پروفایل کاربر" onclick="event.stopPropagation()">
-          <button class="profile-preview-close" type="button" onclick="closeProfilePreview()" aria-label="بستن">×</button>
-          <div id="profilePreviewAura" class="profile-preview-aura"></div>
-          <div id="profilePreviewAvatar" class="profile-preview-avatar"></div>
-          <div id="profilePreviewName" class="profile-preview-name"></div>
-          <div id="profilePreviewUsername" class="profile-preview-username"></div>
-          <div id="profilePreviewBioWrap" class="profile-preview-bio-wrap">
-            <div class="profile-preview-bio-icon">♡</div>
-            <p id="profilePreviewBio" class="profile-preview-bio"></p>
-          </div>
-        </section>
-      </div>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
       <div id="replyBar" class="reply-bar" aria-live="polite">
         <div id="replyBarIcon" class="reply-bar-icon">↩</div>
@@ -1986,6 +1851,8 @@ async function openChat(partner){
         <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="پیامت را بنویس...">
         <button id="sendButton" class="send" type="submit">${icons.send}</button>
       </form>
+
+      <div id="chatWordReaction" class="chat-word-reaction" aria-live="polite" aria-hidden="true">میشه ارسالش نکنی! حالم ازش بهم میخوره</div>
       <div id="messageSheetBackdrop" class="message-sheet-backdrop" onclick="closeMessageSheet()"></div>
       <div id="messageSheet" class="message-sheet" role="dialog" aria-label="عملیات پیام"></div>
       <div id="deleteConfirmBackdrop" class="delete-confirm-backdrop" onclick="closeDeleteConfirm(event)">
@@ -2011,7 +1878,9 @@ async function openChat(partner){
   document.getElementById("composer").addEventListener("submit",sendMessage);
   messageInput.addEventListener("input",handleTypingInput);
   messageInput.addEventListener("blur",stopTyping);
-  document.getElementById("messageInput").addEventListener("keydown",e=>{ if(e.key==="Escape"){ stopTyping(); closeDeleteConfirm(); closeMessageSheet(); closeProfilePreview(); } });
+  lastChatReactionWord="";
+  clearTimeout(chatReactionTimer);
+  document.getElementById("messageInput").addEventListener("keydown",e=>{ if(e.key==="Escape"){ stopTyping(); closeDeleteConfirm(); closeMessageSheet(); } });
   await loadMessages();
   subscribeMessages();
   subscribeTyping();
@@ -2156,9 +2025,35 @@ function broadcastTyping(isTyping){
   if(homeInboxChannel)homeInboxChannel.send({type:"broadcast",event:"typing",payload}).catch(()=>{});
 }
 
+const chatReactionWords=["سبز","سید","رقیه","سگ","کث","آدامس","تراکتور","یگ","ممد","علف"];
+let chatReactionTimer=null;
+let lastChatReactionWord="";
+
+function checkChatReactionWords(){
+  const input=document.getElementById("messageInput");
+  const box=document.getElementById("chatWordReaction");
+  if(!input || !box)return;
+  const value=String(input.value||"");
+  const found=chatReactionWords.find(word=>value.includes(word));
+  if(!found){
+    lastChatReactionWord="";
+    return;
+  }
+  if(found===lastChatReactionWord)return;
+  lastChatReactionWord=found;
+  box.classList.add("show");
+  box.setAttribute("aria-hidden","false");
+  clearTimeout(chatReactionTimer);
+  chatReactionTimer=setTimeout(()=>{
+    box.classList.remove("show");
+    box.setAttribute("aria-hidden","true");
+  },2600);
+}
+
 function handleTypingInput(){
   const input=document.getElementById("messageInput");
-  if(!input || !input.value.length){stopTyping();return;}
+  if(!input || !input.value.length){stopTyping();checkChatReactionWords();return;}
+  checkChatReactionWords();
   if(!isLocalTyping){isLocalTyping=true;broadcastTyping(true)}
   clearTimeout(typingTimer);
   typingTimer=setTimeout(stopTyping,900);
@@ -2623,42 +2518,6 @@ function navPulse(btn,action){
     nav.classList.remove("jelly-pulse");
     btn.classList.remove("jelly-target");
   },450);
-}
-
-function openProfilePreview(){
-  const p=chatPartner;
-  const backdrop=document.getElementById("profilePreviewBackdrop");
-  if(!p||!backdrop)return;
-  const avatar=document.getElementById("profilePreviewAvatar");
-  const name=document.getElementById("profilePreviewName");
-  const username=document.getElementById("profilePreviewUsername");
-  const bioWrap=document.getElementById("profilePreviewBioWrap");
-  const bio=document.getElementById("profilePreviewBio");
-  if(!avatar||!name||!username||!bioWrap||!bio)return;
-  const displayName=String(p.display_name||p.username||"کاربر").trim();
-  const bioText=String(p.bio||"").trim();
-  avatar.innerHTML=p.avatar_url
-    ? `<img src="${esc(p.avatar_url)}" alt="عکس پروفایل">`
-    : esc(displayName.slice(0,1));
-  name.textContent=displayName;
-  username.textContent=p.username?`@${p.username}`:"";
-  if(bioText){
-    bio.textContent=bioText;
-    bioWrap.hidden=false;
-  }else{
-    bio.textContent="";
-    bioWrap.hidden=true;
-  }
-  backdrop.classList.add("show");
-  backdrop.setAttribute("aria-hidden","false");
-}
-
-function closeProfilePreview(e){
-  if(e&&e.target!==e.currentTarget)return;
-  const backdrop=document.getElementById("profilePreviewBackdrop");
-  if(!backdrop)return;
-  backdrop.classList.remove("show");
-  backdrop.setAttribute("aria-hidden","true");
 }
 
 function soon(){alert("این بخش به‌زودی فعال می‌شود ♡")}
