@@ -777,6 +777,36 @@ body{
   .bottom-nav,.bottom-nav::before,.bottom-nav::after,.bottom-nav .nav-btn,.bottom-nav .nav-btn::before,.bottom-nav .nav-btn svg{animation:none !important;transition:none !important}
 }
 
+
+/* ===== Message actions / reply / edit ===== */
+.msg-wrap{position:relative;display:flex;flex-direction:column;width:100%;touch-action:pan-y}
+.msg-wrap.mine{align-items:flex-start}.msg-wrap.theirs{align-items:flex-end}
+.msg-wrap .msg{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;transition:transform .18s ease,opacity .18s ease}
+.msg-wrap.swiping .msg{transition:none}
+.msg-wrap.replying .msg{box-shadow:0 0 0 1px rgba(255,255,255,.28),0 8px 24px rgba(255,255,255,.08)}
+.msg-reply-preview{max-width:100%;min-width:0;margin-bottom:6px;padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.08);border-left:3px solid rgba(255,255,255,.55);font-size:10px;color:#aeb0b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.mine .msg-reply-preview{background:rgba(0,0,0,.055);border-left-color:rgba(0,0,0,.35);color:#666870}
+.msg.deleted{font-style:italic;opacity:.72}
+.msg-edited{font-size:8px;color:inherit;opacity:.58;margin-right:5px}
+.reply-bar{position:fixed;z-index:12;left:50%;bottom:82px;transform:translateX(-50%);width:min(560px,calc(100% - 28px));padding:9px 12px;border-radius:18px;background:rgba(20,21,26,.96);border:1px solid #2c2e35;box-shadow:0 12px 35px rgba(0,0,0,.42);display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:opacity .2s ease,transform .2s ease}
+.reply-bar.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.reply-bar.editing{border-color:rgba(255,255,255,.24)}
+.reply-bar-icon{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:#fff;color:#0a0b0d;flex:none;font-size:14px}
+.reply-bar-text{min-width:0;flex:1;text-align:left}
+.reply-bar-label{font-size:9px;color:#aaaeb7;margin-bottom:2px}
+.reply-bar-content{font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-bar-close{width:28px;height:28px;border:0;border-radius:9px;background:transparent;color:#8d9099;font-size:18px;display:grid;place-items:center}
+.message-sheet-backdrop{position:fixed;z-index:30;inset:0;background:rgba(0,0,0,.38);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .18s ease}
+.message-sheet-backdrop.show{opacity:1;pointer-events:auto}
+.message-sheet{position:fixed;z-index:31;left:50%;bottom:14px;transform:translate(-50%,18px) scale(.98);width:min(430px,calc(100% - 24px));padding:8px;border-radius:25px;background:rgba(20,21,26,.97);border:1px solid #30323a;box-shadow:0 25px 65px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .22s cubic-bezier(.16,1,.3,1)}
+.message-sheet.show{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+.message-sheet-title{padding:8px 11px 7px;color:#858892;font-size:9px;text-align:center}
+.message-action{width:100%;height:46px;border:0;border-radius:15px;background:transparent;color:#f4f4f6;display:flex;align-items:center;gap:11px;padding:0 13px;text-align:left;font-size:12px}
+.message-action:hover{background:#292b31}.message-action:active{transform:scale(.985)}
+.message-action .action-icon{width:30px;height:30px;border-radius:10px;background:#2b2d34;display:grid;place-items:center;font-size:14px;flex:none}
+.message-action.danger{color:#ff9aaa}.message-action.danger .action-icon{background:rgba(255,100,125,.10)}
+@media(max-width:480px){.message-sheet{bottom:10px}.reply-bar{bottom:76px}}
+
 </style>
 </head>
 <body>
@@ -817,6 +847,14 @@ let typingTimer=null;
 let typingBroadcastTimer=null;
 let remoteTypingTimer=null;
 let isLocalTyping=false;
+let messageCache=new Map();
+let hiddenMessageIds=new Set();
+let activeMessageId=null;
+let editingMessageId=null;
+let replyingToMessage=null;
+let messagePressTimer=null;
+let messagePressTarget=null;
+let messageGesture=null;
 
 const icons={
  chat:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1005,8 +1043,14 @@ async function renderChats(){
 
 async function openChat(partner){
   chatPartner=partner;
+  messageCache=new Map();
+  hiddenMessageIds=new Set();
+  activeMessageId=null;
+  editingMessageId=null;
+  replyingToMessage=null;
+  clearMessagePress();
   if(realtimeChannel){
-    await supabaseClient.removeChannel(realtimeChannel);
+    try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}
     realtimeChannel=null;
   }
 
@@ -1024,28 +1068,38 @@ async function openChat(partner){
         </div>
       </header>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
+      <div id="replyBar" class="reply-bar" aria-live="polite">
+        <div id="replyBarIcon" class="reply-bar-icon">↩</div>
+        <div class="reply-bar-text">
+          <div id="replyBarLabel" class="reply-bar-label">پاسخ به پیام</div>
+          <div id="replyBarContent" class="reply-bar-content"></div>
+        </div>
+        <button class="reply-bar-close" type="button" onclick="cancelMessageMode()" aria-label="بستن">×</button>
+      </div>
       <form id="composer" class="composer">
         <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="پیامت را بنویس...">
-        <button class="send" type="submit">${icons.send}</button>
+        <button id="sendButton" class="send" type="submit">${icons.send}</button>
       </form>
+      <div id="messageSheetBackdrop" class="message-sheet-backdrop" onclick="closeMessageSheet()"></div>
+      <div id="messageSheet" class="message-sheet" role="dialog" aria-label="عملیات پیام"></div>
     </div>`;
 
   const messageInput=document.getElementById("messageInput");
   document.getElementById("composer").addEventListener("submit",sendMessage);
   messageInput.addEventListener("input",handleTypingInput);
   messageInput.addEventListener("blur",stopTyping);
-  messageInput.addEventListener("keydown",e=>{
-    if(e.key==="Escape") stopTyping();
-  });
+  messageInput.addEventListener("keydown",e=>{ if(e.key==="Escape") stopTyping(); });
   await loadMessages();
   subscribeMessages();
 }
 
 async function loadMessages(){
   const box=document.getElementById("messages");
+  if(!box)return;
+
   const {data,error}=await supabaseClient
     .from("messages")
-    .select("id,sender_id,receiver_id,content,created_at")
+    .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone")
     .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${chatPartner.id}),and(sender_id.eq.${chatPartner.id},receiver_id.eq.${currentUser.id})`)
     .order("created_at",{ascending:true});
 
@@ -1054,20 +1108,56 @@ async function loadMessages(){
     return;
   }
 
-  if(!data?.length){
+  const ids=(data||[]).map(m=>m.id);
+  if(ids.length){
+    const {data:hidden,error:hiddenError}=await supabaseClient
+      .from("message_user_deletions")
+      .select("message_id")
+      .eq("user_id",currentUser.id)
+      .in("message_id",ids);
+    if(!hiddenError) (hidden||[]).forEach(x=>hiddenMessageIds.add(String(x.message_id)));
+  }
+
+  const visible=(data||[]).filter(m=>!hiddenMessageIds.has(String(m.id)));
+  visible.forEach(m=>messageCache.set(String(m.id),m));
+
+  if(!visible.length){
     box.innerHTML=`<div class="empty">هنوز گفت‌وگویی شروع نشده ♡</div>`;
     return;
   }
 
-  box.innerHTML=data.map(renderMessage).join("");
+  box.innerHTML=visible.map(renderMessage).join("");
+  attachMessageGestures();
   box.scrollTop=box.scrollHeight;
+}
+
+function messageDisplayText(m){
+  if(m.deleted_for_everyone) return "این پیام حذف شد";
+  return m.content||"";
+}
+
+function replyPreviewHtml(m){
+  if(!m?.reply_to_id)return "";
+  const original=messageCache.get(String(m.reply_to_id));
+  const text=original ? messageDisplayText(original) : "پیام قبلی";
+  return `<div class="msg-reply-preview">↩ ${esc(text)}</div>`;
 }
 
 function renderMessage(m){
   const mine=m.sender_id===currentUser.id;
-  return `<div class="msg ${mine?"mine":"theirs"}">${esc(m.content)}<div class="msg-time">${faTime(m.created_at)}</div></div>`;
+  const deleted=!!m.deleted_for_everyone;
+  const body=deleted
+    ? `<span class="msg ${mine?"mine":"theirs"} deleted">${esc(messageDisplayText(m))}<span class="msg-edited"> </span></span>`
+    : `<span class="msg ${mine?"mine":"theirs"}">${replyPreviewHtml(m)}${esc(m.content||"")}${m.edited_at?`<span class="msg-edited">ویرایش شد</span>`:""}<div class="msg-time">${faTime(m.created_at)}</div></span>`;
+  return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
 
+function refreshMessageElement(m){
+  const old=document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`);
+  if(!old)return;
+  old.outerHTML=renderMessage(m);
+  attachMessageGestures();
+}
 
 function getChatChannelName(){
   const ids=[String(currentUser.id),String(chatPartner.id)].sort();
@@ -1082,96 +1172,271 @@ function setTypingIndicator(show){
 
 function broadcastTyping(isTyping){
   if(!realtimeChannel || !currentUser || !chatPartner)return;
-  realtimeChannel.send({
-    type:"broadcast",
-    event:"typing",
-    payload:{sender_id:currentUser.id,is_typing:!!isTyping}
-  }).catch(()=>{});
+  realtimeChannel.send({type:"broadcast",event:"typing",payload:{sender_id:currentUser.id,is_typing:!!isTyping}}).catch(()=>{});
 }
 
 function handleTypingInput(){
   const input=document.getElementById("messageInput");
-  if(!input || !input.value.length){
-    stopTyping();
-    return;
-  }
-
-  if(!isLocalTyping){
-    isLocalTyping=true;
-    broadcastTyping(true);
-  }
-
+  if(!input || !input.value.length){stopTyping();return;}
+  if(!isLocalTyping){isLocalTyping=true;broadcastTyping(true)}
   clearTimeout(typingTimer);
   typingTimer=setTimeout(stopTyping,900);
-
-  // Keep the realtime traffic light even when the user types continuously.
   clearTimeout(typingBroadcastTimer);
-  typingBroadcastTimer=setTimeout(()=>{
-    if(isLocalTyping) broadcastTyping(true);
-  },350);
+  typingBroadcastTimer=setTimeout(()=>{if(isLocalTyping)broadcastTyping(true)},350);
 }
 
 function stopTyping(){
-  clearTimeout(typingTimer);
-  clearTimeout(typingBroadcastTimer);
-  typingTimer=null;
-  typingBroadcastTimer=null;
-  if(isLocalTyping){
-    isLocalTyping=false;
-    broadcastTyping(false);
-  }
+  clearTimeout(typingTimer);clearTimeout(typingBroadcastTimer);
+  typingTimer=null;typingBroadcastTimer=null;
+  if(isLocalTyping){isLocalTyping=false;broadcastTyping(false)}
 }
 
 function clearTypingState(){
-  clearTimeout(remoteTypingTimer);
-  remoteTypingTimer=null;
-  setTypingIndicator(false);
+  clearTimeout(remoteTypingTimer);remoteTypingTimer=null;setTypingIndicator(false);
+}
+
+function attachMessageGestures(){
+  const box=document.getElementById("messages");
+  if(!box)return;
+  box.querySelectorAll(".msg-wrap").forEach(el=>{
+    if(el.dataset.gestureBound)return;
+    el.dataset.gestureBound="1";
+    el.addEventListener("pointerdown",messagePointerDown,{passive:true});
+    el.addEventListener("pointermove",messagePointerMove,{passive:true});
+    el.addEventListener("pointerup",messagePointerUp,{passive:true});
+    el.addEventListener("pointercancel",messagePointerCancel,{passive:true});
+    el.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")messagePointerCancel(e)},{passive:true});
+    el.addEventListener("contextmenu",e=>{e.preventDefault();openMessageActions(el.dataset.msgId) });
+  });
+}
+
+function clearMessagePress(){
+  clearTimeout(messagePressTimer);messagePressTimer=null;messagePressTarget=null;messageGesture=null;
+}
+
+function messagePointerDown(e){
+  if(e.button!==undefined && e.button!==0)return;
+  const el=e.currentTarget;
+  const m=messageCache.get(String(el.dataset.msgId));
+  if(!m)return;
+  clearMessagePress();
+  const point=e.touches?.[0]||e;
+  messageGesture={startX:point.clientX,startY:point.clientY,lastX:point.clientX,active:true,moved:false};
+  messagePressTarget=el;
+  messagePressTimer=setTimeout(()=>{
+    if(messageGesture?.active&&!messageGesture.moved){
+      navigator.vibrate?.(12);
+      openMessageActions(el.dataset.msgId);
+      messageGesture.active=false;
+    }
+  },480);
+}
+
+function messagePointerMove(e){
+  if(!messageGesture?.active)return;
+  const point=e.touches?.[0]||e;
+  messageGesture.lastX=point.clientX;
+  const dx=point.clientX-messageGesture.startX;
+  const dy=point.clientY-messageGesture.startY;
+  if(Math.abs(dx)>10 || Math.abs(dy)>10)messageGesture.moved=true;
+  if(Math.abs(dx)>16 && Math.abs(dx)>Math.abs(dy)*1.15){
+    clearTimeout(messagePressTimer);
+    if(Math.abs(dx)<100){
+      messagePressTarget.classList.add("swiping");
+      messagePressTarget.querySelector(".msg").style.transform=`translateX(${Math.max(-72,Math.min(72,dx))}px)`;
+    }
+  }
+  if(Math.abs(dx)>58 && Math.abs(dx)>Math.abs(dy)*1.2){
+    clearTimeout(messagePressTimer);
+  }
+}
+
+function messagePointerUp(e){
+  if(!messageGesture?.active)return;
+  const el=messagePressTarget;
+  const point=e.changedTouches?.[0]||e;
+  const dx=point.clientX-messageGesture.startX;
+  const dy=point.clientY-messageGesture.startY;
+  clearTimeout(messagePressTimer);
+  messagePressTimer=null;
+  if(el){
+    el.classList.remove("swiping");
+    const bubble=el.querySelector(".msg");
+    if(bubble){bubble.style.transform=""}
+    if(Math.abs(dx)>58 && Math.abs(dx)>Math.abs(dy)*1.2){
+      const m=messageCache.get(String(el.dataset.msgId));
+      if(m)startReply(m);
+    }
+  }
+  messageGesture.active=false;
+}
+
+function messagePointerCancel(){
+  clearTimeout(messagePressTimer);messagePressTimer=null;
+  if(messagePressTarget){messagePressTarget.classList.remove("swiping");const bubble=messagePressTarget.querySelector(".msg");if(bubble)bubble.style.transform=""}
+  if(messageGesture)messageGesture.active=false;
+}
+
+function openMessageActions(id){
+  const m=messageCache.get(String(id));
+  if(!m || m.deleted_for_everyone)return;
+  activeMessageId=String(id);
+  const mine=m.sender_id===currentUser.id;
+  const sheet=document.getElementById("messageSheet");
+  const backdrop=document.getElementById("messageSheetBackdrop");
+  if(!sheet||!backdrop)return;
+  sheet.innerHTML=`
+    <div class="message-sheet-title">عملیات روی پیام</div>
+    <button class="message-action" onclick="startReplyById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">↩</span><span>پاسخ دادن</span></button>
+    ${mine?`<button class="message-action" onclick="startEditById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">✎</span><span>ویرایش پیام</span></button>`:""}
+    <button class="message-action" onclick="deleteForMeById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">⌫</span><span>حذف برای من</span></button>
+    ${mine?`<button class="message-action danger" onclick="deleteForEveryoneById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">×</span><span>حذف برای همه</span></button>`:""}`;
+  backdrop.classList.add("show");sheet.classList.add("show");
+}
+
+function closeMessageSheet(){
+  document.getElementById("messageSheet")?.classList.remove("show");
+  document.getElementById("messageSheetBackdrop")?.classList.remove("show");
+}
+
+function startReplyById(id){
+  const m=messageCache.get(String(id));
+  if(m)startReply(m);
+}
+
+function startReply(m){
+  if(m.deleted_for_everyone)return;
+  cancelEditOnly();
+  replyingToMessage=m;
+  const bar=document.getElementById("replyBar");
+  const label=document.getElementById("replyBarLabel");
+  const content=document.getElementById("replyBarContent");
+  if(!bar||!label||!content)return;
+  label.textContent=m.sender_id===currentUser.id?"پاسخ به پیام خودت":"پاسخ به پیام";
+  content.textContent=messageDisplayText(m);
+  bar.classList.remove("editing");bar.classList.add("show");
+  document.getElementById("messageInput")?.focus();
+}
+
+function startEditById(id){
+  const m=messageCache.get(String(id));
+  if(!m || m.sender_id!==currentUser.id || m.deleted_for_everyone)return;
+  editingMessageId=String(id);replyingToMessage=null;
+  const input=document.getElementById("messageInput");
+  const bar=document.getElementById("replyBar");
+  if(!input||!bar)return;
+  input.value=m.content||"";
+  document.getElementById("replyBarLabel").textContent="ویرایش پیام";
+  document.getElementById("replyBarContent").textContent=m.content||"";
+  document.getElementById("replyBarIcon").textContent="✎";
+  bar.classList.add("editing","show");
+  input.focus();input.setSelectionRange(input.value.length,input.value.length);
+}
+
+function cancelEditOnly(){
+  editingMessageId=null;
+  const bar=document.getElementById("replyBar");
+  if(bar)bar.classList.remove("editing");
+  const icon=document.getElementById("replyBarIcon");if(icon)icon.textContent="↩";
+}
+
+function cancelMessageMode(){
+  editingMessageId=null;replyingToMessage=null;
+  const bar=document.getElementById("replyBar");
+  if(bar)bar.classList.remove("show","editing");
+  const input=document.getElementById("messageInput");
+  if(input){input.value="";input.focus()}
+  const icon=document.getElementById("replyBarIcon");if(icon)icon.textContent="↩";
+}
+
+async function deleteForMeById(id){
+  const m=messageCache.get(String(id));
+  if(!m)return;
+  const {error}=await supabaseClient.from("message_user_deletions").upsert({message_id:m.id,user_id:currentUser.id},{onConflict:"message_id,user_id"});
+  if(error){alert("حذف پیام انجام نشد: "+error.message);return}
+  hiddenMessageIds.add(String(m.id));
+  messageCache.delete(String(m.id));
+  document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`)?.remove();
+  if(replyingToMessage?.id===m.id)cancelMessageMode();
+  ensureMessageEmptyState();
+}
+
+async function deleteForEveryoneById(id){
+  const m=messageCache.get(String(id));
+  if(!m || m.sender_id!==currentUser.id)return;
+  if(!confirm("این پیام برای هر دو طرف حذف شود؟"))return;
+  const {data,error}=await supabaseClient.from("messages")
+    .update({content:null,deleted_for_everyone:true,edited_at:null})
+    .eq("id",m.id).eq("sender_id",currentUser.id)
+    .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone").single();
+  if(error){alert("حذف برای همه انجام نشد: "+error.message);return}
+  messageCache.set(String(data.id),data);
+  refreshMessageElement(data);
+}
+
+async function editMessage(id,content){
+  const m=messageCache.get(String(id));
+  if(!m || m.sender_id!==currentUser.id || m.deleted_for_everyone)return false;
+  const {data,error}=await supabaseClient.from("messages")
+    .update({content,edited_at:new Date().toISOString()})
+    .eq("id",m.id).eq("sender_id",currentUser.id)
+    .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone").single();
+  if(error){alert("ویرایش پیام انجام نشد: "+error.message);return false}
+  messageCache.set(String(data.id),data);refreshMessageElement(data);return true;
+}
+
+function ensureMessageEmptyState(){
+  const box=document.getElementById("messages");
+  if(box&&!box.querySelector(".msg-wrap"))box.innerHTML=`<div class="empty">هنوز گفت‌وگویی شروع نشده ♡</div>`;
 }
 
 function subscribeMessages(){
   const channelName=getChatChannelName();
   realtimeChannel=supabaseClient
     .channel(channelName)
-    .on("postgres_changes",
-      {event:"INSERT",schema:"public",table:"messages"},
-      payload=>{
-        const m=payload.new;
-        const relevant=
-          (m.sender_id===currentUser.id&&m.receiver_id===chatPartner.id) ||
-          (m.sender_id===chatPartner.id&&m.receiver_id===currentUser.id);
-        if(!relevant)return;
-        const box=document.getElementById("messages");
-        if(!box)return;
-        if(box.querySelector(".empty"))box.innerHTML="";
-        if(document.querySelector(`[data-msg-id="${m.id}"]`))return;
-        box.insertAdjacentHTML("beforeend",`<div data-msg-id="${esc(m.id)}">${renderMessage(m)}</div>`);
-        box.scrollTop=box.scrollHeight;
-      })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},async payload=>{
+      const m=payload.new;
+      const relevant=(m.sender_id===currentUser.id&&m.receiver_id===chatPartner.id)||(m.sender_id===chatPartner.id&&m.receiver_id===currentUser.id);
+      if(!relevant)return;
+      messageCache.set(String(m.id),m);
+      if(hiddenMessageIds.has(String(m.id)))return;
+      if(m.reply_to_id && !messageCache.has(String(m.reply_to_id))){
+        const {data:original}=await supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone").eq("id",m.reply_to_id).maybeSingle();
+        if(original)messageCache.set(String(original.id),original);
+      }
+      const box=document.getElementById("messages");if(!box)return;
+      box.querySelector(".empty")?.remove();
+      if(document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`))return;
+      box.insertAdjacentHTML("beforeend",renderMessage(m));attachMessageGestures();box.scrollTop=box.scrollHeight;
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
+      const m=payload.new;
+      const relevant=(m.sender_id===currentUser.id&&m.receiver_id===chatPartner.id)||(m.sender_id===chatPartner.id&&m.receiver_id===currentUser.id);
+      if(!relevant)return;
+      messageCache.set(String(m.id),m);
+      if(hiddenMessageIds.has(String(m.id)))return;
+      refreshMessageElement(m);
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_user_deletions"},payload=>{
+      const d=payload.new;
+      if(String(d.user_id)!==String(currentUser.id))return;
+      const id=String(d.message_id);
+      hiddenMessageIds.add(id);messageCache.delete(id);
+      document.querySelector(`[data-msg-id="${CSS.escape(id)}"]`)?.remove();ensureMessageEmptyState();
+    })
     .on("broadcast",{event:"typing"},payload=>{
       const data=payload?.payload||{};
-      if(!chatPartner || data.sender_id!==chatPartner.id)return;
-
-      const typing=!!data.is_typing;
-      setTypingIndicator(typing);
-      clearTimeout(remoteTypingTimer);
-
-      // Safety timeout: if the other browser closes unexpectedly, the indicator cannot get stuck.
-      if(typing){
-        remoteTypingTimer=setTimeout(()=>setTypingIndicator(false),1800);
-      }
+      if(!chatPartner||String(data.sender_id)!==String(chatPartner.id))return;
+      const typing=!!data.is_typing;setTypingIndicator(typing);clearTimeout(remoteTypingTimer);
+      if(typing)remoteTypingTimer=setTimeout(()=>setTypingIndicator(false),1800);
     })
     .subscribe(status=>console.log("Realtime:",status));
 }
 
 async function closeChatAndHome(){
-  stopTyping();
-  clearTypingState();
-  if(realtimeChannel){
-    await supabaseClient.removeChannel(realtimeChannel);
-    realtimeChannel=null;
-  }
-  chatPartner=null;
-  await renderHome();
+  stopTyping();clearTypingState();clearMessagePress();closeMessageSheet();cancelMessageMode();
+  if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
+  chatPartner=null;messageCache.clear();hiddenMessageIds.clear();await renderHome();
 }
 
 async function sendMessage(e){
@@ -1180,21 +1445,25 @@ async function sendMessage(e){
   const content=input.value.trim();
   if(!content)return;
 
-  stopTyping();
-  input.disabled=true;
+  stopTyping();input.disabled=true;
+  let error=null;
 
-  const {error}=await supabaseClient.from("messages").insert({
-    sender_id:currentUser.id,
-    receiver_id:chatPartner.id,
-    content
-  });
-
-  input.disabled=false;
-  if(error){
-    alert("پیام ارسال نشد: "+error.message);
-    return;
+  if(editingMessageId){
+    const ok=await editMessage(editingMessageId,content);
+    input.disabled=false;
+    if(!ok)return;
+    cancelMessageMode();input.focus();return;
   }
-  input.value="";
+
+  const payload={sender_id:currentUser.id,receiver_id:chatPartner.id,content};
+  if(replyingToMessage?.id)payload.reply_to_id=replyingToMessage.id;
+  const result=await supabaseClient.from("messages").insert(payload);
+  error=result.error;
+  input.disabled=false;
+  if(error){alert("پیام ارسال نشد: "+error.message);return}
+  input.value="";replyingToMessage=null;
+  document.getElementById("replyBar")?.classList.remove("show");
+  const icon=document.getElementById("replyBarIcon");if(icon)icon.textContent="↩";
   input.focus();
 }
 
@@ -1234,12 +1503,18 @@ function soon(){alert("این بخش به‌زودی فعال می‌شود ♡"
 async function logout(){
   stopTyping();
   clearTypingState();
+  clearMessagePress();
+  closeMessageSheet();
   if(realtimeChannel){
     await supabaseClient.removeChannel(realtimeChannel);
     realtimeChannel=null;
   }
   currentUser=null;
   chatPartner=null;
+  messageCache.clear();
+  hiddenMessageIds.clear();
+  editingMessageId=null;
+  replyingToMessage=null;
   sessionStorage.removeItem("love_profile");
   document.getElementById("app").innerHTML="";
   document.getElementById("loginScreen").classList.remove("hidden");
