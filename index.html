@@ -1587,7 +1587,11 @@ document.getElementById("loginForm").addEventListener("submit",async e=>{
     }
 
     currentUser={profile,id:profile.id};
-    sessionStorage.setItem("love_profile",JSON.stringify(profile));
+    // Keep the last successful login on this browser so a normal reload/reopen
+    // does not force the user to enter the password again. Never store the password.
+    const savedProfile=JSON.stringify(profile);
+    sessionStorage.setItem("love_profile",savedProfile);
+    localStorage.setItem("khatmin_remembered_profile",savedProfile);
     await loadApp();
   }catch(err){
     console.error(err);
@@ -1622,6 +1626,7 @@ async function loadApp(){
     }
     if(!canonical?.id){
       sessionStorage.removeItem("love_profile");
+      localStorage.removeItem("khatmin_remembered_profile");
       currentUser=null;
       document.getElementById("app").innerHTML="";
       document.getElementById("loginScreen").classList.remove("hidden");
@@ -1629,7 +1634,9 @@ async function loadApp(){
       return;
     }
     currentUser={profile:{...(currentUser.profile||{}),...canonical},id:canonical.id};
-    sessionStorage.setItem("love_profile",JSON.stringify(currentUser.profile));
+    const syncedProfile=JSON.stringify(currentUser.profile);
+    sessionStorage.setItem("love_profile",syncedProfile);
+    localStorage.setItem("khatmin_remembered_profile",syncedProfile);
   }catch(err){
     console.error("PROFILE SYNC ERROR:",err);
     document.getElementById("app").innerHTML="";
@@ -2687,6 +2694,7 @@ async function logout(){
   editingMessageId=null;
   replyingToMessage=null;
   sessionStorage.removeItem("love_profile");
+  localStorage.removeItem("khatmin_remembered_profile");
   document.getElementById("app").innerHTML="";
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("password").value="";
@@ -2695,16 +2703,23 @@ async function logout(){
 }
 
 (async()=>{
-  const saved=sessionStorage.getItem("love_profile");
+  // Prefer the current tab session; if the browser was reopened, restore
+  // the last successful profile from persistent browser storage.
+  const saved=sessionStorage.getItem("love_profile")||localStorage.getItem("khatmin_remembered_profile");
   if(saved){
     try{
       const profile=JSON.parse(saved);
       if(profile?.id){
         currentUser={profile,id:profile.id};
+        // Restore the tab session too, so navigation inside this tab remains fast.
+        sessionStorage.setItem("love_profile",JSON.stringify(profile));
         await loadApp();
         return;
       }
-    }catch(e){}
+    }catch(e){
+      sessionStorage.removeItem("love_profile");
+      localStorage.removeItem("khatmin_remembered_profile");
+    }
   }
   document.getElementById("loginScreen").classList.remove("hidden");
 })();
