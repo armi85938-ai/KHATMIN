@@ -1377,7 +1377,73 @@ body{
   .water-transition__drop,.water-transition__impact,.water-transition__ripple,.water-transition__ripple::before,.water-transition__ripple::after,.water-transition__veil{animation-duration:.01ms !important;animation-delay:0ms !important}
 }
 
-.voice-message-player{display:flex;align-items:center;gap:9px;min-width:190px;padding:3px 0}.voice-message-player audio{width:190px;height:34px;filter:brightness(.96)}.voice-message-player audio::-webkit-media-controls-panel{background:rgba(255,255,255,.55)}
+.voice-message-player{
+  width:min(292px,78vw);min-width:210px;height:54px;padding:5px 7px;
+  display:flex;align-items:center;gap:9px;direction:rtl;
+  border:1px solid rgba(255,255,255,.14);border-radius:999px;
+  background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  box-shadow:0 12px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.15);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  user-select:none;overflow:hidden;
+}
+.msg.mine .voice-message-player{background:linear-gradient(145deg,rgba(255,255,255,.15),rgba(255,255,255,.045));border-color:rgba(255,255,255,.2);}
+.voice-play-btn{
+  width:38px;height:38px;flex:0 0 38px;border:0;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;color:#fff;
+  background:rgba(255,255,255,.13);
+  box-shadow:0 5px 16px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.16);
+  transition:transform .18s ease,background .18s ease;
+}
+.voice-play-btn:hover{transform:scale(1.045);background:rgba(255,255,255,.19)}
+.voice-play-btn:active{transform:scale(.94)}
+.voice-play-btn svg{width:17px;height:17px;fill:currentColor;display:block}
+.voice-wave{
+  position:relative;flex:1;height:38px;display:flex;align-items:center;
+  justify-content:center;gap:3px;overflow:hidden;cursor:pointer;
+}
+.voice-wave::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.09) 48%,transparent 100%);
+  opacity:0;transform:translateX(110%);transition:opacity .2s ease;
+}
+.voice-message-player.playing .voice-wave::before{opacity:1;animation:voiceShimmer 1.8s linear infinite}
+.voice-bar{
+  width:3px;min-width:3px;height:var(--h);border-radius:99px;
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.38));
+  opacity:.72;transform-origin:center;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.voice-message-player.playing .voice-bar{animation:voiceWave 850ms ease-in-out infinite alternate;animation-delay:var(--d)}
+.voice-message-player.playing .voice-bar:nth-child(3n){animation-duration:620ms}
+.voice-message-player.playing .voice-bar:nth-child(4n){animation-duration:1030ms}
+.voice-message-player .voice-bar.active{opacity:1}
+.voice-duration{min-width:39px;color:rgba(255,255,255,.72);font-size:10px;font-variant-numeric:tabular-nums;direction:ltr;text-align:center;letter-spacing:.03em}
+.voice-message-player audio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+@keyframes voiceWave{0%{transform:scaleY(.62);opacity:.48}100%{transform:scaleY(1.12);opacity:.96}}
+@keyframes voiceShimmer{from{transform:translateX(110%)}to{transform:translateX(-110%)}}
+@media(max-width:520px){.voice-message-player{min-width:205px;width:min(270px,76vw)}}
+
+/* Full-screen user profile overlay */
+.user-profile-overlay{position:fixed;inset:0;z-index:120;background:radial-gradient(circle at 50% 0%,rgba(125,96,150,.22),transparent 38%),linear-gradient(180deg,#0a0b0f,#06070a 70%,#050609);display:flex;flex-direction:column;opacity:0;visibility:hidden;pointer-events:none;transform:scale(.985);transition:opacity .24s ease,transform .3s cubic-bezier(.2,.8,.2,1),visibility .24s ease}
+.user-profile-overlay.show{opacity:1;visibility:visible;pointer-events:auto;transform:scale(1)}
+.user-profile-top{height:76px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;direction:rtl}
+.user-profile-close,.user-profile-more{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;display:grid;place-items:center;backdrop-filter:blur(18px);box-shadow:0 10px 28px rgba(0,0,0,.25)}
+.user-profile-close svg{width:22px;height:22px}.user-profile-more{font-size:20px}
+.user-profile-content{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:18px 22px 42px;direction:rtl}
+.user-profile-avatar-wrap{position:relative;margin-top:12px;margin-bottom:22px}
+.user-profile-avatar{width:138px;height:138px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#27232d,#111319);border:1px solid rgba(255,255,255,.2);box-shadow:0 0 0 8px rgba(255,255,255,.025),0 22px 70px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.22);font-size:46px;color:#fff;font-weight:700}
+.user-profile-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.user-profile-online{position:absolute;right:8px;bottom:8px;width:20px;height:20px;border-radius:50%;background:#63e39b;border:4px solid #08090c;box-shadow:0 0 18px rgba(99,227,155,.48)}
+.user-profile-name{margin:0;color:#fff;font-size:28px;font-weight:700;letter-spacing:.1px;text-align:center}
+.user-profile-username{margin-top:7px;color:#999ba5;font-size:14px;direction:ltr;text-align:center}
+.user-profile-bio{width:min(560px,100%);margin:22px auto 0;padding:17px 20px;border:1px solid rgba(255,255,255,.09);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.07);color:#d8d8de;font-size:13px;line-height:1.9;text-align:center;white-space:pre-wrap;word-break:break-word}
+.user-profile-actions{width:min(560px,100%);margin-top:28px;display:grid;gap:11px}
+.user-profile-block{height:54px;border:1px solid rgba(255,91,111,.2);border-radius:18px;background:linear-gradient(145deg,rgba(255,73,97,.12),rgba(255,73,97,.045));color:#ff8d9c;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.user-profile-block svg{width:20px;height:20px;stroke:currentColor}
+.user-profile-divider{width:min(560px,100%);height:1px;margin:30px 0 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)}
+.user-profile-note{margin-top:16px;color:#676a74;font-size:11px;text-align:center}
+@media(max-width:520px){.user-profile-avatar{width:124px;height:124px}.user-profile-name{font-size:25px}.user-profile-content{padding-left:16px;padding-right:16px}}
+
 </style>
 
 <style>
@@ -1642,7 +1708,8 @@ const icons={
  back:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.55 4.55 0 0 1 7.75 4.2c1.7 0 3.35.88 4.25 2.25.9-1.37 2.55-2.25 4.25-2.25A4.55 4.55 0 0 1 20.8 8.8Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  send:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 4 16 8-16 8 3.2-8L4 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.2 12H20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
- voiceMic:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.1" y="3.3" width="7.8" height="11.6" rx="3.9" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 11.7a6.2 6.2 0 0 0 12.4 0M12 18v3M8.8 21h6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+ block:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.2 8.1a3.8 3.8 0 1 1 7.6 0v1.2a3.8 3.8 0 0 1-7.6 0V8.1Z" stroke="currentColor" stroke-width="1.7"/><path d="M5.2 19.4c.8-3.1 3.1-4.8 6.8-4.8 1.4 0 2.6.3 3.6.8M4.5 4.5l15 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+voiceMic:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8.1" y="3.3" width="7.8" height="11.6" rx="3.9" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="1.7"/><path d="M5.8 11.7a6.2 6.2 0 0 0 12.4 0M12 18v3M8.8 21h6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
  logout:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H6.8A1.8 1.8 0 0 0 5 5.8v12.4A1.8 1.8 0 0 0 6.8 20H10M14 16l4-4-4-4M18 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
 
@@ -2100,7 +2167,7 @@ async function openChat(partner){
     <div class="chat-view">
       <header class="chat-header">
         <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
-        <div class="chat-profile">
+        <button class="chat-profile" type="button" onclick="openUserProfile(chatPartner)" aria-label="نمایش پروفایل کاربر">
           <div class="avatar">${partner.avatar_url ? `<img src="${esc(partner.avatar_url)}" alt="" class="chat-avatar-image">` : esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
           <div class="chat-user-meta">
             <div class="chat-title">${esc(partner.display_name)}</div>
@@ -2109,7 +2176,7 @@ async function openChat(partner){
               <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
             </div>
           </div>
-        </div>
+        </button>
         <button class="chat-head-side" type="button" aria-label="قلب">${icons.heart}</button>
       </header>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
@@ -2130,6 +2197,14 @@ async function openChat(partner){
         </div>
         <button id="sendButton" class="composer-action is-voice" type="button" aria-label="ضبط ویس">${icons.voiceMic}</button>
       </form>
+
+      <div id="userProfileOverlay" class="user-profile-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="user-profile-top">
+          <button class="user-profile-close" type="button" onclick="closeUserProfile()" aria-label="بستن">${icons.back}</button>
+          <button class="user-profile-more" type="button" aria-label="بیشتر">⋯</button>
+        </div>
+        <div id="userProfileContent" class="user-profile-content"></div>
+      </div>
 
       <div id="chatWordReaction" class="chat-word-reaction" aria-live="polite" aria-hidden="true">میشه ارسالش نکنی! حالم ازش بهم میخوره</div>
       <div id="messageSheetBackdrop" class="message-sheet-backdrop" onclick="closeMessageSheet()"></div>
@@ -2273,11 +2348,86 @@ function renderMessage(m){
   const voiceSrc=isVoice
     ? (m.content.startsWith("__KHATMIN_VOICE_URL__") ? m.content.slice("__KHATMIN_VOICE_URL__".length) : m.content.slice("__KHATMIN_VOICE__".length))
     : "";
+  const voiceBars=Array.from({length:30},(_,i)=>{
+    const heights=[34,52,68,44,78,58,88,48,70,38,62,82,52,72,94,58,76,46,66,86,54,72,42,64,82,50,70,40,58,76];
+    return `<span class="voice-bar" style="--h:${heights[i]}%;--d:${(i%7)*70}ms"></span>`;
+  }).join("");
+  const voiceId=`voice-${String(m.id).replace(/[^a-zA-Z0-9_-]/g,"")}`;
   const contentHtml=isVoice
-    ? `${replyPreviewHtml(m)}<div class="voice-message-player"><audio controls preload="metadata" src="${esc(voiceSrc)}"></audio></div>`
+    ? `${replyPreviewHtml(m)}<div class="voice-message-player" data-voice-id="${esc(voiceId)}" oncontextmenu="return false">
+        <button class="voice-play-btn" type="button" onclick="toggleVoiceMessage('${esc(voiceId)}')" aria-label="پخش ویس">
+          <svg class="voice-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8v12.4a1 1 0 0 0 1.52.85l9.6-6.2a1 1 0 0 0 0-1.68l-9.6-6.2A1 1 0 0 0 8 5.8Z"/></svg>
+        </button>
+        <div class="voice-wave" onclick="seekVoiceMessage('${esc(voiceId)}',event)" aria-hidden="true">${voiceBars}</div>
+        <span class="voice-duration">00:00</span>
+        <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
+      </div>`
     : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
   const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
+}
+
+function formatVoiceDuration(seconds){
+  const total=Math.max(0,Math.floor(Number(seconds)||0));
+  const min=Math.floor(total/60);
+  const sec=total%60;
+  return `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+}
+
+function updateVoiceMessageUI(audio){
+  if(!audio)return;
+  const player=audio.closest(".voice-message-player");
+  if(!player)return;
+  const btn=player.querySelector(".voice-play-btn");
+  const duration=player.querySelector(".voice-duration");
+  const bars=[...player.querySelectorAll(".voice-bar")];
+  const current=Number(audio.currentTime)||0;
+  const total=Number(audio.duration)||0;
+  if(duration)duration.textContent=formatVoiceDuration(total||current);
+  const ratio=total>0?Math.min(1,current/total):0;
+  bars.forEach((bar,i)=>bar.classList.toggle("active",i<Math.round(ratio*bars.length)));
+  const playing=!audio.paused&&!audio.ended;
+  player.classList.toggle("playing",playing);
+  if(btn){
+    btn.setAttribute("aria-label",playing?"توقف ویس":"پخش ویس");
+    btn.innerHTML=playing
+      ? `<svg class="voice-pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 6.2a1 1 0 0 1 1-1h1.2a1 1 0 0 1 1 1v11.6a1 1 0 0 1-1 1H8.5a1 1 0 0 1-1-1V6.2Zm5.8 0a1 1 0 0 1 1-1h1.2a1 1 0 0 1 1 1v11.6a1 1 0 0 1-1 1h-1.2a1 1 0 0 1-1-1V6.2Z"/></svg>`
+      : `<svg class="voice-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8v12.4a1 1 0 0 0 1.52.85l9.6-6.2a1 1 0 0 0 0-1.68l-9.6-6.2A1 1 0 0 0 8 5.8Z"/></svg>`;
+  }
+}
+
+function bindVoicePlayers(root=document){
+  root.querySelectorAll?.(".voice-message-player audio").forEach(audio=>{
+    if(audio.dataset.bound)return;
+    audio.dataset.bound="1";
+    audio.addEventListener("loadedmetadata",()=>updateVoiceMessageUI(audio));
+    audio.addEventListener("timeupdate",()=>updateVoiceMessageUI(audio));
+    audio.addEventListener("play",()=>{
+      document.querySelectorAll(".voice-message-player audio").forEach(other=>{if(other!==audio&&!other.paused){other.pause();}});
+      updateVoiceMessageUI(audio);
+    });
+    audio.addEventListener("pause",()=>updateVoiceMessageUI(audio));
+    audio.addEventListener("ended",()=>{audio.currentTime=0;updateVoiceMessageUI(audio)});
+    audio.addEventListener("error",()=>updateVoiceMessageUI(audio));
+    updateVoiceMessageUI(audio);
+  });
+}
+
+function toggleVoiceMessage(id){
+  const audio=document.getElementById(id);
+  if(!audio)return;
+  if(audio.paused) audio.play().catch(()=>{});
+  else audio.pause();
+}
+
+function seekVoiceMessage(id,event){
+  const audio=document.getElementById(id);
+  const wave=event?.currentTarget;
+  if(!audio||!wave||!Number.isFinite(audio.duration)||audio.duration<=0)return;
+  const rect=wave.getBoundingClientRect();
+  const ratio=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+  audio.currentTime=ratio*audio.duration;
+  updateVoiceMessageUI(audio);
 }
 
 function refreshMessageElement(m,animateReaction=false){
@@ -2285,6 +2435,7 @@ function refreshMessageElement(m,animateReaction=false){
   if(!old)return;
   old.outerHTML=renderMessage(m);
   attachMessageGestures();
+  bindVoicePlayers();
   if(animateReaction){
     const el=document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"] .msg`);
     if(el){el.classList.add("reaction-pop");setTimeout(()=>el.classList.remove("reaction-pop"),360)}
@@ -2472,7 +2623,7 @@ function openMessageActions(id){
     </div>
     <div class="message-sheet-title">عملیات روی پیام</div>
     <button class="message-action" type="button" onclick="startReplyById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">↩</span><span>پاسخ دادن</span></button>
-    ${mine?`<button class="message-action" type="button" onclick="startEditById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">✎</span><span>ویرایش پیام</span></button>`:""}
+    ${mine && !(typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__")))?`<button class="message-action" type="button" onclick="startEditById('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">✎</span><span>ویرایش پیام</span></button>`:""}
     <button class="message-action" type="button" onclick="openDeleteConfirm('${esc(m.id)}');closeMessageSheet()"><span class="action-icon">⌫</span><span>حذف پیام</span></button>`;
   backdrop.classList.add("show");sheet.classList.add("show");
 }
@@ -2552,6 +2703,7 @@ function startReply(m){
 function startEditById(id){
   const m=messageCache.get(String(id));
   if(!m || m.sender_id!==currentUser.id || m.deleted_for_everyone)return;
+  if(typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__")))return;
   editingMessageId=String(id);replyingToMessage=null;
   const input=document.getElementById("messageInput");
   const bar=document.getElementById("replyBar");
@@ -2639,7 +2791,7 @@ function subscribeMessages(){
       const box=document.getElementById("messages");if(!box)return;
       box.querySelector(".empty")?.remove();
       if(document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`))return;
-      box.insertAdjacentHTML("beforeend",renderMessage(m));attachMessageGestures();box.scrollTop=box.scrollHeight;
+      box.insertAdjacentHTML("beforeend",renderMessage(m));attachMessageGestures();bindVoicePlayers();box.scrollTop=box.scrollHeight;
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
       const m=payload.new;
@@ -2682,6 +2834,76 @@ function subscribeMessages(){
       document.querySelector(`[data-msg-id="${CSS.escape(id)}"]`)?.remove();ensureMessageEmptyState();
     })
     .subscribe(status=>console.log("Realtime:",status));
+}
+
+function openUserProfile(partner){
+  if(!partner)return;
+  const overlay=document.getElementById("userProfileOverlay");
+  const content=document.getElementById("userProfileContent");
+  if(!overlay||!content)return;
+  const avatar=partner.avatar_url
+    ? `<img src="${esc(partner.avatar_url)}" alt="عکس پروفایل">`
+    : esc((partner.display_name||partner.username||"?").slice(0,1));
+  const username=partner.username ? `@${partner.username}` : "@کاربر";
+  const bio=(partner.bio||"").trim();
+  content.innerHTML=`
+    <div class="user-profile-avatar-wrap">
+      <div class="user-profile-avatar">${avatar}</div>
+      <span class="user-profile-online" aria-hidden="true"></span>
+    </div>
+    <h1 class="user-profile-name">${esc(partner.display_name||partner.username||"کاربر")}</h1>
+    <div class="user-profile-username">${esc(username)}</div>
+    ${bio?`<div class="user-profile-bio">${esc(bio)}</div>`:""}
+    <div class="user-profile-actions">
+      <button class="user-profile-block" type="button" onclick="requestBlockUser(${JSON.stringify(String(partner.id))})">
+        ${icons.block || ""}<span>مسدود کردن</span>
+      </button>
+    </div>
+    <div class="user-profile-divider"></div>
+    <div class="user-profile-note">اطلاعات این پروفایل از حساب کاربر نمایش داده می‌شود.</div>`;
+  overlay.classList.add("show");
+  overlay.setAttribute("aria-hidden","false");
+  document.body.classList.add("profile-overlay-open");
+}
+function closeUserProfile(){
+  const overlay=document.getElementById("userProfileOverlay");
+  if(!overlay)return;
+  overlay.classList.remove("show");
+  overlay.setAttribute("aria-hidden","true");
+  document.body.classList.remove("profile-overlay-open");
+}
+async function requestBlockUser(userId){
+  if(!userId || !currentUser?.id)return;
+  const targetId=String(userId);
+  if(targetId===String(currentUser.id))return;
+  const ok=window.confirm("آیا می‌خواهید این کاربر را مسدود کنید؟");
+  if(!ok)return;
+
+  try{
+    const {error}=await supabaseClient.from("blocked_users").upsert({
+      blocker_id:currentUser.id,
+      blocked_id:targetId
+    },{onConflict:"blocker_id,blocked_id"});
+    if(error)throw error;
+
+    closeUserProfile();
+    if(chatPartner && String(chatPartner.id)===targetId){
+      stopTyping();
+      clearTypingState();
+      if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
+      if(typingChannel){try{await supabaseClient.removeChannel(typingChannel)}catch(e){}typingChannel=null}
+      chatPartner=null;
+      messageCache.clear();
+      hiddenMessageIds.clear();
+      await renderHome();
+    }else{
+      document.querySelector(`[data-partner-id="${CSS.escape(targetId)}"]`)?.remove();
+    }
+    showToast?.("کاربر با موفقیت مسدود شد.");
+  }catch(err){
+    console.error("BLOCK USER ERROR:",err);
+    alert("مسدود کردن انجام نشد. ابتدا جدول blocked_users را در دیتابیس بسازید.");
+  }
 }
 
 async function closeChatAndHome(){
@@ -2861,7 +3083,7 @@ async function sendRawMessage(content){
     if(error)throw error;
     if(data){messageCache.set(String(data.id),data);await cacheMessages([data]);}
     const box=document.getElementById("messages");
-    if(box){box.querySelector(".empty")?.remove();if(data&&!box.querySelector(`[data-msg-id="${CSS.escape(String(data.id))}"]`)){box.insertAdjacentHTML("beforeend",renderMessage(data));attachMessageGestures();box.scrollTop=box.scrollHeight;}}
+    if(box){box.querySelector(".empty")?.remove();if(data&&!box.querySelector(`[data-msg-id="${CSS.escape(String(data.id))}"]`)){box.insertAdjacentHTML("beforeend",renderMessage(data));attachMessageGestures();bindVoicePlayers();box.scrollTop=box.scrollHeight;}}
     return true;
   }catch(err){alert("ویس ارسال نشد: "+(err?.message||"خطای اتصال"));return false;}
 }
@@ -2950,6 +3172,7 @@ async function sendMessage(e){
       if(!document.querySelector(`[data-msg-id="${CSS.escape(String(saved.id))}"]`)){
         box.insertAdjacentHTML("beforeend",renderMessage(saved));
         attachMessageGestures();
+        bindVoicePlayers();
       }
       box.scrollTop=box.scrollHeight;
     }
