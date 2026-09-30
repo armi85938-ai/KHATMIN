@@ -6,7 +6,7 @@
 <title>KHATMIN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Playfair+Display:wght@500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;-webkit-user-select:none;user-select:none}
@@ -509,17 +509,101 @@ body{
 .nav-btn:active{transform:scale(.92)}
 
 .chat-view{
-  direction:ltr;
+  direction:rtl;
   background:#08090c;
+  height:100dvh;
+  min-height:0;
+  overflow:hidden;
 }
 .chat-header{
   direction:ltr;
-  background:rgba(9,10,13,.82);
-  border-bottom:1px solid #202228;
+  flex:none;
+  height:78px;
+  min-height:78px;
+  padding:8px 14px;
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr) 52px;
+  align-items:center;
+  gap:10px;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  position:relative;
+  z-index:20;
 }
-.chat-title{color:#fff;text-align:left}
-.chat-user-meta{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+/* Three independent liquid-glass panels — no enclosing glass bar */
+.chat-header > .chat-head-side,
+.chat-header > .chat-profile{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.035) 52%,rgba(255,255,255,.075));
+  box-shadow:
+    0 10px 28px rgba(0,0,0,.16),
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(24px) saturate(155%);
+  -webkit-backdrop-filter:blur(24px) saturate(155%);
+}
+.chat-header > .chat-head-side::before,
+.chat-header > .chat-profile::before{
+  content:"";
+  position:absolute;
+  inset:-45% -20%;
+  z-index:-1;
+  background:
+    radial-gradient(circle at 18% 18%,rgba(255,255,255,.24),transparent 24%),
+    radial-gradient(circle at 82% 82%,rgba(210,190,255,.10),transparent 30%),
+    linear-gradient(120deg,transparent 28%,rgba(255,255,255,.08) 48%,transparent 67%);
+  filter:blur(8px);
+  transform:rotate(-8deg);
+  pointer-events:none;
+}
+.chat-header > .chat-head-side{
+  width:52px;height:52px;border-radius:50%;
+  color:#fff;display:grid;place-items:center;
+  padding:0;
+}
+.chat-header > .chat-head-side svg{width:25px;height:25px;stroke:currentColor}
+.chat-header > .chat-profile{
+  min-width:0;height:58px;padding:5px 14px 5px 8px;
+  border-radius:31px;
+  display:flex;align-items:center;gap:10px;
+  direction:rtl;
+}
+.chat-profile .avatar{width:48px!important;height:48px!important;border-radius:50%!important;flex:none;background:#202126;color:#fff}
+.chat-user-meta{
+  position:relative;
+  min-width:0;
+  height:42px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
+.chat-title{
+  color:#fff;
+  width:100%;
+  text-align:center;
+  font-family:"Playfair Display",Caveat,Vazirmatn,serif;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:.15px;
+  line-height:22px;
+  transform:translateY(0);
+  transition:transform .24s cubic-bezier(.22,.8,.22,1);
+}
 .chat-typing{
+  position:absolute;
+  left:50%;
+  right:auto;
+  bottom:-1px;
+  transform:translate(-50%,8px);
   min-height:15px;
   display:flex;
   align-items:center;
@@ -527,12 +611,13 @@ body{
   color:#aeb0b8;
   font-size:10px;
   font-weight:500;
+  line-height:14px;
   opacity:0;
-  transform:translateY(-2px);
-  transition:opacity .22s ease,transform .22s ease;
+  transition:opacity .22s ease,transform .24s cubic-bezier(.22,.8,.22,1);
   pointer-events:none;
 }
-.chat-typing.show{opacity:1;transform:translateY(0)}
+.chat-user-meta.typing-active .chat-title{transform:translateY(-5px)}
+.chat-typing.show{opacity:1;transform:translate(-50%,0)}
 .typing-dots{display:inline-flex;align-items:center;gap:3px;height:12px}
 .typing-dots i{
   width:4px;height:4px;border-radius:50%;background:#bfc1c9;
@@ -546,7 +631,17 @@ body{
   30%{transform:translateY(-3px);opacity:1}
 }
 .chat-body{
-  direction:ltr;
+  direction:rtl;
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:18px 13px 110px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
   background:
     radial-gradient(circle at 20% 15%,rgba(255,255,255,.025),transparent 25%),
     radial-gradient(circle at 80% 60%,rgba(255,255,255,.018),transparent 25%),
@@ -554,11 +649,12 @@ body{
 }
 .chat-body:before{color:rgba(255,255,255,.025)}
 .msg{
-  direction:ltr;
-  text-align:left;
+  direction:rtl;
+  text-align:right;
   color:#fff;
 }
 .msg.mine{
+  align-self:flex-end;
   color:#0a0b0d;
   background:linear-gradient(145deg,#fff,#dedee2);
   border:1px solid #fff;
@@ -566,6 +662,7 @@ body{
 }
 .msg.mine:after{background:#dedee2}
 .msg.theirs{
+  align-self:flex-start;
   color:#f3f3f5;
   background:linear-gradient(145deg,#17191e,#111318);
   border:1px solid #292b31;
@@ -579,7 +676,7 @@ body{
   border:1px solid #292b31;
   box-shadow:0 18px 50px rgba(0,0,0,.5);
 }
-.composer input{color:#fff;text-align:left}
+.composer input{color:#fff;text-align:right;direction:rtl}
 .composer input::placeholder{color:#686a73}
 .send{
   background:#fff;
@@ -780,7 +877,7 @@ body{
 
 /* ===== Message actions / reply / edit ===== */
 .msg-wrap{position:relative;display:flex;flex-direction:column;width:100%;touch-action:pan-y}
-.msg-wrap.mine{align-items:flex-start}.msg-wrap.theirs{align-items:flex-end}
+.msg-wrap.mine{align-items:flex-end}.msg-wrap.theirs{align-items:flex-start}
 .msg-wrap .msg{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;transition:transform .18s ease,opacity .18s ease}
 .msg-wrap.swiping .msg{transition:none}
 .msg-wrap.replying .msg{box-shadow:0 0 0 1px rgba(255,255,255,.28),0 8px 24px rgba(255,255,255,.08)}
@@ -874,6 +971,7 @@ const icons={
    <path d="m19.05 13.45 1.05.82-1.55 2.68-1.25-.5a7.8 7.8 0 0 1-1.45.84l-.2 1.34h-3.1l-.2-1.34a7.8 7.8 0 0 1-1.45-.84l-1.25.5-1.55-2.68 1.05-.82a7.6 7.6 0 0 1 0-1.68l-1.05-.82 1.55-2.68 1.25.5a7.8 7.8 0 0 1 1.45-.84l.2-1.34h3.1l.2 1.34a7.8 7.8 0 0 1 1.45.84l1.25-.5 1.55 2.68-1.05.82a7.6 7.6 0 0 1 0 1.68Z" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round"/>
  </svg>`,
  back:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+ heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.55 4.55 0 0 1 7.75 4.2c1.7 0 3.35.88 4.25 2.25.9-1.37 2.55-2.25 4.25-2.25A4.55 4.55 0 0 1 20.8 8.8Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  send:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 4 16 8-16 8 3.2-8L4 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.2 12H20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
  logout:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H6.8A1.8 1.8 0 0 0 5 5.8v12.4A1.8 1.8 0 0 0 6.8 20H10M14 16l4-4-4-4M18 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
@@ -1057,15 +1155,18 @@ async function openChat(partner){
   document.getElementById("app").innerHTML=`
     <div class="chat-view">
       <header class="chat-header">
-        <button class="icon-btn" onclick="closeChatAndHome()">${icons.back}</button>
-        <div class="avatar" style="width:43px;height:43px;border-radius:14px">${esc(partner.display_name.slice(0,1))}</div>
-        <div class="chat-user-meta">
-          <div class="chat-title">${esc(partner.display_name)}</div>
-          <div id="typingIndicator" class="chat-typing" aria-live="polite">
-            <span>در حال نوشتن</span>
-            <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
+        <div class="chat-profile">
+          <div class="avatar">${esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
+          <div class="chat-user-meta">
+            <div class="chat-title">${esc(partner.display_name)}</div>
+            <div id="typingIndicator" class="chat-typing" aria-live="polite">
+              <span>در حال نوشتن</span>
+              <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
           </div>
         </div>
+        <button class="chat-head-side" type="button" aria-label="قلب">${icons.heart}</button>
       </header>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
       <div id="replyBar" class="reply-bar" aria-live="polite">
@@ -1166,8 +1267,10 @@ function getChatChannelName(){
 
 function setTypingIndicator(show){
   const el=document.getElementById("typingIndicator");
+  const meta=el?.closest(".chat-user-meta");
   if(!el)return;
   el.classList.toggle("show",!!show);
+  meta?.classList.toggle("typing-active",!!show);
 }
 
 function broadcastTyping(isTyping){
