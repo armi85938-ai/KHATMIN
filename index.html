@@ -1115,6 +1115,7 @@ let homeTypingTimers=new Map();
 let remoteTypingTimer=null;
 let isLocalTyping=false;
 let messageCache=new Map();
+let messageReactionCache=new Map();
 let hiddenMessageIds=new Set();
 let activeMessageId=null;
 let editingMessageId=null;
@@ -1227,10 +1228,26 @@ document.getElementById("loginForm").addEventListener("submit",async e=>{
   btn.textContent="در حال ورود...";
 
   try{
-    const profile=await login(
+    let profile=await login(
       document.getElementById("username").value,
       document.getElementById("password").value
     );
+
+    // Always resolve the logged-in user from the real profiles table.
+    // This prevents an old/mismatched RPC id from breaking contacts and messages.
+    try{
+      const loginUsername=String(profile?.username||document.getElementById("username").value||"").trim();
+      if(loginUsername){
+        const {data:canonicalProfile}=await supabaseClient
+          .from("profiles")
+          .select("id,username,display_name,avatar_url")
+          .eq("username",loginUsername)
+          .maybeSingle();
+        if(canonicalProfile?.id){ profile={...profile,...canonicalProfile}; }
+      }
+    }catch(resolveError){
+      console.warn("Could not resolve canonical profile; using login profile:",resolveError);
+    }
 
     currentUser={profile,id:profile.id};
     sessionStorage.setItem("love_profile",JSON.stringify(profile));
@@ -1246,6 +1263,44 @@ document.getElementById("loginForm").addEventListener("submit",async e=>{
 });
 
 async function loadApp(){
+  // قبل از باز کردن پیام‌رسان، شناسه کاربر را با رکورد واقعی profiles هماهنگ می‌کنیم.
+  // این کار نشست‌های قدیمی را که باعث messages_sender_id_fkey می‌شوند خودکار ترمیم می‌کند.
+  try{
+    let canonical=null;
+    if(currentUser?.profile?.username){
+      const {data,error}=await supabaseClient
+        .from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .eq("username",String(currentUser.profile.username).trim())
+        .maybeSingle();
+      if(!error && data) canonical=data;
+    }
+    if(!canonical && currentUser?.id){
+      const {data,error}=await supabaseClient
+        .from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .eq("id",currentUser.id)
+        .maybeSingle();
+      if(!error && data) canonical=data;
+    }
+    if(!canonical?.id){
+      sessionStorage.removeItem("love_profile");
+      currentUser=null;
+      document.getElementById("app").innerHTML="";
+      document.getElementById("loginScreen").classList.remove("hidden");
+      setLoginError("نشست قبلی منقضی شده؛ لطفاً دوباره وارد شوید.");
+      return;
+    }
+    currentUser={profile:{...(currentUser.profile||{}),...canonical},id:canonical.id};
+    sessionStorage.setItem("love_profile",JSON.stringify(currentUser.profile));
+  }catch(err){
+    console.error("PROFILE SYNC ERROR:",err);
+    document.getElementById("app").innerHTML="";
+    document.getElementById("loginScreen").classList.remove("hidden");
+    setLoginError("اتصال اطلاعات کاربر برقرار نشد؛ دوباره وارد شوید.");
+    return;
+  }
+
   document.getElementById("loginScreen").classList.add("hidden");
   await renderHome();
 }
@@ -1374,7 +1429,18 @@ async function renderChats(){
   }
 
   const cards=[];
-  for(const p of profiles){
+  const myId=String(currentUser?.id||"");
+  const myUsername=String(currentUser?.profile?.username||"").trim().toLowerCase();
+  const seenPartners=new Set();
+  for(const p of (profiles||[])){
+    // Some older login RPC responses can carry a stale/mismatched id.
+    // Never show the currently logged-in profile in the contact list.
+    const pid=String(p?.id||"");
+    const pun=String(p?.username||"").trim().toLowerCase();
+    if((myId && pid===myId) || (myUsername && pun===myUsername)) continue;
+    if(!pid || seenPartners.has(pid)) continue;
+    seenPartners.add(pid);
+
     const {data:last}=await supabaseClient
       .from("messages")
       .select("id,content,created_at")
@@ -1499,11 +1565,24 @@ async function loadMessages(){
   const box=document.getElementById("messages");
   if(!box)return;
 
-  const {data,error}=await supabaseClient
+  const messageFilter=`and(sender_id.eq.${currentUser.id},receiver_id.eq.${chatPartner.id}),and(sender_id.eq.${chatPartner.id},receiver_id.eq.${currentUser.id})`;
+  let {data,error}=await supabaseClient
     .from("messages")
     .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone")
-    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${chatPartner.id}),and(sender_id.eq.${chatPartner.id},receiver_id.eq.${currentUser.id})`)
+    .or(messageFilter)
     .order("created_at",{ascending:true});
+
+  // If an older database is missing one of the optional messenger columns,
+  // still load the original messages instead of showing an empty chat.
+  if(error && /column .* does not exist/i.test(error.message||"")){
+    const fallback=await supabaseClient
+      .from("messages")
+      .select("id,sender_id,receiver_id,content,created_at")
+      .or(messageFilter)
+      .order("created_at",{ascending:true});
+    data=fallback.data;
+    error=fallback.error;
+  }
 
   if(error){
     box.innerHTML=`<div class="empty">خطا در دریافت پیام‌ها: ${esc(error.message)}</div>`;
@@ -1522,6 +1601,19 @@ async function loadMessages(){
 
   const visible=(data||[]).filter(m=>!hiddenMessageIds.has(String(m.id)));
   visible.forEach(m=>messageCache.set(String(m.id),m));
+
+  messageReactionCache.clear();
+  const visibleIds=visible.map(m=>m.id);
+  if(visibleIds.length){
+    const {data:reactions}=await supabaseClient
+      .from("message_reactions")
+      .select("message_id,user_id,reaction,created_at")
+      .in("message_id",visibleIds)
+      .order("created_at",{ascending:false});
+    (reactions||[]).forEach(r=>{
+      if(!messageReactionCache.has(String(r.message_id))) messageReactionCache.set(String(r.message_id),r);
+    });
+  }
 
   if(!visible.length){
     box.innerHTML=`<div class="empty">هنوز گفت‌وگویی شروع نشده ♡</div>`;
@@ -1552,15 +1644,23 @@ function renderMessage(m){
   const footer=deleted
     ? ""
     : `<div class="msg-footer"><span class="msg-time">${faTime(m.created_at)}</span>${m.edited_at?`<span class="msg-edited">ویرایش شد</span>`:""}</div>`;
-  const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):`${replyPreviewHtml(m)}${esc(m.content||"")}`}${footer}</span>`;
+  const reaction=messageReactionCache.get(String(m.id));
+  const reactionBadge=(!deleted && reaction?.reaction)
+    ? `<span class="msg-reaction-badge" title="واکنش">${esc(reaction.reaction)}</span>`
+    : "";
+  const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):`${replyPreviewHtml(m)}${esc(m.content||"")}`}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
 
-function refreshMessageElement(m){
+function refreshMessageElement(m,animateReaction=false){
   const old=document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`);
   if(!old)return;
   old.outerHTML=renderMessage(m);
   attachMessageGestures();
+  if(animateReaction){
+    const el=document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"] .msg`);
+    if(el){el.classList.add("reaction-pop");setTimeout(()=>el.classList.remove("reaction-pop"),360)}
+  }
 }
 
 function getChatChannelName(){
@@ -1722,19 +1822,21 @@ function openMessageActions(id){
   backdrop.classList.add("show");sheet.classList.add("show");
 }
 
-function reactToMessage(id,emoji){
-  const el=document.querySelector(`[data-msg-id="${CSS.escape(String(id))}"] .msg`);
-  if(!el)return;
-  el.classList.remove("reaction-pop");
-  void el.offsetWidth;
-  el.classList.add("reaction-pop");
-  let badge=el.querySelector(".msg-reaction-badge");
-  if(!badge){
-    badge=document.createElement("span");
-    badge.className="msg-reaction-badge";
-    el.appendChild(badge);
+async function reactToMessage(id,emoji){
+  const m=messageCache.get(String(id));
+  if(!m || m.deleted_for_everyone)return;
+  const {data,error}=await supabaseClient.from("message_reactions").upsert({
+    message_id:m.id,
+    user_id:currentUser.id,
+    reaction:emoji,
+    created_at:new Date().toISOString()
+  },{onConflict:"message_id,user_id"}).select("message_id,user_id,reaction,created_at").single();
+  if(error){
+    alert("واکنش ارسال نشد: "+error.message);
+    return;
   }
-  badge.textContent=emoji;
+  messageReactionCache.set(String(m.id),data);
+  refreshMessageElement(m,true);
   closeMessageSheet();
 }
 
@@ -1840,7 +1942,7 @@ async function deleteForEveryoneById(id){
   if(!m || m.sender_id!==currentUser.id)return;
   if(!confirm("این پیام برای هر دو طرف حذف شود؟"))return;
   const {data,error}=await supabaseClient.from("messages")
-    .update({content:null,deleted_for_everyone:true,edited_at:null})
+    .update({content:"",deleted_for_everyone:true,edited_at:null})
     .eq("id",m.id).eq("sender_id",currentUser.id)
     .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone").single();
   if(error){alert("حذف برای همه انجام نشد: "+error.message);return}
@@ -1891,6 +1993,29 @@ function subscribeMessages(){
       if(hiddenMessageIds.has(String(m.id)))return;
       refreshMessageElement(m);
     })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_reactions"},payload=>{
+      const r=payload.new;
+      const id=String(r.message_id);
+      const m=messageCache.get(id);
+      if(!m)return;
+      messageReactionCache.set(id,r);
+      refreshMessageElement(m,true);
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"message_reactions"},payload=>{
+      const r=payload.new;
+      const id=String(r.message_id);
+      const m=messageCache.get(id);
+      if(!m)return;
+      messageReactionCache.set(id,r);
+      refreshMessageElement(m,true);
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"message_reactions"},payload=>{
+      const r=payload.old;
+      const id=String(r.message_id);
+      const m=messageCache.get(id);
+      messageReactionCache.delete(id);
+      if(m)refreshMessageElement(m);
+    })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_user_deletions"},payload=>{
       const d=payload.new;
       if(String(d.user_id)!==String(currentUser.id))return;
@@ -1909,31 +2034,108 @@ async function closeChatAndHome(){
 }
 
 async function sendMessage(e){
-  e.preventDefault();
+  if(e) e.preventDefault();
   const input=document.getElementById("messageInput");
+  const button=document.getElementById("sendButton");
+  if(!input || !chatPartner || !currentUser)return;
+
   const content=input.value.trim();
   if(!content)return;
 
-  stopTyping();input.disabled=true;
-  let error=null;
+  stopTyping();
+  input.disabled=true;
+  if(button) button.disabled=true;
 
-  if(editingMessageId){
-    const ok=await editMessage(editingMessageId,content);
+  try{
+    if(editingMessageId){
+      const ok=await editMessage(editingMessageId,content);
+      if(!ok)return;
+      cancelMessageMode();
+      input.focus();
+      return;
+    }
+
+    // قبل از INSERT هر دو شناسه را از profiles تأیید می‌کنیم تا خطای FK به کاربر نمایش داده نشود.
+    const {data:senderProfile,senderError}=await (async()=>{
+      const r=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").eq("id",currentUser.id).maybeSingle();
+      return {data:r.data,senderError:r.error};
+    })();
+    if(senderError || !senderProfile?.id){
+      sessionStorage.removeItem("love_profile");
+      currentUser=null;
+      alert("اطلاعات حساب با دیتابیس هماهنگ نیست. لطفاً یک‌بار خارج شوید و دوباره وارد شوید.");
+      return;
+    }
+
+    const {data:receiverProfile, error:receiverError}=await supabaseClient
+      .from("profiles")
+      .select("id")
+      .eq("id",chatPartner.id)
+      .maybeSingle();
+    if(receiverError || !receiverProfile?.id){
+      alert("این مخاطب دیگر در فهرست کاربران وجود ندارد. فهرست گفتگوها را تازه‌سازی کنید.");
+      return;
+    }
+
+    const payload={
+      sender_id:senderProfile.id,
+      receiver_id:receiverProfile.id,
+      content:content
+    };
+
+    if(replyingToMessage?.id){
+      payload.reply_to_id=replyingToMessage.id;
+    }
+
+    // مهم: ذخیره پیام را از SELECT ستون‌های اختیاری جدا می‌کنیم.
+    // این باعث می‌شود نبودن edited_at/reply_to_id/... مانع ارسال پیام نشود.
+    let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at").single();
+
+    // اگر ستون reply_to_id در دیتابیس وجود نداشت، پیام را بدون reply ذخیره کن.
+    if(result.error && payload.reply_to_id && /reply_to_id|column .* does not exist/i.test(result.error.message||"")){
+      const basicPayload={
+        sender_id:currentUser.id,
+        receiver_id:chatPartner.id,
+        content:content
+      };
+      result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at").single();
+    }
+
+    if(result.error){
+      console.error("SEND MESSAGE ERROR:",result.error);
+      alert("پیام ارسال نشد:\n"+(result.error.message||"خطای ناشناخته"));
+      return;
+    }
+
+    const saved=result.data;
+    const box=document.getElementById("messages");
+
+    if(saved && box){
+      messageCache.set(String(saved.id),saved);
+      if(box.querySelector(".empty"))box.innerHTML="";
+      if(!document.querySelector(`[data-msg-id="${CSS.escape(String(saved.id))}"]`)){
+        box.insertAdjacentHTML("beforeend",renderMessage(saved));
+        attachMessageGestures();
+      }
+      box.scrollTop=box.scrollHeight;
+    }
+
+    input.value="";
+    replyingToMessage=null;
+    document.getElementById("replyBar")?.classList.remove("show");
+    const icon=document.getElementById("replyBarIcon");
+    if(icon)icon.textContent="↩";
+    input.focus();
+
+    // یک بار تاریخچه را از دیتابیس تازه می‌کنیم تا مطمئن شویم پیام واقعاً ذخیره شده.
+    setTimeout(()=>{ if(chatPartner) loadMessages().catch(()=>{}); },120);
+  }catch(err){
+    console.error("SEND MESSAGE UNEXPECTED ERROR:",err);
+    alert("خطا در ارسال پیام:\n"+(err?.message||"خطای ناشناخته"));
+  }finally{
     input.disabled=false;
-    if(!ok)return;
-    cancelMessageMode();input.focus();return;
+    if(button)button.disabled=false;
   }
-
-  const payload={sender_id:currentUser.id,receiver_id:chatPartner.id,content};
-  if(replyingToMessage?.id)payload.reply_to_id=replyingToMessage.id;
-  const result=await supabaseClient.from("messages").insert(payload);
-  error=result.error;
-  input.disabled=false;
-  if(error){alert("پیام ارسال نشد: "+error.message);return}
-  input.value="";replyingToMessage=null;
-  document.getElementById("replyBar")?.classList.remove("show");
-  const icon=document.getElementById("replyBarIcon");if(icon)icon.textContent="↩";
-  input.focus();
 }
 
 function navPulse(btn,action){
