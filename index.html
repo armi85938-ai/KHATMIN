@@ -44,7 +44,7 @@ h1{font-size:25px;text-align:center;margin:0 0 8px}
 .avatar{width:51px;height:51px;border-radius:18px;background:linear-gradient(135deg,#ffe0ec,#e9defc);display:grid;place-items:center;font-weight:bold;color:#806474;flex:none}
 .chat-main{min-width:0;flex:1}
 .chat-name{font-weight:bold;font-size:14px}
-.chat-last{font-size:11px;color:#a18d99;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-last{font-size:11px;color:#a18d99;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-last.typing-state{color:#fff;font-weight:600}
 .chat-time{font-size:10px;color:#b19ca7}
 .empty{padding:35px 15px;text-align:center;color:#a08d98;font-size:13px}
 
@@ -1042,6 +1042,35 @@ body{
 .delete-confirm-ok{background:#fff;color:#08090c;box-shadow:0 8px 22px rgba(255,255,255,.10)}
 @media(max-width:480px){.message-sheet{bottom:10px}.reply-bar{bottom:76px}}
 
+
+/* ===== Premium colorful 3D navigation icons ===== */
+.bottom-nav .nav-btn svg{
+  width:40px !important;
+  height:40px !important;
+  overflow:visible;
+  filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 7px rgba(255,255,255,.10));
+  transform:translateY(-1px);
+  transition:transform .28s cubic-bezier(.2,.85,.2,1),filter .28s ease;
+}
+.bottom-nav .nav-btn.active svg{
+  width:43px !important;
+  height:43px !important;
+  transform:translateY(-2px) scale(1.04);
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.52)) drop-shadow(0 0 10px rgba(255,255,255,.18));
+}
+.bottom-nav .nav-btn:hover svg{transform:translateY(-3px) scale(1.08);}
+.bottom-nav .nav-btn:active svg{transform:translateY(0) scale(.94);}
+@media(max-width:480px){
+  .bottom-nav .nav-btn svg{width:40px !important;height:40px !important}
+  .bottom-nav .nav-btn.active svg{width:37px !important;height:37px !important}
+}
+
+/* Individual nav icon color accents */
+.bottom-nav .nav-btn[data-nav="chat"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(98,170,255,.18));}
+.bottom-nav .nav-btn[data-nav="game"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(174,112,255,.20));}
+.bottom-nav .nav-btn[data-nav="book"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(92,211,181,.18));}
+.bottom-nav .nav-btn[data-nav="settings"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(255,190,92,.18));}
+
 </style>
 </head>
 <body>
@@ -1081,6 +1110,8 @@ let realtimeChannel=null;
 let typingTimer=null;
 let typingBroadcastTimer=null;
 let typingChannel=null;
+let homeInboxChannel=null;
+let homeTypingTimers=new Map();
 let remoteTypingTimer=null;
 let isLocalTyping=false;
 let messageCache=new Map();
@@ -1093,22 +1124,46 @@ let messagePressTarget=null;
 let messageGesture=null;
 
 const icons={
- chat:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-   <path d="M20 11.15c0 4.28-3.55 7.75-7.93 7.75-1.28 0-2.49-.29-3.56-.81L4.1 19.55l1.35-3.38A7.43 7.43 0 0 1 4.07 11.15c0-4.28 3.55-7.75 7.93-7.75S20 6.87 20 11.15Z" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
-   <path d="M12 15.45c-.2-.18-3.15-2.3-3.15-4.58 0-1.02.67-1.74 1.58-1.74.67 0 1.19.4 1.57 1 .38-.6.9-1 1.57-1 .91 0 1.58.72 1.58 1.74 0 2.28-2.95 4.4-3.15 4.58Z" fill="currentColor"/>
- </svg>`,
- game:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-   <path d="M8.2 7.2h7.6c2.55 0 4.35 2.05 4.05 4.55l-.42 3.45c-.25 2.05-2.58 2.8-3.83 1.22l-1.48-1.87H9.88L8.4 16.42c-1.25 1.58-3.58.83-3.83-1.22l-.42-3.45C3.85 9.25 5.65 7.2 8.2 7.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-   <path d="M7.4 11.1v3M5.9 12.6h3M16.1 12.1h.01M18 10.9h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
- </svg>`,
- book:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-   <path d="M5.2 5.5A2.5 2.5 0 0 1 7.7 3H19v15.2H7.7a2.5 2.5 0 0 0-2.5 2.5V5.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-   <path d="M5.2 20.7A2.5 2.5 0 0 1 7.7 18H19M8.5 7h6.8M8.5 10.3h5.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
- </svg>`,
- settings:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-   <path d="M12 15.1a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Z" stroke="currentColor" stroke-width="1.7"/>
-   <path d="m19.05 13.45 1.05.82-1.55 2.68-1.25-.5a7.8 7.8 0 0 1-1.45.84l-.2 1.34h-3.1l-.2-1.34a7.8 7.8 0 0 1-1.45-.84l-1.25.5-1.55-2.68 1.05-.82a7.6 7.6 0 0 1 0-1.68l-1.05-.82 1.55-2.68 1.25.5a7.8 7.8 0 0 1 1.45-.84l.2-1.34h3.1l.2 1.34a7.8 7.8 0 0 1 1.45.84l1.25-.5 1.55 2.68-1.05.82a7.6 7.6 0 0 1 0 1.68Z" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round"/>
- </svg>`,
+ chat:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+ <defs>
+  <linearGradient id="navChatReal" x1="7" y1="5" x2="26" y2="27" gradientUnits="userSpaceOnUse"><stop stop-color="#8fd3ff"/><stop offset=".34" stop-color="#4fa8ff"/><stop offset=".7" stop-color="#2776d8"/><stop offset="1" stop-color="#17458d"/></linearGradient>
+  <linearGradient id="navChatEdge" x1="9" y1="7" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#dff3ff"/><stop offset="1" stop-color="#2468c0"/></linearGradient>
+ </defs>
+ <path d="M25.9 13.75c0 5.55-4.6 10.05-10.3 10.05-1.65 0-3.2-.37-4.58-1.02l-5.2 1.62 1.7-4.45a9.75 9.75 0 0 1-1.98-5.88C5.54 8.52 10.14 4 15.78 4s10.12 4.2 10.12 9.75Z" fill="url(#navChatReal)" stroke="url(#navChatEdge)" stroke-width="1.35" stroke-linejoin="round"/>
+ <path d="M9.15 10.3c2.1-2.12 5.25-2.78 8.05-1.67 1.55.61 2.77 1.55 3.64 2.78" stroke="#fff" stroke-opacity=".82" stroke-width="1.55" stroke-linecap="round"/>
+ <path d="M10.2 15.4c1.05 1.35 2.52 2.18 4.25 2.42" stroke="#73767f" stroke-width="1.25" stroke-linecap="round"/>
+ <ellipse cx="12.1" cy="7.15" rx="3.7" ry="1.25" fill="#fff" opacity=".28" transform="rotate(-18 12.1 7.15)"/>
+</svg>`,
+ game:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+ <defs>
+  <linearGradient id="navGameReal" x1="7" y1="6" x2="26" y2="27" gradientUnits="userSpaceOnUse"><stop stop-color="#f0c8ff"/><stop offset=".34" stop-color="#b86cff"/><stop offset=".7" stop-color="#7437d8"/><stop offset="1" stop-color="#3c176f"/></linearGradient>
+  <linearGradient id="navGameTop" x1="10" y1="7" x2="22" y2="14" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity=".72"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ </defs>
+ <path d="M10.45 7.8h11.1c3.55 0 6.2 2.88 5.72 6.35l-.58 4.32c-.43 3.13-3.95 4.2-5.8 1.8l-1.7-2.2h-6.38l-1.7 2.2c-1.85 2.4-5.37 1.33-5.8-1.8l-.58-4.32C4.25 10.68 6.9 7.8 10.45 7.8Z" fill="url(#navGameReal)" stroke="#fff" stroke-opacity=".58" stroke-width="1.3" stroke-linejoin="round"/>
+ <path d="M9.1 11.9v4.15M7.03 13.98h4.15" stroke="#38205f" stroke-width="1.75" stroke-linecap="round"/>
+ <circle cx="21.4" cy="13.1" r="1.1" fill="#3b1a72"/><circle cx="24" cy="15.15" r="1.1" fill="#3b1a72"/>
+ <path d="M10.8 9.15h8.8" stroke="url(#navGameTop)" stroke-width="1.55" stroke-linecap="round"/>
+</svg>`,
+ book:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+ <defs>
+  <linearGradient id="navBookCover" x1="7" y1="3" x2="25" y2="29" gradientUnits="userSpaceOnUse"><stop stop-color="#b9fff0"/><stop offset=".3" stop-color="#4fe0c0"/><stop offset=".7" stop-color="#1fa98e"/><stop offset="1" stop-color="#0c5e55"/></linearGradient>
+  <linearGradient id="navBookPage" x1="10" y1="7" x2="23" y2="25" gradientUnits="userSpaceOnUse"><stop stop-color="#effffb"/><stop offset="1" stop-color="#a7eee0"/></linearGradient>
+ </defs>
+ <path d="M9 4.4A3.4 3.4 0 0 1 12.4 1H25v24.2H12.4A3.4 3.4 0 0 0 9 28.6V4.4Z" fill="url(#navBookCover)" stroke="#fff" stroke-opacity=".7" stroke-width="1.35" stroke-linejoin="round"/>
+ <path d="M9 28.6a3.4 3.4 0 0 1 3.4-3.4H25" stroke="#0b6b5d" stroke-width="1.25" stroke-linecap="round"/>
+ <path d="M12.8 8h8.9M12.8 11.8h7.1M12.8 15.6h8.9M12.8 19.4h6.1" stroke="#0b6b5d" stroke-width="1.15" stroke-linecap="round"/>
+ <path d="M12.2 4.3h10.5" stroke="#fff" stroke-opacity=".78" stroke-width="1.45" stroke-linecap="round"/>
+ <path d="M23.3 3.1v20.6" stroke="#fff" stroke-opacity=".2" stroke-width="1.1"/>
+</svg>`,
+ settings:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+ <defs>
+  <linearGradient id="navSetReal" x1="8" y1="5" x2="25" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe9a8"/><stop offset=".34" stop-color="#ffc85a"/><stop offset=".7" stop-color="#e78b20"/><stop offset="1" stop-color="#8b4a0c"/></linearGradient>
+ </defs>
+ <path d="M25.15 17.3l1.42 1.08-1.95 3.38-1.7-.67a9.55 9.55 0 0 1-1.92 1.12l-.25 1.8h-3.9l-.25-1.8a9.55 9.55 0 0 1-1.92-1.12l-1.7.67-1.95-3.38 1.42-1.08a9.2 9.2 0 0 1 0-2.6l-1.42-1.08 1.95-3.38 1.7.67a9.55 9.55 0 0 1 1.92-1.12l.25-1.8h3.9l.25 1.8a9.55 9.55 0 0 1 1.92 1.12l1.7-.67 1.95 3.38-1.42 1.08a9.2 9.2 0 0 1 0 2.6Z" fill="url(#navSetReal)" stroke="#fff" stroke-opacity=".56" stroke-width="1.3" stroke-linejoin="round"/>
+ <circle cx="18.8" cy="16" r="4.15" fill="#8a5314" stroke="#fff" stroke-opacity=".62" stroke-width="1.1"/>
+ <circle cx="18.8" cy="16" r="1.55" fill="#e9eaed"/>
+ <path d="M12.8 9.55c2.25-2.05 5.5-2.55 8.18-1.2" stroke="#fff" stroke-opacity=".68" stroke-width="1.35" stroke-linecap="round"/>
+</svg>`,
  back:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.55 4.55 0 0 1 7.75 4.2c1.7 0 3.35.88 4.25 2.25.9-1.37 2.55-2.25 4.25-2.25A4.55 4.55 0 0 1 20.8 8.8Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  send:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 4 16 8-16 8 3.2-8L4 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.2 12H20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
@@ -1228,10 +1283,69 @@ async function renderSettings(){
   document.getElementById('app').innerHTML = shell('', 'settings');
 }
 
+function setHomeTyping(partnerId,show){
+  const card=document.querySelector(`.chat-card[data-partner-id="${CSS.escape(String(partnerId))}"]`);
+  const last=card?.querySelector(".chat-last");
+  if(!last)return;
+  clearTimeout(homeTypingTimers.get(String(partnerId)));
+  if(show){
+    last.textContent="در حال نوشتن";
+    last.classList.add("typing-state");
+    homeTypingTimers.set(String(partnerId),setTimeout(()=>setHomeTyping(partnerId,false),2600));
+  }else{
+    last.textContent=last.dataset.lastText||"";
+    last.classList.remove("typing-state");
+    homeTypingTimers.delete(String(partnerId));
+  }
+}
+
+function bumpHomeUnread(partnerId){
+  const card=document.querySelector(`.chat-card[data-partner-id="${CSS.escape(String(partnerId))}"]`);
+  if(!card)return;
+  const meta=card.querySelector(".chat-meta");
+  let badge=meta?.querySelector(".unread-badge");
+  const current=Number(badge?.textContent?.replace(/\D/g,"")||0);
+  if(meta){
+    if(!badge){badge=document.createElement("div");badge.className="unread-badge";meta.appendChild(badge)}
+    badge.textContent=String(Math.min(99,current+1));
+  }
+}
+
+function updateHomeLastMessage(m){
+  const partnerId=String(m.sender_id===currentUser.id?m.receiver_id:m.sender_id);
+  const card=document.querySelector(`.chat-card[data-partner-id="${CSS.escape(partnerId)}"]`);
+  if(!card)return;
+  const last=card.querySelector(".chat-last");
+  const time=card.querySelector(".chat-time");
+  if(last){last.dataset.lastText=m.content||"";last.textContent=m.content||"";last.classList.remove("typing-state")}
+  if(time)time.textContent=faTime(m.created_at);
+  if(m.sender_id!==currentUser.id)bumpHomeUnread(partnerId);
+}
+
+async function subscribeHomeInbox(){
+  if(!currentUser)return;
+  if(homeInboxChannel){try{await supabaseClient.removeChannel(homeInboxChannel)}catch(e){}homeInboxChannel=null}
+  const name="love-home-inbox-"+currentUser.id;
+  homeInboxChannel=supabaseClient
+    .channel(name,{config:{broadcast:{self:false}}})
+    .on("broadcast",{event:"typing"},payload=>{
+      const data=payload?.payload||{};
+      if(!data.sender_id || String(data.sender_id)===String(currentUser.id))return;
+      setHomeTyping(String(data.sender_id),!!data.is_typing);
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
+      const m=payload.new;
+      if(String(m.receiver_id)!==String(currentUser.id))return;
+      updateHomeLastMessage(m);
+    })
+    .subscribe(status=>console.log("Home inbox realtime:",status));
+}
+
 async function renderHome(){
   const app=document.getElementById("app");
   app.innerHTML=shell(`<div id="chatList" class="chat-list"><div class="empty">در حال آماده‌سازی...</div></div>`,"chat");
   await renderChats();
+  await subscribeHomeInbox();
 }
 
 function getReadKey(partnerId){return `khatmin-chat-read-${currentUser?.id||""}-${partnerId}`;}
@@ -1279,11 +1393,11 @@ async function renderChats(){
     const m=last?.[0];
     const unread=Number(unreadCount||0);
     cards.push(`
-      <button class="chat-card" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+      <button class="chat-card" data-partner-id="${esc(p.id)}" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
         <div class="avatar">${esc((p.display_name||p.username).slice(0,1))}</div>
         <div class="chat-main">
           <div class="chat-name">${esc(p.display_name)}</div>
-          <div class="chat-last">${m?esc(m.content):"هنوز پیامی ندارید ♡"}</div>
+          <div class="chat-last" data-last-text="${esc(m?m.content:"هنوز پیامی ندارید ♡")}">${m?esc(m.content):"هنوز پیامی ندارید ♡"}</div>
         </div>
         <div class="chat-meta">
           <div class="chat-time">${m?faTime(m.created_at):""}</div>
@@ -1480,8 +1594,10 @@ function subscribeTyping(){
 }
 
 function broadcastTyping(isTyping){
-  if(!typingChannel || !currentUser || !chatPartner)return;
-  typingChannel.send({type:"broadcast",event:"typing",payload:{sender_id:currentUser.id,is_typing:!!isTyping}}).catch(()=>{});
+  if(!currentUser || !chatPartner)return;
+  const payload={sender_id:currentUser.id,is_typing:!!isTyping};
+  if(typingChannel)typingChannel.send({type:"broadcast",event:"typing",payload}).catch(()=>{});
+  if(homeInboxChannel)homeInboxChannel.send({type:"broadcast",event:"typing",payload}).catch(()=>{});
 }
 
 function handleTypingInput(){
@@ -1862,6 +1978,12 @@ async function logout(){
     await supabaseClient.removeChannel(realtimeChannel);
     realtimeChannel=null;
   }
+  if(homeInboxChannel){
+    await supabaseClient.removeChannel(homeInboxChannel);
+    homeInboxChannel=null;
+  }
+  homeTypingTimers.forEach(t=>clearTimeout(t));
+  homeTypingTimers.clear();
   currentUser=null;
   chatPartner=null;
   messageCache.clear();
