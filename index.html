@@ -590,15 +590,16 @@ body{
 .chat-user-meta{
   position:relative;
   min-width:0;
-  width:auto;
+  width:100%;
+  max-width:220px;
   flex:1 1 auto;
   height:48px;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
   justify-content:center;
-  gap:0;
-  padding:0 2px;
+  padding:0;
+  overflow:visible;
 }
 .chat-title{
   color:#fff;
@@ -617,9 +618,9 @@ body{
 }
 .chat-typing{
   position:absolute;
-  left:2px;
-  right:auto;
-  top:28px;
+  right:0;
+  left:auto;
+  top:27px;
   bottom:auto;
   transform:translateY(5px);
   min-height:15px;
@@ -635,6 +636,7 @@ body{
   opacity:0;
   transition:opacity .22s ease,transform .24s cubic-bezier(.22,.8,.22,1);
   pointer-events:none;
+  z-index:3;
 }
 .chat-user-meta.typing-active .chat-title{transform:translateY(-5px)}
 .chat-typing.show{opacity:1;transform:translateY(0)}
@@ -692,9 +694,49 @@ body{
 .msg-time{color:#85868e}
 .composer{
   direction:ltr;
-  background:rgba(16,17,21,.93);
-  border:1px solid #292b31;
-  box-shadow:0 18px 50px rgba(0,0,0,.5);
+  position:fixed;
+  z-index:30;
+  overflow:hidden;
+  isolation:isolate;
+  background:linear-gradient(145deg,rgba(255,255,255,.115),rgba(255,255,255,.035) 48%,rgba(255,255,255,.075));
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:
+    0 18px 48px rgba(0,0,0,.34),
+    0 4px 14px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(24px) saturate(170%);
+  -webkit-backdrop-filter:blur(24px) saturate(170%);
+}
+.composer::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-80% -15%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 30%,rgba(255,255,255,.18),transparent 25%),
+    radial-gradient(circle at 72% 75%,rgba(210,190,255,.09),transparent 30%),
+    linear-gradient(115deg,transparent 28%,rgba(255,255,255,.065) 48%,transparent 68%);
+  filter:blur(12px);
+  transform:rotate(-7deg);
+  animation:composerLiquid 7s ease-in-out infinite alternate;
+}
+.composer::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  left:10%;
+  right:10%;
+  top:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+  opacity:.7;
+  pointer-events:none;
+}
+@keyframes composerLiquid{
+  0%{transform:translate3d(-2%,0,0) rotate(-7deg) scale(1)}
+  100%{transform:translate3d(3%,2%,0) rotate(-3deg) scale(1.08)}
 }
 .composer input{color:#fff;text-align:right;direction:rtl}
 .composer input::placeholder{color:#686a73}
@@ -972,6 +1014,7 @@ let chatPartner=null;
 let realtimeChannel=null;
 let typingTimer=null;
 let typingBroadcastTimer=null;
+let typingChannel=null;
 let remoteTypingTimer=null;
 let isLocalTyping=false;
 let messageCache=new Map();
@@ -1206,6 +1249,11 @@ async function openChat(partner){
     try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}
     realtimeChannel=null;
   }
+  if(typingChannel){
+    try{await supabaseClient.removeChannel(typingChannel)}catch(e){}
+    typingChannel=null;
+  }
+  clearTypingState();
 
   document.getElementById("app").innerHTML=`
     <div class="chat-view">
@@ -1247,6 +1295,7 @@ async function openChat(partner){
   messageInput.addEventListener("keydown",e=>{ if(e.key==="Escape") stopTyping(); });
   await loadMessages();
   subscribeMessages();
+  subscribeTyping();
 }
 
 async function loadMessages(){
@@ -1328,9 +1377,26 @@ function setTypingIndicator(show){
   meta?.classList.toggle("typing-active",!!show);
 }
 
+function subscribeTyping(){
+  if(!currentUser || !chatPartner)return;
+  const ids=[String(currentUser.id),String(chatPartner.id)].sort();
+  const name="love-typing-"+ids[0]+"-"+ids[1];
+  typingChannel=supabaseClient
+    .channel(name,{config:{broadcast:{self:false}}})
+    .on("broadcast",{event:"typing"},payload=>{
+      const data=payload?.payload||{};
+      if(!chatPartner || String(data.sender_id)!==String(chatPartner.id))return;
+      const typing=!!data.is_typing;
+      setTypingIndicator(typing);
+      clearTimeout(remoteTypingTimer);
+      if(typing) remoteTypingTimer=setTimeout(()=>setTypingIndicator(false),2200);
+    })
+    .subscribe(status=>console.log("Typing realtime:",status));
+}
+
 function broadcastTyping(isTyping){
-  if(!realtimeChannel || !currentUser || !chatPartner)return;
-  realtimeChannel.send({type:"broadcast",event:"typing",payload:{sender_id:currentUser.id,is_typing:!!isTyping}}).catch(()=>{});
+  if(!typingChannel || !currentUser || !chatPartner)return;
+  typingChannel.send({type:"broadcast",event:"typing",payload:{sender_id:currentUser.id,is_typing:!!isTyping}}).catch(()=>{});
 }
 
 function handleTypingInput(){
@@ -1582,18 +1648,13 @@ function subscribeMessages(){
       hiddenMessageIds.add(id);messageCache.delete(id);
       document.querySelector(`[data-msg-id="${CSS.escape(id)}"]`)?.remove();ensureMessageEmptyState();
     })
-    .on("broadcast",{event:"typing"},payload=>{
-      const data=payload?.payload||{};
-      if(!chatPartner||String(data.sender_id)!==String(chatPartner.id))return;
-      const typing=!!data.is_typing;setTypingIndicator(typing);clearTimeout(remoteTypingTimer);
-      if(typing)remoteTypingTimer=setTimeout(()=>setTypingIndicator(false),1800);
-    })
     .subscribe(status=>console.log("Realtime:",status));
 }
 
 async function closeChatAndHome(){
   stopTyping();clearTypingState();clearMessagePress();closeMessageSheet();cancelMessageMode();
   if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
+  if(typingChannel){try{await supabaseClient.removeChannel(typingChannel)}catch(e){}typingChannel=null}
   chatPartner=null;messageCache.clear();hiddenMessageIds.clear();await renderHome();
 }
 
