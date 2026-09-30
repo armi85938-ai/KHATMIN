@@ -1071,6 +1071,152 @@ body{
 .bottom-nav .nav-btn[data-nav="book"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(92,211,181,.18));}
 .bottom-nav .nav-btn[data-nav="settings"] svg{filter:drop-shadow(0 4px 4px rgba(0,0,0,.45)) drop-shadow(0 0 8px rgba(255,190,92,.18));}
 
+
+
+.settings-shell-top,.settings-shell-divider{display:none!important}
+.settings-shell-top + .settings-shell-divider + .content{padding-top:18px}
+/* ===== BEAUTIFUL SETTINGS PAGE ===== */
+.settings-page{
+  width:min(760px,100%);
+  margin:0 auto;
+  padding:8px 16px 118px;
+  color:#fff;
+}
+.settings-page-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:4px 2px 18px;
+}
+.settings-kicker{font-size:9px;letter-spacing:3px;color:#8d8f98;font-weight:800;margin-bottom:4px}
+.settings-page-head h1{margin:0;font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-.5px}
+.settings-page-head p{margin:7px 0 0;color:#858791;font-size:12px}
+.settings-head-orb{
+  width:52px;height:52px;border-radius:18px;display:grid;place-items:center;
+  color:#f4c96b;border:1px solid rgba(255,255,255,.13);
+  background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  box-shadow:0 14px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.13);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+.settings-head-orb svg{width:25px;height:25px}
+.settings-profile-card,.settings-menu-card{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  background:linear-gradient(145deg,rgba(255,255,255,.095),rgba(255,255,255,.035) 55%,rgba(255,255,255,.06));
+  box-shadow:0 20px 55px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.11),inset 0 -1px 0 rgba(255,255,255,.025);
+  backdrop-filter:blur(26px) saturate(150%);-webkit-backdrop-filter:blur(26px) saturate(150%);
+}
+.settings-profile-card{border-radius:30px;padding:26px 22px 22px;margin-bottom:14px}
+.settings-profile-glow{position:absolute;width:240px;height:180px;right:-100px;top:-90px;background:radial-gradient(circle,rgba(196,180,255,.14),transparent 68%);filter:blur(8px);pointer-events:none}
+.settings-avatar-picker{
+  position:relative;display:grid;place-items:center;width:132px;height:132px;margin:0 auto 20px;
+  border-radius:50%;cursor:pointer;border:1px solid rgba(255,255,255,.22);
+  background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.14),rgba(255,255,255,.045) 62%,rgba(255,255,255,.02));
+  box-shadow:0 18px 45px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.12),0 0 0 7px rgba(255,255,255,.025);
+  overflow:visible;
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.settings-avatar-picker:hover{transform:translateY(-2px);box-shadow:0 22px 48px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.15),0 0 0 8px rgba(255,255,255,.035)}
+.settings-avatar-image{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.settings-avatar-letter{font-size:48px;font-weight:700;color:#f4f4f6;text-shadow:0 4px 18px rgba(0,0,0,.45)}
+.settings-avatar-camera{position:absolute;right:2px;bottom:3px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#08090c;background:#fff;border:3px solid #111217;box-shadow:0 7px 18px rgba(0,0,0,.35)}
+.settings-avatar-camera svg{width:16px;height:16px}
+.settings-profile-fields{display:grid;gap:12px;max-width:560px;margin:0 auto}
+.settings-field{display:grid;gap:7px}
+.settings-field>span{font-size:10px;color:#999ba5;padding-right:4px}
+.settings-field input,.settings-field textarea{
+  width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.11);outline:none;color:#fff;
+  background:rgba(4,5,8,.48);border-radius:15px;padding:12px 14px;font-family:inherit;font-size:13px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:border-color .2s,box-shadow .2s;
+}
+.settings-field textarea{resize:vertical;min-height:70px;line-height:1.7}
+.settings-field input:focus,.settings-field textarea:focus{border-color:rgba(255,255,255,.32);box-shadow:0 0 0 3px rgba(255,255,255,.045)}
+.settings-field input::placeholder,.settings-field textarea::placeholder{color:#5f616a}
+.settings-save{border:0;border-radius:15px;padding:12px 16px;background:#fff;color:#090a0d;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.25);transition:transform .18s,opacity .18s}
+.settings-save:active{transform:scale(.98)}
+.settings-menu-card{border-radius:27px;padding:7px}
+.settings-menu-item{width:100%;border:0;background:transparent;color:#fff;display:grid;grid-template-columns:46px minmax(0,1fr) 24px;align-items:center;gap:12px;text-align:right;padding:14px 10px;border-radius:20px;cursor:pointer;font-family:inherit;transition:background .2s,transform .2s}
+.settings-menu-item:hover{background:rgba(255,255,255,.055)}
+.settings-menu-item:active{transform:scale(.99)}
+.settings-menu-item>span:nth-child(2){min-width:0}
+.settings-menu-item b{display:block;font-size:13px;font-weight:700}
+.settings-menu-item small{display:block;margin-top:4px;color:#747680;font-size:9px}
+.settings-menu-icon{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.045);color:#fff}
+.settings-menu-icon svg{width:21px;height:21px}
+.settings-menu-icon.privacy{color:#b9a8ff}.settings-menu-icon.appearance{color:#6fd9c3}.settings-menu-icon.logout{color:#ff8f9d}
+.settings-menu-arrow{font-size:26px;color:#686a73;text-align:center;transform:translateY(-1px)}
+.settings-menu-separator{height:1px;background:rgba(255,255,255,.07);margin:2px 12px}
+.settings-menu-item.logout-item b{color:#ff9aa6}
+@media(max-width:600px){
+  .settings-page{padding-left:12px;padding-right:12px}
+  .settings-profile-card{padding:22px 16px 18px;border-radius:26px}
+  .settings-avatar-picker{width:124px;height:124px}
+  .settings-page-head h1{font-size:25px}
+}
+
+</style>
+
+<style>
+/* ===== Final Liquid Glass navigation + settings polish ===== */
+.bottom-nav{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+.bottom-nav::before{
+  inset:0 !important;
+  border:1px solid rgba(255,255,255,.17) !important;
+  border-radius:30px !important;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(255,255,255,.16),transparent 34%),
+    radial-gradient(circle at 86% 100%,rgba(186,165,255,.10),transparent 40%),
+    linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035) 48%,rgba(255,255,255,.075)) !important;
+  backdrop-filter:blur(30px) saturate(175%) contrast(105%) !important;
+  -webkit-backdrop-filter:blur(30px) saturate(175%) contrast(105%) !important;
+  box-shadow:
+    0 22px 55px rgba(0,0,0,.48),
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    0 0 0 1px rgba(255,255,255,.025) !important;
+}
+.bottom-nav::after{
+  background:
+    radial-gradient(circle at 30% 20%,rgba(255,255,255,.18),transparent 38%),
+    linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.035)) !important;
+  border:1px solid rgba(255,255,255,.18) !important;
+  backdrop-filter:blur(30px) saturate(175%) !important;
+  -webkit-backdrop-filter:blur(30px) saturate(175%) !important;
+  box-shadow:0 18px 38px rgba(0,0,0,.38),inset 0 1px 1px rgba(255,255,255,.38),inset 0 -8px 18px rgba(0,0,0,.12) !important;
+}
+.bottom-nav .nav-btn::before{
+  background:rgba(255,255,255,.075) !important;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.12),0 7px 18px rgba(0,0,0,.12) !important;
+}
+.bottom-nav .nav-btn.active::before{
+  background:rgba(255,255,255,.13) !important;
+  border-color:rgba(255,255,255,.13);
+}
+.settings-page-head{margin-top:0 !important}
+.settings-kicker{display:none !important}
+.settings-head-orb{
+  background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.035)) !important;
+  border:1px solid rgba(255,255,255,.14) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 12px 30px rgba(0,0,0,.22) !important;
+  backdrop-filter:blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(160%) !important;
+}
+.settings-menu-icon{
+  background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.035)) !important;
+  border-color:rgba(255,255,255,.13) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 8px 18px rgba(0,0,0,.16) !important;
+}
+.settings-menu-icon svg{width:24px !important;height:24px !important;stroke-width:1.8}
+.settings-menu-icon.privacy{color:#b9a8ff !important}
+.settings-menu-icon.appearance{color:#65e2c6 !important}
+.settings-menu-icon.logout{color:#ff8f9d !important}
 </style>
 </head>
 <body>
@@ -1165,6 +1311,9 @@ const icons={
  <circle cx="18.8" cy="16" r="1.55" fill="#e9eaed"/>
  <path d="M12.8 9.55c2.25-2.05 5.5-2.55 8.18-1.2" stroke="#fff" stroke-opacity=".68" stroke-width="1.35" stroke-linecap="round"/>
 </svg>`,
+ lock:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 14V10.8C10 7.8 12.35 5.5 16 5.5s6 2.3 6 5.3V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="7" y="13" width="18" height="13.5" rx="4.2" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="1.8"/><circle cx="16" cy="19.5" r="1.65" fill="currentColor"/><path d="M16 21.2v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+ palette:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 5.5c-6.35 0-11.5 4.7-11.5 10.5S9.65 26.5 16 26.5h2.2c1.5 0 2.55-1.55 1.8-2.85-.62-1.08.16-2.4 1.4-2.4h1.7c2.7 0 4.9-2.1 4.9-4.75C28 10.35 22.65 5.5 16 5.5Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="1.8"/><circle cx="10.2" cy="14" r="1.45" fill="currentColor"/><circle cx="14" cy="10.6" r="1.45" fill="currentColor"/><circle cx="19" cy="10.8" r="1.45" fill="currentColor"/><circle cx="22.7" cy="14.4" r="1.45" fill="currentColor"/></svg>`,
+ plus:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
  back:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.55 4.55 0 0 1 7.75 4.2c1.7 0 3.35.88 4.25 2.25.9-1.37 2.55-2.25 4.25-2.25A4.55 4.55 0 0 1 20.8 8.8Z" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
  send:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 4 16 8-16 8 3.2-8L4 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.2 12H20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
@@ -1240,7 +1389,7 @@ document.getElementById("loginForm").addEventListener("submit",async e=>{
       if(loginUsername){
         const {data:canonicalProfile}=await supabaseClient
           .from("profiles")
-          .select("id,username,display_name,avatar_url")
+          .select("id,username,display_name,avatar_url,bio")
           .eq("username",loginUsername)
           .maybeSingle();
         if(canonicalProfile?.id){ profile={...profile,...canonicalProfile}; }
@@ -1270,7 +1419,7 @@ async function loadApp(){
     if(currentUser?.profile?.username){
       const {data,error}=await supabaseClient
         .from("profiles")
-        .select("id,username,display_name,avatar_url")
+        .select("id,username,display_name,avatar_url,bio")
         .eq("username",String(currentUser.profile.username).trim())
         .maybeSingle();
       if(!error && data) canonical=data;
@@ -1278,7 +1427,7 @@ async function loadApp(){
     if(!canonical && currentUser?.id){
       const {data,error}=await supabaseClient
         .from("profiles")
-        .select("id,username,display_name,avatar_url")
+        .select("id,username,display_name,avatar_url,bio")
         .eq("id",currentUser.id)
         .maybeSingle();
       if(!error && data) canonical=data;
@@ -1312,7 +1461,7 @@ function shell(content,active="chat"){
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
       </div>
-      <button class="icon-btn" onclick="logout()" title="خروج">${icons.logout}</button>
+
     </div>
     <div class="top-divider" aria-hidden="true"></div>
     <div class="content">${content}</div>
@@ -1335,7 +1484,124 @@ function toggleBrandTitle(){
 }
 
 async function renderSettings(){
-  document.getElementById('app').innerHTML = shell('', 'settings');
+  const p=currentUser?.profile||{};
+  const avatar=p.avatar_url||"";
+  const avatarHtml=avatar
+    ? `<img src="${esc(avatar)}" alt="عکس پروفایل" class="settings-avatar-image">`
+    : `<span class="settings-avatar-letter">${esc((p.display_name||p.username||"A").slice(0,1))}</span>`;
+
+  const content=`
+    <section class="settings-page" dir="rtl">
+      <div class="settings-page-head">
+        <div>
+          <h1>تنظیمات</h1>
+          <p>حساب کاربری، حریم خصوصی و ظاهر برنامه</p>
+        </div>
+        <div class="settings-head-orb">${icons.settings}</div>
+      </div>
+
+      <section class="settings-profile-card">
+        <div class="settings-profile-glow"></div>
+        <label class="settings-avatar-picker" for="settingsAvatarInput" title="انتخاب عکس از گالری">
+          ${avatarHtml}
+          <span class="settings-avatar-camera">${icons.plus}</span>
+        </label>
+        <input id="settingsAvatarInput" type="file" accept="image/*" hidden onchange="handleSettingsAvatar(this)">
+
+        <div class="settings-profile-fields">
+          <label class="settings-field">
+            <span>نام</span>
+            <input id="settingsDisplayName" maxlength="60" value="${esc(p.display_name||p.username||"")}" placeholder="نام شما">
+          </label>
+          <label class="settings-field">
+            <span>بیوگرافی</span>
+            <textarea id="settingsBio" maxlength="160" rows="2" placeholder="چند کلمه درباره خودت...">${esc(p.bio||"")}</textarea>
+          </label>
+          <button class="settings-save" type="button" onclick="saveSettingsProfile()">ذخیره تغییرات</button>
+        </div>
+      </section>
+
+      <section class="settings-menu-card">
+        <button class="settings-menu-item" type="button" onclick="soon()">
+          <span class="settings-menu-icon privacy">${icons.lock}</span>
+          <span><b>حریم خصوصی و امنیت</b><small>امنیت حساب و کنترل دسترسی</small></span>
+          <span class="settings-menu-arrow">‹</span>
+        </button>
+        <button class="settings-menu-item" type="button" onclick="soon()">
+          <span class="settings-menu-icon appearance">${icons.palette}</span>
+          <span><b>فضای ظاهری</b><small>ظاهر و حال‌وهوای برنامه</small></span>
+          <span class="settings-menu-arrow">‹</span>
+        </button>
+        <div class="settings-menu-separator"></div>
+        <button class="settings-menu-item logout-item" type="button" onclick="logout()">
+          <span class="settings-menu-icon logout">${icons.logout}</span>
+          <span><b>خروج از حساب کاربری</b><small>خروج امن از این دستگاه</small></span>
+          <span class="settings-menu-arrow">‹</span>
+        </button>
+      </section>
+    </section>`;
+
+  document.getElementById('app').innerHTML=shell(content,'settings');
+}
+
+let pendingSettingsAvatar="";
+
+function handleSettingsAvatar(input){
+  const file=input?.files?.[0];
+  if(!file)return;
+  if(!file.type.startsWith("image/")){
+    alert("لطفاً یک عکس انتخاب کنید.");
+    input.value="";
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=420;
+      const scale=Math.min(1,size/Math.max(img.width,img.height));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(img.width*scale));
+      canvas.height=Math.max(1,Math.round(img.height*scale));
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      pendingSettingsAvatar=canvas.toDataURL("image/jpeg",.82);
+      const picker=document.querySelector(".settings-avatar-picker");
+      if(picker)picker.innerHTML=`<img src="${pendingSettingsAvatar}" alt="عکس پروفایل" class="settings-avatar-image"><span class="settings-avatar-camera">${icons.plus}</span>`;
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveSettingsProfile(){
+  if(!currentUser?.id)return;
+  const name=document.getElementById("settingsDisplayName")?.value.trim();
+  const bio=document.getElementById("settingsBio")?.value.trim()||"";
+  if(!name){alert("لطفاً نام را وارد کنید.");return;}
+
+  const payload={display_name:name,bio};
+  if(pendingSettingsAvatar)payload.avatar_url=pendingSettingsAvatar;
+
+  const {data,error}=await supabaseClient
+    .from("profiles")
+    .update(payload)
+    .eq("id",currentUser.id)
+    .select("id,username,display_name,avatar_url,bio")
+    .maybeSingle();
+
+  if(error){
+    console.error("SAVE PROFILE ERROR:",error);
+    alert("ذخیره نشد:\n"+(error.message||"خطای ناشناخته"));
+    return;
+  }
+
+  const updated=data||{...currentUser.profile,...payload,id:currentUser.id};
+  currentUser={profile:{...currentUser.profile,...updated},id:currentUser.id};
+  sessionStorage.setItem("love_profile",JSON.stringify(currentUser.profile));
+  pendingSettingsAvatar="";
+  alert("تغییرات با موفقیت ذخیره شد ♡");
+  renderSettings();
 }
 
 function setHomeTyping(partnerId,show){
@@ -1414,7 +1680,7 @@ async function renderChats(){
   const list=document.getElementById("chatList");
   const {data:profiles,error:pErr}=await supabaseClient
     .from("profiles")
-    .select("id,username,display_name,avatar_url")
+    .select("id,username,display_name,avatar_url,bio")
     .neq("id",currentUser.id)
     .order("display_name");
 
@@ -2057,7 +2323,7 @@ async function sendMessage(e){
 
     // قبل از INSERT هر دو شناسه را از profiles تأیید می‌کنیم تا خطای FK به کاربر نمایش داده نشود.
     const {data:senderProfile,senderError}=await (async()=>{
-      const r=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").eq("id",currentUser.id).maybeSingle();
+      const r=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url,bio").eq("id",currentUser.id).maybeSingle();
       return {data:r.data,senderError:r.error};
     })();
     if(senderError || !senderProfile?.id){
