@@ -1412,6 +1412,52 @@ let messagePressTimer=null;
 let messagePressTarget=null;
 let messageGesture=null;
 
+/* ===== Fast local cache =====
+   The browser keeps previously loaded contacts/messages in IndexedDB.
+   Supabase remains the source of truth; after the first sync only newer
+   messages are requested in the background. */
+const LOCAL_CACHE_DB="khatmin-local-cache-v1";
+let localCacheDBPromise=null;
+function openLocalCache(){
+  if(localCacheDBPromise)return localCacheDBPromise;
+  localCacheDBPromise=new Promise((resolve,reject)=>{
+    try{
+      const req=indexedDB.open(LOCAL_CACHE_DB,1);
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains("profiles"))db.createObjectStore("profiles",{keyPath:"key"});
+        if(!db.objectStoreNames.contains("messages"))db.createObjectStore("messages",{keyPath:"key"});
+      };
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    }catch(e){reject(e)}
+  });
+  return localCacheDBPromise;
+}
+async function localCacheGet(store,key){
+  try{const db=await openLocalCache();return await new Promise((resolve,reject)=>{const r=db.transaction(store,"readonly").objectStore(store).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch(e){return null}
+}
+async function localCacheGetAll(store,prefix){
+  try{const db=await openLocalCache();return await new Promise((resolve,reject)=>{const out=[];const r=db.transaction(store,"readonly").objectStore(store).openCursor();r.onsuccess=()=>{const c=r.result;if(!c)return resolve(out);if(!prefix||String(c.key).startsWith(prefix))out.push(c.value);c.continue()};r.onerror=()=>reject(r.error)})}catch(e){return []}
+}
+async function localCachePutAll(store,rows){
+  if(!rows?.length)return;
+  try{const db=await openLocalCache();await new Promise((resolve,reject)=>{const tx=db.transaction(store,"readwrite");const os=tx.objectStore(store);rows.forEach(x=>os.put(x));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn("LOCAL CACHE WRITE:",e)}
+}
+async function localCacheDelete(store,key){try{const db=await openLocalCache();await new Promise((resolve,reject)=>{const tx=db.transaction(store,"readwrite");tx.objectStore(store).delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}}
+function profileCacheKey(userId,partnerId){return `${String(userId)}:${String(partnerId)}`}
+function messageCacheKey(userId,messageId){return `${String(userId)}:${String(messageId)}`}
+async function getCachedProfiles(){return (await localCacheGetAll("profiles",`${currentUser.id}:`)).map(x=>x.profile).filter(Boolean)}
+async function cacheProfiles(profiles){await localCachePutAll("profiles",(profiles||[]).map(profile=>({key:profileCacheKey(currentUser.id,profile.id),profile}))) }
+async function getCachedMessages(partnerId){return (await localCacheGetAll("messages",`${currentUser.id}:${String(partnerId)}:`)).map(x=>x.message).filter(Boolean).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))}
+async function cacheMessages(messages){await localCachePutAll("messages",(messages||[]).filter(Boolean).map(message=>({key:messageCacheKey(currentUser.id,message.id).replace(`${currentUser.id}:`,`${currentUser.id}:${String(message.sender_id===currentUser.id?message.receiver_id:message.sender_id)}:`),message}))) }
+async function getCachedAllMessages(){return (await localCacheGetAll("messages",`${currentUser.id}:`)).map(x=>x.message).filter(Boolean)}
+function mergeMessagesIntoCache(list,extra){
+  const map=new Map((list||[]).map(m=>[String(m.id),m]));
+  (extra||[]).forEach(m=>map.set(String(m.id),m));
+  return Array.from(map.values()).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+}
+
 const icons={
  chat:`<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
  <defs>
@@ -1813,79 +1859,82 @@ function markChatRead(partnerId,latestCreatedAt){
 
 async function renderChats(){
   const list=document.getElementById("chatList");
-  const {data:profiles,error:pErr}=await supabaseClient
-    .from("profiles")
-    .select("id,username,display_name,avatar_url,bio")
-    .neq("id",currentUser.id)
-    .order("display_name");
+  if(!list||!currentUser)return;
 
-  if(pErr){
-    list.innerHTML=`<div class="empty">خطا در دریافت مخاطب‌ها: ${esc(pErr.message)}</div>`;
-    return;
-  }
-
-  if(!profiles?.length){
-    list.innerHTML=`<div class="empty">مخاطب دیگری پیدا نشد.</div>`;
-    return;
-  }
-
-  const cards=[];
+  // Paint the cached contacts immediately. The database sync happens in the background.
+  let profiles=await getCachedProfiles();
   const myId=String(currentUser?.id||"");
   const myUsername=String(currentUser?.profile?.username||"").trim().toLowerCase();
-  const seenPartners=new Set();
-  for(const p of (profiles||[])){
-    // Some older login RPC responses can carry a stale/mismatched id.
-    // Never show the currently logged-in profile in the contact list.
+  profiles=(profiles||[]).filter(p=>{
     const pid=String(p?.id||"");
     const pun=String(p?.username||"").trim().toLowerCase();
-    if((myId && pid===myId) || (myUsername && pun===myUsername)) continue;
-    if(!pid || seenPartners.has(pid)) continue;
-    seenPartners.add(pid);
+    return pid && pid!==myId && (!myUsername || pun!==myUsername);
+  }).sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username),'fa'));
 
-    const {data:last}=await supabaseClient
-      .from("messages")
-      .select("id,content,created_at")
-      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${p.id}),and(sender_id.eq.${p.id},receiver_id.eq.${currentUser.id})`)
-      .order("created_at",{ascending:false})
-      .limit(1);
+  const renderCards=(allMessages)=>{
+    const cards=[];
+    for(const p of profiles){
+      const pair=(allMessages||[]).filter(m=>String(m.sender_id)===String(p.id)||String(m.receiver_id)===String(p.id));
+      const m=pair[pair.length-1];
+      const readAt=getLastReadAt(p.id);
+      const unread=pair.filter(x=>String(x.sender_id)===String(p.id)&&String(x.receiver_id)===String(currentUser.id)&&new Date(x.created_at)>new Date(readAt)).length;
+      cards.push(`
+        <button class="chat-card" data-partner-id="${esc(p.id)}" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+          <div class="avatar">${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="" class="chat-avatar-image">` : esc((p.display_name||p.username||"?").slice(0,1))}</div>
+          <div class="chat-main">
+            <div class="chat-name">${esc(p.display_name)}</div>
+            <div class="chat-last" data-last-text="${esc(m?m.content:"هنوز پیامی ندارید ♡")}">${m?esc(m.content):"هنوز پیامی ندارید ♡"}</div>
+          </div>
+          <div class="chat-meta">
+            <div class="chat-time">${m?faTime(m.created_at):""}</div>
+            ${unread>0?`<div class="unread-badge">${unread>99?"99+":unread}</div>`:""}
+          </div>
+        </button>`);
+    }
+    list.innerHTML=cards.length?cards.join(""):"<div class=\"empty\">مخاطب دیگری پیدا نشد.</div>";
+  };
 
-    const readAt=getLastReadAt(p.id);
-    const {count:unreadCount}=await supabaseClient
-      .from("messages")
-      .select("id",{count:"exact",head:true})
-      .eq("sender_id",p.id)
-      .eq("receiver_id",currentUser.id)
-      .gt("created_at",readAt);
+  const cachedMessages=await getCachedAllMessages();
+  if(profiles.length) renderCards(cachedMessages);
+  else list.innerHTML=`<div class="empty">در حال آماده‌سازی...</div>`;
 
-    const m=last?.[0];
-    const unread=Number(unreadCount||0);
-    cards.push(`
-      <button class="chat-card" data-partner-id="${esc(p.id)}" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
-        <div class="avatar">${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="" class="chat-avatar-image">` : esc((p.display_name||p.username||"?").slice(0,1))}</div>
-        <div class="chat-main">
-          <div class="chat-name">${esc(p.display_name)}</div>
-          <div class="chat-last" data-last-text="${esc(m?m.content:"هنوز پیامی ندارید ♡")}">${m?esc(m.content):"هنوز پیامی ندارید ♡"}</div>
-        </div>
-        <div class="chat-meta">
-          <div class="chat-time">${m?faTime(m.created_at):""}</div>
-          ${unread>0?`<div class="unread-badge">${unread>99?"99+":unread}</div>`:""}
-        </div>
-      </button>`);
+  // First visit: one profiles query + one messages query. Later visits: only new messages.
+  try{
+    const {data:freshProfiles,error:pErr}=await supabaseClient
+      .from("profiles").select("id,username,display_name,avatar_url,bio")
+      .neq("id",currentUser.id).order("display_name");
+    if(pErr)throw pErr;
+    profiles=(freshProfiles||[]);
+    await cacheProfiles(profiles);
+
+    const allCached=await getCachedAllMessages();
+    const latestCached=allCached.reduce((max,m)=>Math.max(max,new Date(m.created_at).getTime()),0);
+    let query=supabaseClient.from("messages")
+      .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone")
+      .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+      .order("created_at",{ascending:true});
+    if(latestCached)query=query.gt("created_at",new Date(latestCached).toISOString());
+    let {data:newMessages,error:mErr}=await query;
+    if(mErr && /column .* does not exist/i.test(mErr.message||"")){
+      let fallback=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at")
+        .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`).order("created_at",{ascending:true});
+      if(latestCached)fallback=fallback.gt("created_at",new Date(latestCached).toISOString());
+      const r=await fallback;newMessages=r.data;mErr=r.error;
+    }
+    if(mErr)throw mErr;
+    await cacheMessages(newMessages||[]);
+    renderCards(await getCachedAllMessages());
+  }catch(err){
+    console.warn("BACKGROUND CHAT CACHE SYNC:",err);
+    if(!profiles.length && !list.innerHTML.trim())list.innerHTML=`<div class="empty">خطا در دریافت مخاطب‌ها: ${esc(err.message||"خطای اتصال")}</div>`;
   }
-  list.innerHTML=cards.join("");
 }
-
 async function openChat(partner){
   chatPartner=partner;
-  // Opening a conversation marks its current incoming messages as read.
-  const {data:latestIncoming}=await supabaseClient
-    .from("messages")
-    .select("created_at")
-    .eq("sender_id",partner.id)
-    .eq("receiver_id",currentUser.id)
-    .order("created_at",{ascending:false})
-    .limit(1);
-  if(latestIncoming?.[0]?.created_at) markChatRead(partner.id,latestIncoming[0].created_at);
+  // Read state is based on the locally cached conversation; no blocking query is needed here.
+  const cachedPartnerMessages=await getCachedMessages(partner.id);
+  const latestIncoming=cachedPartnerMessages.filter(m=>String(m.sender_id)===String(partner.id));
+  if(latestIncoming.length) markChatRead(partner.id,latestIncoming[latestIncoming.length-1].created_at);
   messageCache=new Map();
   hiddenMessageIds=new Set();
   activeMessageId=null;
@@ -1968,66 +2017,76 @@ async function openChat(partner){
 
 async function loadMessages(){
   const box=document.getElementById("messages");
-  if(!box)return;
+  if(!box||!chatPartner)return;
 
-  const messageFilter=`and(sender_id.eq.${currentUser.id},receiver_id.eq.${chatPartner.id}),and(sender_id.eq.${chatPartner.id},receiver_id.eq.${currentUser.id})`;
-  let {data,error}=await supabaseClient
-    .from("messages")
-    .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone")
-    .or(messageFilter)
-    .order("created_at",{ascending:true});
-
-  // If an older database is missing one of the optional messenger columns,
-  // still load the original messages instead of showing an empty chat.
-  if(error && /column .* does not exist/i.test(error.message||"")){
-    const fallback=await supabaseClient
-      .from("messages")
-      .select("id,sender_id,receiver_id,content,created_at")
-      .or(messageFilter)
-      .order("created_at",{ascending:true});
-    data=fallback.data;
-    error=fallback.error;
+  // Cached messages are rendered first, so reopening a chat is effectively instant.
+  let cached=await getCachedMessages(chatPartner.id);
+  if(cached.length){
+    hiddenMessageIds=new Set();
+    messageCache=new Map();
+    cached.forEach(m=>messageCache.set(String(m.id),m));
+    box.innerHTML=cached.map(renderMessage).join("");
+    attachMessageGestures();
+    box.scrollTop=box.scrollHeight;
   }
-
-  if(error){
-    box.innerHTML=`<div class="empty">خطا در دریافت پیام‌ها: ${esc(error.message)}</div>`;
-    return;
-  }
-
-  const ids=(data||[]).map(m=>m.id);
-  if(ids.length){
-    const {data:hidden,error:hiddenError}=await supabaseClient
-      .from("message_user_deletions")
-      .select("message_id")
-      .eq("user_id",currentUser.id)
-      .in("message_id",ids);
-    if(!hiddenError) (hidden||[]).forEach(x=>hiddenMessageIds.add(String(x.message_id)));
-  }
-
-  const visible=(data||[]).filter(m=>!hiddenMessageIds.has(String(m.id)));
-  visible.forEach(m=>messageCache.set(String(m.id),m));
 
   messageReactionCache.clear();
-  const visibleIds=visible.map(m=>m.id);
-  if(visibleIds.length){
-    const {data:reactions}=await supabaseClient
-      .from("message_reactions")
-      .select("message_id,user_id,reaction,created_at")
-      .in("message_id",visibleIds)
-      .order("created_at",{ascending:false});
-    (reactions||[]).forEach(r=>{
-      if(!messageReactionCache.has(String(r.message_id))) messageReactionCache.set(String(r.message_id),r);
-    });
-  }
+  // Sync only messages newer than the newest locally stored message.
+  syncChatMessages(cached.length?cached[cached.length-1].created_at:null).catch(e=>console.warn("CHAT BACKGROUND SYNC:",e));
 
-  if(!visible.length){
-    box.innerHTML=`<div class="empty">هنوز گفت‌وگویی شروع نشده ♡</div>`;
-    return;
-  }
+  if(!cached.length)box.innerHTML=`<div class="empty">در حال دریافت پیام‌ها...</div>`;
+}
 
-  box.innerHTML=visible.map(renderMessage).join("");
+async function syncChatMessages(latestCreatedAt){
+  if(!chatPartner||!currentUser)return;
+  const partnerId=String(chatPartner.id);
+  const messageFilter=`and(sender_id.eq.${currentUser.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${currentUser.id})`;
+  let query=supabaseClient.from("messages")
+    .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone")
+    .or(messageFilter).order("created_at",{ascending:true});
+  if(latestCreatedAt)query=query.gt("created_at",latestCreatedAt);
+  let {data,error}=await query;
+  if(error && /column .* does not exist/i.test(error.message||"")){
+    let fallback=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at")
+      .or(messageFilter).order("created_at",{ascending:true});
+    if(latestCreatedAt)fallback=fallback.gt("created_at",latestCreatedAt);
+    const r=await fallback;data=r.data;error=r.error;
+  }
+  if(error)throw error;
+  await cacheMessages(data||[]);
+
+  const merged=mergeMessagesIntoCache(await getCachedMessages(partnerId),data||[]);
+  messageCache=new Map(merged.map(m=>[String(m.id),m]));
+  const box=document.getElementById("messages");
+  if(!box||!chatPartner||String(chatPartner.id)!==partnerId)return;
+  if(!merged.length){box.innerHTML=`<div class="empty">هنوز گفت‌وگویی شروع نشده ♡</div>`;return;}
+  syncChatExtras(merged).catch(e=>console.warn("CHAT EXTRAS SYNC:",e));
+  const wasAtBottom=box.scrollHeight-box.scrollTop-box.clientHeight<100;
+  box.innerHTML=merged.map(renderMessage).join("");
   attachMessageGestures();
-  box.scrollTop=box.scrollHeight;
+  if(wasAtBottom||!latestCreatedAt)box.scrollTop=box.scrollHeight;
+  const newestIncoming=merged.filter(m=>String(m.sender_id)===partnerId);
+  if(newestIncoming.length)markChatRead(partnerId,newestIncoming[newestIncoming.length-1].created_at);
+}
+async function syncChatExtras(messages){
+  const ids=(messages||[]).map(m=>m.id).filter(Boolean);
+  if(!ids.length||!currentUser)return;
+  try{
+    const {data:hidden,error:hiddenError}=await supabaseClient.from("message_user_deletions")
+      .select("message_id").eq("user_id",currentUser.id).in("message_id",ids);
+    if(!hiddenError){
+      hiddenMessageIds=new Set((hidden||[]).map(x=>String(x.message_id)));
+      hiddenMessageIds.forEach(id=>{messageCache.delete(id);document.querySelector(`[data-msg-id="${CSS.escape(id)}"]`)?.remove()});
+      ensureMessageEmptyState();
+    }
+  }catch(e){}
+  try{
+    const {data:reactions}=await supabaseClient.from("message_reactions")
+      .select("message_id,user_id,reaction,created_at").in("message_id",ids).order("created_at",{ascending:false});
+    messageReactionCache.clear();
+    (reactions||[]).forEach(r=>{if(!messageReactionCache.has(String(r.message_id)))messageReactionCache.set(String(r.message_id),r)});
+    (messages||[]).forEach(m=>{if(!hiddenMessageIds.has(String(m.id)))refreshMessageElement(m,true)});
+  }catch(e){}
 }
 
 function messageDisplayText(m){
@@ -2406,6 +2465,7 @@ function subscribeMessages(){
       const relevant=(m.sender_id===currentUser.id&&m.receiver_id===chatPartner.id)||(m.sender_id===chatPartner.id&&m.receiver_id===currentUser.id);
       if(!relevant)return;
       messageCache.set(String(m.id),m);
+      cacheMessages([m]).catch(()=>{});
       if(hiddenMessageIds.has(String(m.id)))return;
       if(m.reply_to_id && !messageCache.has(String(m.reply_to_id))){
         const {data:original}=await supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone").eq("id",m.reply_to_id).maybeSingle();
@@ -2421,6 +2481,7 @@ function subscribeMessages(){
       const relevant=(m.sender_id===currentUser.id&&m.receiver_id===chatPartner.id)||(m.sender_id===chatPartner.id&&m.receiver_id===currentUser.id);
       if(!relevant)return;
       messageCache.set(String(m.id),m);
+      cacheMessages([m]).catch(()=>{});
       if(hiddenMessageIds.has(String(m.id)))return;
       refreshMessageElement(m);
     })
@@ -2452,6 +2513,7 @@ function subscribeMessages(){
       if(String(d.user_id)!==String(currentUser.id))return;
       const id=String(d.message_id);
       hiddenMessageIds.add(id);messageCache.delete(id);
+      localCacheDelete("messages",messageCacheKey(currentUser.id,id)).catch(()=>{});
       document.querySelector(`[data-msg-id="${CSS.escape(id)}"]`)?.remove();ensureMessageEmptyState();
     })
     .subscribe(status=>console.log("Realtime:",status));
@@ -2543,6 +2605,7 @@ async function sendMessage(e){
 
     if(saved && box){
       messageCache.set(String(saved.id),saved);
+      await cacheMessages([saved]);
       if(box.querySelector(".empty"))box.innerHTML="";
       if(!document.querySelector(`[data-msg-id="${CSS.escape(String(saved.id))}"]`)){
         box.insertAdjacentHTML("beforeend",renderMessage(saved));
@@ -2558,8 +2621,8 @@ async function sendMessage(e){
     if(icon)icon.textContent="↩";
     input.focus();
 
-    // یک بار تاریخچه را از دیتابیس تازه می‌کنیم تا مطمئن شویم پیام واقعاً ذخیره شده.
-    setTimeout(()=>{ if(chatPartner) loadMessages().catch(()=>{}); },120);
+    // The new message is already in IndexedDB and in the live cache; no full-history SELECT is needed.
+
   }catch(err){
     console.error("SEND MESSAGE UNEXPECTED ERROR:",err);
     alert("خطا در ارسال پیام:\n"+(err?.message||"خطای ناشناخته"));
