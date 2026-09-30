@@ -42,7 +42,7 @@ h1{font-size:25px;text-align:center;margin:0 0 8px}
 .chat-list{display:grid;gap:10px}
 .chat-card{width:100%;display:flex;align-items:center;gap:12px;border:1px solid #f0e4eb;background:rgba(255,255,255,.8);border-radius:21px;padding:13px;text-align:right;box-shadow:0 7px 22px rgba(170,110,145,.07)}
 .avatar{width:51px;height:51px;border-radius:18px;background:linear-gradient(135deg,#ffe0ec,#e9defc);display:grid;place-items:center;font-weight:bold;color:#806474;flex:none}
-.chat-main{min-width:0;flex:1}
+.chat-avatar-image{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}.chat-profile .avatar{overflow:hidden}.chat-profile .avatar img{width:100%;height:100%;display:block;object-fit:cover}\n.chat-main{min-width:0;flex:1}
 .chat-name{font-weight:bold;font-size:14px}
 .chat-last{font-size:11px;color:#a18d99;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-last.typing-state{color:#fff;font-weight:600}
 .chat-time{font-size:10px;color:#b19ca7}
@@ -1076,6 +1076,24 @@ body{
 .settings-shell-top,.settings-shell-divider{display:none!important}
 .settings-shell-top + .settings-shell-divider + .content{padding-top:18px}
 /* ===== BEAUTIFUL SETTINGS PAGE ===== */
+.settings-page{position:relative;isolation:isolate}
+.settings-page:before,.settings-page:after{content:"";position:absolute;pointer-events:none;z-index:-1;border-radius:50%;filter:blur(12px)}
+.settings-page:before{width:280px;height:280px;top:30px;right:-110px;background:radial-gradient(circle,rgba(177,145,255,.13),transparent 68%)}
+.settings-page:after{width:240px;height:240px;bottom:120px;left:-100px;background:radial-gradient(circle,rgba(80,205,190,.09),transparent 68%)}
+.settings-page-head{padding:4px 4px 2px}
+.settings-page-head h1{font-size:31px;text-shadow:0 8px 28px rgba(0,0,0,.28)}
+.settings-page-head p{font-size:11px;color:#92949e}
+.settings-profile-card{background:linear-gradient(145deg,rgba(255,255,255,.115),rgba(255,255,255,.035) 48%,rgba(157,128,255,.055));}
+.settings-profile-card:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.045) 50%,transparent 75%);opacity:.55}
+.settings-avatar-picker{box-shadow:0 22px 55px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.16),0 0 0 8px rgba(255,255,255,.025),0 0 38px rgba(177,145,255,.08)}
+.settings-avatar-picker:before{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(255,255,255,.07);pointer-events:none}
+.settings-field input,.settings-field textarea{background:rgba(0,0,0,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.settings-save{width:100%;min-height:46px;font-size:12px;letter-spacing:.1px}
+.settings-save:disabled{opacity:.55;cursor:wait}
+.settings-menu-card{background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.028) 55%,rgba(255,255,255,.055));}
+.settings-menu-item:hover .settings-menu-icon{transform:translateY(-1px) scale(1.03)}
+.settings-menu-icon{transition:transform .2s ease,background .2s ease}
+.avatar-crop-backdrop{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.68);backdrop-filter:blur(18px)}.avatar-crop-backdrop.show{display:flex}.avatar-crop-modal{width:min(430px,100%);border:1px solid rgba(255,255,255,.12);border-radius:28px;padding:18px;background:rgba(20,21,25,.94);box-shadow:0 25px 80px rgba(0,0,0,.55);color:#fff}.avatar-crop-title{font-size:16px;font-weight:800;text-align:center;margin-bottom:14px}.avatar-crop-stage{position:relative;width:min(330px,82vw);aspect-ratio:1;margin:0 auto;border-radius:50%;overflow:hidden;background:#090a0d;border:2px solid rgba(255,255,255,.18);touch-action:none}.avatar-crop-image{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;user-select:none;-webkit-user-drag:none;cursor:grab}.avatar-crop-image.dragging{cursor:grabbing}.avatar-crop-stage:after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.12);pointer-events:none}.avatar-crop-controls{display:flex;align-items:center;gap:10px;margin:16px 4px 12px}.avatar-crop-controls span{font-size:11px;color:#9b9da6}.avatar-crop-controls input{flex:1;accent-color:#fff}.avatar-crop-actions{display:flex;gap:9px}.avatar-crop-actions button{flex:1;height:44px;border:0;border-radius:15px;font-family:inherit;font-weight:800;cursor:pointer}.avatar-crop-cancel{background:rgba(255,255,255,.08);color:#fff}.avatar-crop-save{background:#fff;color:#08090c}
 .settings-page{
   width:min(760px,100%);
   margin:0 auto;
@@ -1217,6 +1235,13 @@ body{
 .settings-menu-icon.privacy{color:#b9a8ff !important}
 .settings-menu-icon.appearance{color:#65e2c6 !important}
 .settings-menu-icon.logout{color:#ff8f9d !important}
+
+/* Brand divider: always visible */
+.top-divider{
+  opacity:.9 !important;
+  height:1px !important;
+  display:block !important;
+}
 </style>
 </head>
 <body>
@@ -1243,7 +1268,7 @@ body{
   </div>
 </div>
 
-<div id="app"></div>
+<div id="avatarCropBackdrop" class="avatar-crop-backdrop" onclick="closeAvatarCrop(event)"><div class="avatar-crop-modal" role="dialog" aria-modal="true" aria-label="برش عکس پروفایل" onclick="event.stopPropagation()"><div class="avatar-crop-title">برش عکس پروفایل</div><div id="avatarCropStage" class="avatar-crop-stage"><img id="avatarCropImage" class="avatar-crop-image" alt="پیش‌نمایش عکس"></div><div class="avatar-crop-controls"><span>کوچک</span><input id="avatarCropZoom" type="range" min="1" max="3" step=".01" value="1" aria-label="بزرگنمایی"><span>بزرگ</span></div><div class="avatar-crop-actions"><button type="button" class="avatar-crop-cancel" onclick="closeAvatarCrop()">انصراف</button><button type="button" class="avatar-crop-save" onclick="applyAvatarCrop()">برش و استفاده</button></div></div></div><div id="app"></div>
 
 <script>
 const SUPABASE_URL="https://xycgmffmbuelkznfqojd.supabase.co";
@@ -1546,39 +1571,28 @@ async function renderSettings(){
 
 let pendingSettingsAvatar="";
 
+let avatarCropState=null;
 function handleSettingsAvatar(input){
-  const file=input?.files?.[0];
-  if(!file)return;
-  if(!file.type.startsWith("image/")){
-    alert("لطفاً یک عکس انتخاب کنید.");
-    input.value="";
-    return;
-  }
+  const file=input?.files?.[0]; if(!file)return;
+  if(!file.type.startsWith("image/")){alert("لطفاً یک عکس انتخاب کنید.");input.value="";return;}
   const reader=new FileReader();
-  reader.onload=()=>{
-    const img=new Image();
-    img.onload=()=>{
-      const size=420;
-      const scale=Math.min(1,size/Math.max(img.width,img.height));
-      const canvas=document.createElement("canvas");
-      canvas.width=Math.max(1,Math.round(img.width*scale));
-      canvas.height=Math.max(1,Math.round(img.height*scale));
-      const ctx=canvas.getContext("2d");
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      pendingSettingsAvatar=canvas.toDataURL("image/jpeg",.82);
-      const picker=document.querySelector(".settings-avatar-picker");
-      if(picker)picker.innerHTML=`<img src="${pendingSettingsAvatar}" alt="عکس پروفایل" class="settings-avatar-image"><span class="settings-avatar-camera">${icons.plus}</span>`;
-    };
-    img.src=reader.result;
-  };
+  reader.onload=()=>{const img=new Image();img.onload=()=>{avatarCropState={img,scale:1,x:0,y:0,input};const preview=document.getElementById("avatarCropImage"),zoom=document.getElementById("avatarCropZoom");if(!preview)return;preview.src=reader.result;zoom.value="1";document.getElementById("avatarCropBackdrop")?.classList.add("show");requestAnimationFrame(fitAvatarCropImage)};img.src=reader.result};
   reader.readAsDataURL(file);
 }
-
+function fitAvatarCropImage(){if(!avatarCropState)return;const stage=document.getElementById("avatarCropStage");const preview=document.getElementById("avatarCropImage");if(!stage||!preview)return;const r=stage.getBoundingClientRect();avatarCropState.base=Math.max(r.width/avatarCropState.img.width,r.height/avatarCropState.img.height);avatarCropState.scale=Number(document.getElementById("avatarCropZoom")?.value||1);avatarCropState.x=0;avatarCropState.y=0;updateAvatarCropPreview()}
+function updateAvatarCropPreview(){if(!avatarCropState)return;const preview=document.getElementById("avatarCropImage");if(!preview)return;const scale=avatarCropState.base*avatarCropState.scale;preview.style.width=`${avatarCropState.img.width*scale}px`;preview.style.height=`${avatarCropState.img.height*scale}px`;preview.style.transform=`translate(calc(-50% + ${avatarCropState.x}px),calc(-50% + ${avatarCropState.y}px))`}
+function closeAvatarCrop(e){if(e&&e.target!==e.currentTarget)return;document.getElementById("avatarCropBackdrop")?.classList.remove("show");if(avatarCropState?.input)avatarCropState.input.value="";avatarCropState=null}
+function applyAvatarCrop(){if(!avatarCropState)return;const stage=document.getElementById("avatarCropStage");if(!stage)return;const r=stage.getBoundingClientRect(),out=420,sourceScale=avatarCropState.base*avatarCropState.scale,crop=r.width,sw=crop/sourceScale,sx=avatarCropState.img.width/2-(crop/2+avatarCropState.x)/sourceScale,sy=avatarCropState.img.height/2-(crop/2+avatarCropState.y)/sourceScale,canvas=document.createElement("canvas");canvas.width=out;canvas.height=out;canvas.getContext("2d").drawImage(avatarCropState.img,sx,sy,sw,sw,0,0,out,out);pendingSettingsAvatar=canvas.toDataURL("image/jpeg",.84);const picker=document.querySelector(".settings-avatar-picker");if(picker)picker.innerHTML=`<img src="${pendingSettingsAvatar}" alt="عکس پروفایل" class="settings-avatar-image"><span class="settings-avatar-camera">${icons.plus}</span>`;closeAvatarCrop()}
+function initAvatarCropInteractions(){const stage=document.getElementById("avatarCropStage"),zoom=document.getElementById("avatarCropZoom");if(!stage||!zoom)return;zoom.oninput=()=>{if(avatarCropState){avatarCropState.scale=Number(zoom.value);updateAvatarCropPreview()}};let drag=false,lx=0,ly=0;stage.onpointerdown=e=>{drag=true;lx=e.clientX;ly=e.clientY;stage.setPointerCapture?.(e.pointerId)};stage.onpointermove=e=>{if(!drag||!avatarCropState)return;avatarCropState.x+=e.clientX-lx;avatarCropState.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;updateAvatarCropPreview()};stage.onpointerup=stage.onpointercancel=()=>drag=false}
+document.addEventListener("DOMContentLoaded",initAvatarCropInteractions);
 async function saveSettingsProfile(){
   if(!currentUser?.id)return;
   const name=document.getElementById("settingsDisplayName")?.value.trim();
   const bio=document.getElementById("settingsBio")?.value.trim()||"";
   if(!name){alert("لطفاً نام را وارد کنید.");return;}
+
+  const btn=document.querySelector(".settings-save");
+  if(btn){btn.disabled=true;btn.textContent="در حال ذخیره..."}
 
   const payload={display_name:name,bio};
   if(pendingSettingsAvatar)payload.avatar_url=pendingSettingsAvatar;
@@ -1590,18 +1604,22 @@ async function saveSettingsProfile(){
     .select("id,username,display_name,avatar_url,bio")
     .maybeSingle();
 
-  if(error){
-    console.error("SAVE PROFILE ERROR:",error);
-    alert("ذخیره نشد:\n"+(error.message||"خطای ناشناخته"));
+  if(error || !data){
+    console.error("SAVE PROFILE ERROR:",error||"No profile row was updated");
+    if(btn){btn.disabled=false;btn.textContent="ذخیره تغییرات"}
+    alert(error?.message
+      ? "پروفایل در دیتابیس ذخیره نشد:\n"+error.message
+      : "پروفایل در دیتابیس ذخیره نشد.\nاحتمالاً دسترسی UPDATE جدول profiles در Supabase فعال نیست.");
     return;
   }
 
-  const updated=data||{...currentUser.profile,...payload,id:currentUser.id};
-  currentUser={profile:{...currentUser.profile,...updated},id:currentUser.id};
+  // Only update the local/session profile after Supabase confirms the row.
+  currentUser={profile:{...currentUser.profile,...data},id:currentUser.id};
   sessionStorage.setItem("love_profile",JSON.stringify(currentUser.profile));
   pendingSettingsAvatar="";
-  alert("تغییرات با موفقیت ذخیره شد ♡");
+  if(btn){btn.disabled=false;btn.textContent="ذخیره تغییرات"}
   renderSettings();
+  showToast?.("پروفایل با موفقیت در دیتابیس ذخیره شد ✓");
 }
 
 function setHomeTyping(partnerId,show){
@@ -1726,7 +1744,7 @@ async function renderChats(){
     const unread=Number(unreadCount||0);
     cards.push(`
       <button class="chat-card" data-partner-id="${esc(p.id)}" onclick='openChat(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
-        <div class="avatar">${esc((p.display_name||p.username).slice(0,1))}</div>
+        <div class="avatar">${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="" class="chat-avatar-image">` : esc((p.display_name||p.username||"?").slice(0,1))}</div>
         <div class="chat-main">
           <div class="chat-name">${esc(p.display_name)}</div>
           <div class="chat-last" data-last-text="${esc(m?m.content:"هنوز پیامی ندارید ♡")}">${m?esc(m.content):"هنوز پیامی ندارید ♡"}</div>
@@ -1772,7 +1790,7 @@ async function openChat(partner){
       <header class="chat-header">
         <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
         <div class="chat-profile">
-          <div class="avatar">${esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
+          <div class="avatar">${partner.avatar_url ? `<img src="${esc(partner.avatar_url)}" alt="" class="chat-avatar-image">` : esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
           <div class="chat-user-meta">
             <div class="chat-title">${esc(partner.display_name)}</div>
             <div id="typingIndicator" class="chat-typing" aria-live="polite">
