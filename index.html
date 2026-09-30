@@ -516,7 +516,7 @@ body{
   overflow:hidden;
 }
 .chat-header{
-  direction:ltr;
+  direction:rtl;
   flex:none;
   height:78px;
   min-height:78px;
@@ -543,6 +543,9 @@ body{
   display:none !important;
 }
 .chat-header > *{pointer-events:auto}
+.chat-header > .chat-head-side:first-child{grid-column:1}
+.chat-header > .chat-profile{grid-column:2}
+.chat-header > .chat-head-side:last-child{grid-column:3}
 /* Three completely independent floating liquid-glass surfaces.
    The header itself has ZERO visual surface behind them. */
 .chat-header > .chat-head-side,
@@ -947,6 +950,15 @@ body{
 }
 
 
+/* ===== Final conversation-list alignment ===== */
+.chat-list{direction:rtl !important}
+.chat-card{direction:rtl !important;display:flex !important;align-items:center !important;gap:12px !important;text-align:right !important}
+.chat-card .avatar{flex:0 0 54px !important;order:0 !important}
+.chat-card .chat-main{flex:1 1 auto !important;min-width:0 !important;text-align:right !important;order:1 !important}
+.chat-card .chat-name,.chat-card .chat-last{text-align:right !important;direction:rtl !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-card .chat-meta{flex:0 0 auto !important;min-width:48px !important;margin-inline-start:auto !important;margin-inline-end:0 !important;align-self:stretch !important;display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:center !important;gap:7px !important;order:2 !important;text-align:left !important}
+.chat-card .chat-time{margin:0 !important;align-self:flex-start !important;white-space:nowrap !important}
+.chat-card .unread-badge{margin:0 !important;align-self:flex-start !important}
 /* ===== Final chat message alignment + footer ===== */
 .msg-wrap.mine{
   align-items:flex-end !important;
@@ -1167,10 +1179,38 @@ body{
 .settings-menu-separator{height:1px;background:rgba(255,255,255,.07);margin:2px 12px}
 .settings-menu-item.logout-item b{color:#ff9aa6}
 @media(max-width:600px){
-  .settings-page{padding-left:12px;padding-right:12px}
+  .settings-page{padding-left:12px;padding-right:12px;touch-action:pan-y;overscroll-behavior-x:none}
   .settings-profile-card{padding:22px 16px 18px;border-radius:26px}
   .settings-avatar-picker{width:124px;height:124px}
   .settings-page-head h1{font-size:25px}
+
+  /* Android: keep the profile crop dialog completely inside the viewport. */
+  .avatar-crop-backdrop{
+    align-items:flex-start;
+    justify-content:center;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:12px;
+    padding-top:max(12px,env(safe-area-inset-top));
+    padding-bottom:max(12px,env(safe-area-inset-bottom));
+    overscroll-behavior:contain;
+  }
+  .avatar-crop-modal{
+    width:min(430px,calc(100vw - 24px));
+    max-width:100%;
+    max-height:calc(100dvh - 24px);
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:14px;
+    border-radius:24px;
+    margin:auto 0;
+  }
+  .avatar-crop-stage{
+    width:min(330px,calc(100vw - 64px),58dvh);
+    max-width:100%;
+  }
+  .avatar-crop-controls{margin:14px 2px 10px;gap:8px}
+  .avatar-crop-actions button{height:42px;min-width:0}
 }
 
 </style>
@@ -1480,11 +1520,12 @@ async function loadApp(){
 }
 
 function shell(content,active="chat"){
+  const showKhatmin=active!=="settings";
   return `
   <div class="app">
     <div class="top">
       <div>
-        <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
+        ${showKhatmin ? '<div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>' : ''}
       </div>
 
     </div>
@@ -1584,6 +1625,14 @@ function updateAvatarCropPreview(){if(!avatarCropState)return;const preview=docu
 function closeAvatarCrop(e){if(e&&e.target!==e.currentTarget)return;document.getElementById("avatarCropBackdrop")?.classList.remove("show");if(avatarCropState?.input)avatarCropState.input.value="";avatarCropState=null}
 function applyAvatarCrop(){if(!avatarCropState)return;const stage=document.getElementById("avatarCropStage");if(!stage)return;const r=stage.getBoundingClientRect(),out=420,sourceScale=avatarCropState.base*avatarCropState.scale,crop=r.width,sw=crop/sourceScale,sx=avatarCropState.img.width/2-(crop/2+avatarCropState.x)/sourceScale,sy=avatarCropState.img.height/2-(crop/2+avatarCropState.y)/sourceScale,canvas=document.createElement("canvas");canvas.width=out;canvas.height=out;canvas.getContext("2d").drawImage(avatarCropState.img,sx,sy,sw,sw,0,0,out,out);pendingSettingsAvatar=canvas.toDataURL("image/jpeg",.84);const picker=document.querySelector(".settings-avatar-picker");if(picker)picker.innerHTML=`<img src="${pendingSettingsAvatar}" alt="عکس پروفایل" class="settings-avatar-image"><span class="settings-avatar-camera">${icons.plus}</span>`;closeAvatarCrop()}
 function initAvatarCropInteractions(){const stage=document.getElementById("avatarCropStage"),zoom=document.getElementById("avatarCropZoom");if(!stage||!zoom)return;zoom.oninput=()=>{if(avatarCropState){avatarCropState.scale=Number(zoom.value);updateAvatarCropPreview()}};let drag=false,lx=0,ly=0;stage.onpointerdown=e=>{drag=true;lx=e.clientX;ly=e.clientY;stage.setPointerCapture?.(e.pointerId)};stage.onpointermove=e=>{if(!drag||!avatarCropState)return;avatarCropState.x+=e.clientX-lx;avatarCropState.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;updateAvatarCropPreview()};stage.onpointerup=stage.onpointercancel=()=>drag=false}
+
+/* Android settings: allow vertical scrolling, but block pinch/gesture zoom. */
+function preventSettingsZoom(e){
+  if(!document.querySelector('.settings-page'))return;
+  if(e.touches && e.touches.length>1)e.preventDefault();
+}
+document.addEventListener('touchmove',preventSettingsZoom,{passive:false});
+document.addEventListener('gesturestart',e=>{if(document.querySelector('.settings-page'))e.preventDefault()},{passive:false});
 document.addEventListener("DOMContentLoaded",initAvatarCropInteractions);
 async function saveSettingsProfile(){
   if(!currentUser?.id)return;
