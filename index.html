@@ -1444,6 +1444,135 @@ body{
 .user-profile-note{margin-top:16px;color:#676a74;font-size:11px;text-align:center}
 @media(max-width:520px){.user-profile-avatar{width:124px;height:124px}.user-profile-name{font-size:25px}.user-profile-content{padding-left:16px;padding-right:16px}}
 
+
+/* ===== Premium messenger message + voice skin ===== */
+.msg-wrap .msg.voice-msg{
+  max-width:min(86%,360px);
+  padding:0;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  overflow:visible;
+}
+.msg-wrap .msg.voice-msg:after{display:none !important}
+.msg-wrap .msg.voice-msg .msg-footer{
+  margin-top:4px !important;
+  padding:0 8px;
+  opacity:.62;
+}
+.msg-wrap .msg.voice-msg .msg-reply-preview{margin-bottom:7px !important}
+.voice-message-player{
+  position:relative;
+  width:min(326px,78vw);
+  min-width:228px;
+  height:62px;
+  padding:6px 7px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  direction:ltr;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:999px;
+  background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.045) 48%,rgba(255,255,255,.075));
+  box-shadow:0 14px 36px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(0,0,0,.18);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  user-select:none;
+  overflow:hidden;
+}
+.msg.mine .voice-message-player{
+  background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.065) 50%,rgba(255,255,255,.11));
+  border-color:rgba(255,255,255,.19);
+}
+.voice-message-player::before{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:inherit;
+  background:linear-gradient(100deg,rgba(255,255,255,.08),transparent 35%,rgba(255,255,255,.035) 72%,transparent);
+  pointer-events:none;
+}
+.voice-play-btn{
+  position:relative;
+  z-index:1;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  color:#111318;
+  background:linear-gradient(145deg,#f7f7f8,#cfd1d6);
+  box-shadow:0 7px 18px rgba(0,0,0,.25),inset 0 1px 1px rgba(255,255,255,.85);
+  transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;
+}
+.voice-play-btn:hover{transform:scale(1.055);filter:brightness(1.04);box-shadow:0 9px 22px rgba(0,0,0,.3),inset 0 1px 1px rgba(255,255,255,.9)}
+.voice-play-btn:active{transform:scale(.94)}
+.voice-play-btn svg{width:17px;height:17px;fill:currentColor;display:block}
+.voice-wave{
+  position:relative;
+  z-index:1;
+  flex:1;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:2.5px;
+  overflow:hidden;
+  cursor:pointer;
+}
+.voice-wave::before{
+  content:"";
+  position:absolute;
+  inset:5px 0;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);
+  opacity:0;
+  transform:translateX(110%);
+}
+.voice-message-player.playing .voice-wave::before{opacity:1;animation:voiceShimmer 1.65s linear infinite}
+.voice-bar{
+  width:2.6px;
+  min-width:2.6px;
+  height:var(--h);
+  max-height:34px;
+  border-radius:99px;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.32));
+  opacity:.52;
+  transform-origin:center;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.voice-message-player.playing .voice-bar{animation:voiceWave 760ms ease-in-out infinite alternate;animation-delay:var(--d)}
+.voice-message-player.playing .voice-bar:nth-child(3n){animation-duration:590ms}
+.voice-message-player.playing .voice-bar:nth-child(4n){animation-duration:940ms}
+.voice-message-player .voice-bar.active{opacity:1;box-shadow:0 0 8px rgba(255,255,255,.13)}
+.msg.mine .voice-play-btn{order:3}
+.msg.mine .voice-wave{order:2}
+.msg.mine .voice-duration{order:1}
+.msg.theirs .voice-play-btn{order:1}
+.msg.theirs .voice-wave{order:2}
+.msg.theirs .voice-duration{order:3}
+.voice-duration{
+  position:relative;
+  z-index:1;
+  min-width:39px;
+  color:rgba(255,255,255,.74);
+  font-size:10px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+  direction:ltr;
+  text-align:center;
+  letter-spacing:.03em;
+}
+.voice-message-player audio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+@media(max-width:520px){
+  .msg-wrap .msg.voice-msg{max-width:90%}
+  .voice-message-player{width:min(310px,82vw);min-width:210px;height:60px}
+}
+
 </style>
 
 <style>
@@ -1562,6 +1691,17 @@ body{
   .chat-card .avatar{flex-basis:51px !important;width:51px !important;height:51px !important;}
   .chat-card .chat-meta{min-width:44px !important;}
 }
+</style>
+<style id="voice-direction-final">
+/* Final voice alignment: received = play left, sent = play right */
+.msg-wrap .msg.voice-msg .voice-message-player{direction:ltr;}
+.msg-wrap .msg.voice-msg.mine .voice-message-player{direction:rtl;}
+.msg-wrap .msg.voice-msg.mine .voice-message-player .voice-duration{direction:ltr;}
+.msg-wrap .msg.voice-msg.theirs .voice-message-player .voice-duration{direction:ltr;}
+</style>
+<style id="voice-direction-final-2">
+.msg-wrap.mine .msg.voice-msg .voice-message-player{direction:rtl;}
+.msg-wrap.theirs .msg.voice-msg .voice-message-player{direction:ltr;}
 </style>
 </head>
 <body>
@@ -2363,12 +2503,14 @@ function renderMessage(m){
         <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
       </div>`
     : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
-  const body=`<span class="${cls}${deleted?" deleted":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
+  const body=`<span class="${cls}${deleted?" deleted":""}${isVoice?" voice-msg":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
 
 function formatVoiceDuration(seconds){
-  const total=Math.max(0,Math.floor(Number(seconds)||0));
+  const n=Number(seconds);
+  if(!Number.isFinite(n)||n<0)return "00:00";
+  const total=Math.floor(n);
   const min=Math.floor(total/60);
   const sec=total%60;
   return `${String(min).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
@@ -2381,12 +2523,18 @@ function updateVoiceMessageUI(audio){
   const btn=player.querySelector(".voice-play-btn");
   const duration=player.querySelector(".voice-duration");
   const bars=[...player.querySelectorAll(".voice-bar")];
-  const current=Number(audio.currentTime)||0;
-  const total=Number(audio.duration)||0;
-  if(duration)duration.textContent=formatVoiceDuration(total||current);
-  const ratio=total>0?Math.min(1,current/total):0;
-  bars.forEach((bar,i)=>bar.classList.toggle("active",i<Math.round(ratio*bars.length)));
+  const current=Number(audio.currentTime);
+  const total=Number(audio.duration);
+  const hasTotal=Number.isFinite(total)&&total>0;
+  const safeCurrent=Number.isFinite(current)&&current>=0?current:0;
   const playing=!audio.paused&&!audio.ended;
+  const ended=!!audio.ended;
+  const remaining=hasTotal?Math.max(0,total-safeCurrent):0;
+  if(duration){
+    duration.textContent=formatVoiceDuration(playing||(!ended&&safeCurrent>0)?remaining:hasTotal?total:0);
+  }
+  const ratio=hasTotal?Math.max(0,Math.min(1,safeCurrent/total)):0;
+  bars.forEach((bar,i)=>bar.classList.toggle("active",i<Math.round(ratio*bars.length)));
   player.classList.toggle("playing",playing);
   if(btn){
     btn.setAttribute("aria-label",playing?"توقف ویس":"پخش ویس");
@@ -2401,6 +2549,7 @@ function bindVoicePlayers(root=document){
     if(audio.dataset.bound)return;
     audio.dataset.bound="1";
     audio.addEventListener("loadedmetadata",()=>updateVoiceMessageUI(audio));
+    audio.addEventListener("durationchange",()=>updateVoiceMessageUI(audio));
     audio.addEventListener("timeupdate",()=>updateVoiceMessageUI(audio));
     audio.addEventListener("play",()=>{
       document.querySelectorAll(".voice-message-player audio").forEach(other=>{if(other!==audio&&!other.paused){other.pause();}});
