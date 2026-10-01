@@ -2672,6 +2672,7 @@ let messageGesture=null;
 let notificationChannel=null;
 let activeChatNotification=null;
 let replyingToNotification=null;
+let notificationWakeTimer=null;
 
 /* ===== Fast local cache =====
    The browser keeps previously loaded contacts/messages in IndexedDB.
@@ -3377,74 +3378,103 @@ async function deleteChatNotification(){
 
 async function loadIncomingChatNotification(){
   if(!currentUser||!chatPartner)return;
+  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
   const now=new Date().toISOString();
-  const {data,error}=await supabaseClient.from("chat_notifications").select("*")
-    .eq("sender_id",chatPartner.id).eq("receiver_id",currentUser.id).lte("scheduled_at",now).gt("expires_at",now)
-    .order("scheduled_at",{ascending:false}).limit(1).maybeSingle();
-  if(error){if(!/relation .*chat_notifications.*does not exist/i.test(error.message||""))console.warn("NOTIFICATION LOAD:",error);return;}
-  activeIncomingNotification=data||null;
-  renderIncomingNotification(data);
-}
-
-function renderIncomingNotification(n){
-  const host=document.getElementById("chatNotificationHost"); if(!host)return;
-  if(!n){host.innerHTML="";return;}
-  host.innerHTML=`<div class="chat-notification-banner ${notificationThemeClass(n.theme)}" data-notification-id="${esc(n.id)}" onclick="openNotificationReply('${esc(n.id)}')">
-    <div class="chat-notification-banner-top"><span class="chat-notification-theme-dot">${notificationThemeIcon(n.theme)}</span><div><div class="chat-notification-banner-label">اعلان جدید از ${esc(chatPartner?.display_name||"کاربر")}</div><div class="chat-notification-banner-reply">برای پاسخ، روی اعلان بزن</div></div></div>
-    <div class="chat-notification-banner-text">${esc(n.content)}</div>
-  </div>`;
-  if(!n.seen_at){
-    setTimeout(()=>{
-      triggerNotificationThemeEffect(n.theme);
-      supabaseClient.from("chat_notifications").update({seen_at:new Date().toISOString()}).eq("id",n.id).eq("receiver_id",currentUser.id).is("seen_at",null).then(()=>{});
-    },260);
+  const r=await supabaseClient.from("chat_notifications")
+    .select("*")
+    .eq("sender_id",chatPartner.id)
+    .eq("receiver_id",currentUser.id)
+    .lte("scheduled_at",now)
+    .gt("expires_at",now)
+    .order("scheduled_at",{ascending:false})
+    .limit(1)
+    .maybeSingle();
+  if(r.error){
+    console.warn("chat notification load error:",r.error);
+    return;
   }
+  activeIncomingNotification=r.data||null;
+  renderIncomingNotification(activeIncomingNotification);
 }
 
-function triggerNotificationThemeEffect(theme){
-  const symbols=theme==="heart"?["♥","♡","❤","💗","💜"]:theme==="cry"?["💧","💦","﹏"]:theme==="laugh"?["☻","☺","✦","✧"]:[];
-  if(!symbols.length)return;
-  const layer=document.createElement("div");layer.className="chat-notify-particles";document.body.appendChild(layer);
-  for(let i=0;i<30;i++){
-    const el=document.createElement("span");el.className="chat-notify-particle";el.textContent=symbols[i%symbols.length];
-    el.style.setProperty("--x",`${Math.round((Math.random()-.5)*90)}vw`);el.style.setProperty("--y",`${Math.round((Math.random()-.2)*80)}vh`);
-    el.style.setProperty("--sz",`${12+Math.round(Math.random()*25)}px`);el.style.setProperty("--op",`${.35+Math.random()*.55}`);el.style.setProperty("--delay",`${Math.round(Math.random()*500)}ms`);el.style.setProperty("--r",`${Math.round((Math.random()-.5)*80)}deg`);
-    layer.appendChild(el);
+function scheduleIncomingNotificationWake(notification){
+  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
+  if(!notification)return;
+  const scheduled=new Date(notification.scheduled_at).getTime();
+  const now=Date.now();
+  if(!Number.isFinite(scheduled)||scheduled<=now){
+    loadIncomingChatNotification().catch(()=>{});
+    return;
   }
-  setTimeout(()=>layer.remove(),3900);
-}
-
-function openNotificationReply(id){
-  const banner=document.querySelector(`.chat-notification-banner[data-notification-id="${CSS.escape(String(id))}"]`); if(!banner)return;
-  const n=activeIncomingNotification && String(activeIncomingNotification.id)===String(id)?activeIncomingNotification:null;
-  if(!n)return;
-  replyingToNotification=n;cancelEditOnly();
-  const bar=document.getElementById("replyBar"); if(!bar)return;
-  document.getElementById("replyBarLabel").textContent="پاسخ به اعلان";
-  document.getElementById("replyBarContent").textContent=n.content;
-  document.getElementById("replyBarIcon").textContent=notificationThemeIcon(n.theme);
-  bar.classList.remove("editing");bar.classList.add("show");
-  document.getElementById("messageInput")?.focus();
+  const delay=Math.min(Math.max(scheduled-now,0),2147483647);
+  notificationWakeTimer=setTimeout(()=>{
+    notificationWakeTimer=null;
+    loadIncomingChatNotification().catch(()=>{});
+  },delay);
 }
 
 function subscribeChatNotifications(){
-  if(notificationChannel){supabaseClient.removeChannel(notificationChannel).catch(()=>{});notificationChannel=null;}
+  if(notificationChannel){
+    supabaseClient.removeChannel(notificationChannel).catch(()=>{});
+    notificationChannel=null;
+  }
   if(!currentUser||!chatPartner)return;
+
   notificationChannel=supabaseClient.channel(`chat-notifications-${currentUser.id}-${chatPartner.id}`)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.new;if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=n;renderIncomingNotification(n);}
+      const n=payload.new;
+      if(!n)return;
+      const isIncoming=String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id);
+      const isOutgoing=String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id);
+      if(isIncoming){
+        const scheduled=new Date(n.scheduled_at).getTime();
+        if(Number.isFinite(scheduled)&&scheduled>Date.now()){
+          scheduleIncomingNotificationWake(n);
+        }else{
+          activeIncomingNotification=n;
+          renderIncomingNotification(n);
+        }
+      }
+      if(isOutgoing){
+        activeChatNotification=n;
+      }
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.new;if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=n;renderIncomingNotification(n);}
-      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){activeChatNotification=n;}
+      const n=payload.new;
+      if(!n)return;
+      const isIncoming=String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id);
+      const isOutgoing=String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id);
+      if(isIncoming){
+        const scheduled=new Date(n.scheduled_at).getTime();
+        if(Number.isFinite(scheduled)&&scheduled>Date.now()){
+          scheduleIncomingNotificationWake(n);
+          renderIncomingNotification(null);
+        }else{
+          activeIncomingNotification=n;
+          renderIncomingNotification(n);
+        }
+      }
+      if(isOutgoing){
+        activeChatNotification=n;
+      }
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.old;if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=null;renderIncomingNotification(null);}
-      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){activeChatNotification=null;}
-    }).subscribe();
+      const n=payload.old;
+      if(!n)return;
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){
+        if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
+        activeIncomingNotification=null;
+        renderIncomingNotification(null);
+      }
+      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){
+        activeChatNotification=null;
+      }
+    })
+    .subscribe((status)=>{
+      if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+        console.warn("chat notification realtime:",status);
+      }
+    });
 }
 
 let activeIncomingNotification=null;
@@ -4292,6 +4322,8 @@ async function requestBlockUser(userId){
 }
 
 async function closeChatAndHome(){
+  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
+  activeIncomingNotification=null;
   if(voiceRecording)stopVoiceRecording(false);
   stopTyping();clearTypingState();clearMessagePress();closeMessageSheet();cancelMessageMode();
   if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
