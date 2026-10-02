@@ -3875,6 +3875,17 @@ async function renderChats(){
     if(!profiles.length && !list.innerHTML.trim())list.innerHTML=`<div class="empty">خطا در دریافت مخاطب‌ها: ${esc(err.message||"خطای اتصال")}</div>`;
   }
 }
+function toggleUserProfileHeartActions(event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const btn=event?.currentTarget || document.querySelector(".user-profile-more.chat-heart-button");
+  if(!btn) return;
+  const opening=!btn.classList.contains("heart-actions-open");
+  btn.classList.toggle("heart-actions-open",opening);
+  btn.setAttribute("aria-expanded",opening?"true":"false");
+  const actions=btn.querySelector(".chat-heart-actions");
+  if(actions) actions.setAttribute("aria-hidden",opening?"false":"true");
+}
+
 function toggleChatHeartActions(event){
   if(event){ event.preventDefault(); event.stopPropagation(); }
   const btn=document.getElementById("chatHeartButton");
@@ -4137,29 +4148,31 @@ async function openChat(partner){
   document.getElementById("app").innerHTML=`
     <div class="chat-view">
       <header class="chat-header">
-        <button class="chat-head-side" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">${icons.back}</button>
-        <button class="chat-profile" type="button" onclick="openUserProfile(chatPartner)" aria-label="نمایش پروفایل کاربر">
-          <div class="avatar">${partner.avatar_url ? `<img src="${esc(partner.avatar_url)}" alt="" class="chat-avatar-image">` : esc((partner.display_name||partner.username||"?").slice(0,1))}</div>
-          <div class="chat-user-meta">
-            <div class="chat-title">${esc(partner.display_name)}</div>
-            <div id="typingIndicator" class="chat-typing" aria-live="polite">
-              <span>در حال نوشتن</span>
-              <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            </div>
-          </div>
-        </button>
-        <button id="chatHeartButton" class="chat-head-side chat-heart-button" type="button" aria-label="گزینه‌های گفتگو" aria-expanded="false" onclick="toggleChatHeartActions(event)">
-          ${icons.heart}
-          <span class="chat-heart-actions" aria-hidden="true">
-            <span class="chat-heart-action chat-heart-pin" title="رسانه و گالری">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="4" width="17.6" height="16" rx="3"/><circle cx="8.4" cy="9" r="1.7"/><path d="m4.8 17 4.4-4.3 3.1 3 2.1-2.1 4.8 4.5"/></svg>
-            </span>
-            <span class="chat-heart-action chat-heart-bell" title="اعلان‌ها" onclick="openNotificationComposer(event)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9.8c0-3.2-1.7-5.4-4.2-6.1V3a1.8 1.8 0 0 0-3.6 0v.7C7.7 4.4 6 6.6 6 9.8v3.1l-2 2.5h16l-2-2.5V9.8ZM9.5 17.2a2.7 2.7 0 0 0 5 0"/></svg>
-            </span>
-          </span>
-        </button>
-      </header>
+  <!-- Panel 1: back + counter, matching the reference layout -->
+  <button class="chat-head-side chat-back-panel" type="button" onclick="closeChatAndHome()" aria-label="بازگشت">
+    <span class="chat-back-icon">${icons.back}</span>
+  </button>
+
+  <!-- Panel 2: name + last-seen status -->
+  <button class="chat-profile chat-center-panel" type="button" onclick="openUserProfile(chatPartner)" aria-label="نمایش پروفایل کاربر">
+    <div class="chat-user-meta">
+      <div class="chat-title">${esc(partner.display_name)}</div>
+      <div class="chat-last-seen">last seen recently</div>
+      <div id="typingIndicator" class="chat-typing" aria-live="polite">
+        <span>در حال نوشتن</span>
+        <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      </div>
+    </div>
+  </button>
+
+  <!-- Panel 3: real profile avatar; tapping it opens the profile -->
+  <button class="chat-head-side chat-profile-avatar-panel" type="button"
+          onclick="openUserProfile(chatPartner)" aria-label="نمایش پروفایل کاربر">
+    <span class="chat-header-avatar">
+      ${partner.avatar_url ? `<img src="${esc(partner.avatar_url)}" alt="" class="chat-avatar-image">` : esc((partner.display_name||partner.username||"?").slice(0,1))}
+    </span>
+  </button>
+</header>
       <div id="chatNotificationHost"></div>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
       <div id="replyBar" class="reply-bar" aria-live="polite">
@@ -4229,7 +4242,17 @@ async function openChat(partner){
       <div id="userProfileOverlay" class="user-profile-overlay" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="user-profile-top">
           <button class="user-profile-close" type="button" onclick="closeUserProfile()" aria-label="بستن">${icons.back}</button>
-          <button class="user-profile-more" type="button" aria-label="بیشتر">⋯</button>
+          <button class="user-profile-more chat-heart-button" type="button" aria-label="گزینه‌های پروفایل" aria-expanded="false" onclick="toggleUserProfileHeartActions(event)">
+            ${icons.heart}
+            <span class="chat-heart-actions user-profile-heart-actions" aria-hidden="true">
+              <span class="chat-heart-action chat-heart-pin" title="رسانه و گالری">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="4" width="17.6" height="16" rx="3"/><circle cx="8.4" cy="9" r="1.7"/><path d="m4.8 17 4.4-4.3 3.1 3 2.1-2.1 4.8 4.5"/></svg>
+              </span>
+              <span class="chat-heart-action chat-heart-bell" title="اعلان‌ها" onclick="openNotificationComposer(event)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9.8c0-3.2-1.7-5.4-4.2-6.1V3a1.8 1.8 0 0 0-3.6 0v.7C7.7 4.4 6 6.6 6 9.8v3.1l-2 2.5h16l-2-2.5V9.8ZM9.5 17.2a2.7 2.7 0 0 0 5 0"/></svg>
+              </span>
+            </span>
+          </button>
         </div>
         <div id="userProfileContent" class="user-profile-content"></div>
       </div>
@@ -5593,11 +5616,12 @@ async function logout(){
 })();
 </script>
 
-<style id="khatmin-sent-voice-button-right-v2">
-/* Sent voice: play button on the RIGHT; waveform in the middle; time on the LEFT.
-   The player's base direction is RTL, so order 1 is the rightmost position. */
+<style id="khatmin-voice-direction-reversed">
+/* Reverse the voice control direction:
+   sent voices: play LEFT, waveform middle, duration RIGHT.
+   received voices: play RIGHT, waveform middle, duration LEFT. */
 .msg.mine .voice-message-player {
-  direction: rtl !important;
+  direction: ltr !important;
 }
 .msg.mine .voice-message-player .voice-play-btn {
   order: 1 !important;
@@ -5610,7 +5634,322 @@ async function logout(){
   order: 3 !important;
 }
 
-/* Received voice messages deliberately retain their original rules/layout. */
+.msg.theirs .voice-message-player {
+  direction: rtl !important;
+}
+.msg.theirs .voice-message-player .voice-play-btn {
+  order: 1 !important;
+}
+.msg.theirs .voice-message-player .voice-wave {
+  order: 2 !important;
+}
+.msg.theirs .voice-message-player .voice-duration {
+  order: 3 !important;
+}
+</style>
+
+
+<style id="khatmin-profile-more-heart">
+.user-profile-more svg{
+  width:25px;
+  height:25px;
+  display:block;
+  stroke:currentColor;
+}
+</style>
+
+
+<style id="khatmin-profile-heart-actions">
+.user-profile-more.chat-heart-button{
+  overflow:visible !important;
+  z-index:40 !important;
+  position:relative !important;
+}
+.user-profile-more.chat-heart-button .user-profile-heart-actions{
+  position:absolute;
+  top:6px;
+  left:50%;
+  width:48px;
+  height:112px;
+  transform:translateX(-50%);
+}
+.user-profile-more.chat-heart-button .chat-heart-action{
+  pointer-events:auto;
+}
+.user-profile-more.chat-heart-button .chat-heart-actions::before,
+.user-profile-more.chat-heart-button .chat-heart-actions::after{
+  pointer-events:none;
+}
+</style>
+
+
+<style id="khatmin-reference-topbar-3-panels">
+/* ===== Reference-style 3-panel chat header =====
+   Left: back + 940 | Center: name + status | Right: profile avatar */
+.chat-header{
+  direction:ltr !important;
+  height:78px !important;
+  min-height:78px !important;
+  padding:8px 12px !important;
+  display:grid !important;
+  grid-template-columns:84px minmax(150px,1fr) 58px !important;
+  align-items:center !important;
+  gap:10px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+}
+
+.chat-header > *{
+  pointer-events:auto !important;
+  box-sizing:border-box !important;
+}
+
+/* All three are independent glass panels */
+.chat-header > .chat-head-side,
+.chat-header > .chat-profile{
+  position:relative !important;
+  overflow:hidden !important;
+  isolation:isolate !important;
+  border:1px solid rgba(255,255,255,.72) !important;
+  background:linear-gradient(145deg,
+    rgba(255,255,255,.92),
+    rgba(249,244,250,.72) 55%,
+    rgba(255,255,255,.84)) !important;
+  box-shadow:
+    0 8px 26px rgba(91,67,92,.16),
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(255,255,255,.22) !important;
+  backdrop-filter:blur(20px) saturate(145%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(145%) !important;
+  color:#242127 !important;
+}
+
+/* LEFT — rounded pill, not a circle */
+.chat-header > .chat-back-panel{
+  width:58px !important;
+  height:46px !important;
+  min-height:46px !important;
+  border-radius:25px !important;
+  padding:0 9px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:0 !important;
+  color:#18161b !important;
+}
+.chat-back-icon{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  flex:0 0 30px;
+}
+.chat-back-icon svg{
+  width:22px !important;
+  height:22px !important;
+  stroke:currentColor !important;
+  stroke-width:2.25 !important;
+}
+.chat-back-count{
+  min-width:38px;
+  height:30px;
+  padding:0 7px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:system-ui,-apple-system,sans-serif;
+  font-size:15px;
+  font-weight:650;
+  line-height:1;
+  background:rgba(255,255,255,.78);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* CENTER — wide capsule */
+.chat-header > .chat-center-panel{
+  width:100% !important;
+  height:52px !important;
+  min-width:0 !important;
+  min-height:52px !important;
+  padding:5px 18px !important;
+  border-radius:28px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  direction:rtl !important;
+  text-decoration:none !important;
+}
+.chat-center-panel .chat-user-meta{
+  width:100% !important;
+  max-width:none !important;
+  height:42px !important;
+  min-width:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+.chat-center-panel .chat-title{
+  width:100% !important;
+  text-align:center !important;
+  color:#211e24 !important;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif !important;
+  font-size:16px !important;
+  font-weight:700 !important;
+  line-height:19px !important;
+  letter-spacing:.05px !important;
+}
+.chat-last-seen{
+  margin-top:1px;
+  color:#8c858e;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:11px;
+  font-weight:500;
+  line-height:14px;
+  white-space:nowrap;
+}
+.chat-center-panel .chat-typing{
+  top:25px !important;
+  right:50% !important;
+  transform:translate(50%,5px) !important;
+  justify-content:center !important;
+  color:#8c858e !important;
+}
+.chat-center-panel .chat-typing.show{
+  transform:translate(50%,0) !important;
+}
+.chat-center-panel .chat-title.typing-title{
+  transform:translateY(-5px) !important;
+}
+
+/* RIGHT — profile avatar circle */
+.chat-header > .chat-profile-avatar-panel{
+  width:52px !important;
+  height:52px !important;
+  min-width:52px !important;
+  min-height:52px !important;
+  padding:2px !important;
+  border-radius:50% !important;
+  display:grid !important;
+  place-items:center !important;
+  background:rgba(255,255,255,.76) !important;
+  border-color:rgba(255,255,255,.9) !important;
+  box-shadow:
+    0 7px 22px rgba(69,54,73,.20),
+    inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+.chat-header-avatar{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,#eadff7,#f2e3ef);
+  color:#70586d;
+  font-size:18px;
+  font-weight:700;
+}
+.chat-header-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.chat-profile-avatar-panel:active,
+.chat-center-panel:active,
+.chat-back-panel:active{
+  transform:scale(.97);
+}
+
+/* Keep the chosen theme compatible with the new three surfaces. */
+body[data-khat-theme] .chat-header > .chat-head-side,
+body[data-khat-theme] .chat-header > .chat-profile{
+  border-color:var(--theme-border)!important;
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--theme-surface) 92%,transparent),
+    color-mix(in srgb,var(--theme-surface2) 82%,transparent))!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.18),0 0 18px var(--theme-glow),inset 0 1px 0 rgba(255,255,255,.18)!important;
+}
+body[data-khat-theme] .chat-title{
+  color:var(--theme-text)!important;
+}
+body[data-khat-theme] .chat-last-seen{
+  color:var(--theme-muted)!important;
+}
+</style>
+
+
+<style id="khatmin-soft-scroll-message-fade">
+/* Soft, continuous fade while scrolling: no per-message clipping or stepped fade. */
+.chat-shell{
+  position:relative !important;
+  isolation:isolate !important;
+}
+.chat-shell::before,
+.chat-shell::after{
+  content:"" !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  height:34px !important;
+  z-index:12 !important;
+  pointer-events:none !important;
+  opacity:.78 !important;
+  transition:opacity .22s ease !important;
+}
+.chat-shell::before{
+  top:76px !important;
+  background:linear-gradient(
+    to bottom,
+    var(--chat-bg, rgba(255,255,255,.94)) 0%,
+    color-mix(in srgb, var(--chat-bg, #fff) 76%, transparent) 34%,
+    transparent 100%
+  ) !important;
+}
+.chat-shell::after{
+  bottom:78px !important;
+  background:linear-gradient(
+    to top,
+    var(--chat-bg, rgba(255,255,255,.94)) 0%,
+    color-mix(in srgb, var(--chat-bg, #fff) 76%, transparent) 34%,
+    transparent 100%
+  ) !important;
+}
+
+/* Keep the fade very subtle during normal scrolling. */
+.chat-shell.is-scrolling::before,
+.chat-shell.is-scrolling::after{
+  opacity:.9 !important;
+}
+</style>
+<script id="khatmin-soft-scroll-fade-script">
+(function(){
+  const shell=document.querySelector('.chat-shell');
+  if(!shell) return;
+  let timer=null;
+  const scroller=shell.querySelector('.messages-container, .chat-messages, #messages, .messages');
+  if(!scroller) return;
+  scroller.addEventListener('scroll',function(){
+    shell.classList.add('is-scrolling');
+    clearTimeout(timer);
+    timer=setTimeout(()=>shell.classList.remove('is-scrolling'),140);
+  },{passive:true});
+})();
+</script>
+
+
+<style id="khatmin-soft-scroll-fade-fallback">
+/* Fallback: whichever of these containers is present gets the same gentle edge fade. */
+.chat-page::before,.chat-page::after,
+.chat-container::before,.chat-container::after,
+.chat-main::before,.chat-main::after{
+  pointer-events:none !important;
+}
 </style>
 
 </body>
