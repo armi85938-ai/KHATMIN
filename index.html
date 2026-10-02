@@ -614,8 +614,8 @@ body{
   display:flex;
   flex-direction:column;
   align-items:flex-start;
-  justify-content:center;
-  padding:0;
+  justify-content:flex-start;
+  padding:2px 0 0;
   overflow:visible;
 }
 .chat-title{
@@ -655,8 +655,88 @@ body{
   pointer-events:none;
   z-index:3;
 }
-.chat-user-meta.typing-active .chat-title{transform:translateY(-5px)}
+.chat-last-seen{
+  position:relative;
+  width:100%;
+  height:15px;
+  margin-top:0;
+  color:#858790;
+  font-size:calc(9px * var(--text-scale,1));
+  line-height:15px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:right;
+  opacity:1;
+  transform:translateY(0);
+  transition:opacity .22s ease,transform .24s cubic-bezier(.22,.8,.22,1);
+  pointer-events:none;
+}
+.chat-user-meta.typing-active .chat-last-seen{
+  opacity:0;
+  transform:translateY(4px);
+}
+.chat-typing{
+  top:27px;
+}
 .chat-typing.show{opacity:1;transform:translateY(0)}
+.typing-word{
+  display:inline-flex;
+  direction:ltr;
+  font-family:Inter,Arial,sans-serif;
+  font-weight:700;
+  letter-spacing:.35px;
+  color:#fff;
+  text-shadow:0 0 10px rgba(255,255,255,.18);
+}
+.typing-word i{
+  display:inline-block;
+  font-style:normal;
+  opacity:.45;
+  transform:translateY(0);
+  animation:typingLetter 1.05s cubic-bezier(.22,.8,.22,1) infinite;
+}
+.typing-word i:nth-child(1){animation-delay:0s}
+.typing-word i:nth-child(2){animation-delay:.07s}
+.typing-word i:nth-child(3){animation-delay:.14s}
+.typing-word i:nth-child(4){animation-delay:.21s}
+.typing-word i:nth-child(5){animation-delay:.28s}
+.typing-word i:nth-child(6){animation-delay:.35s}
+@keyframes typingLetter{
+  0%,60%,100%{opacity:.42;transform:translateY(0) scale(1)}
+  30%{opacity:1;transform:translateY(-3px) scale(1.05)}
+}
+.chat-last.typing-state{
+  position:relative;
+  display:inline-block;
+  color:#fff !important;
+  font-weight:700;
+  direction:ltr;
+  text-align:left;
+  letter-spacing:.25px;
+  padding-right:13px;
+  animation:homeTypingPulse 1.2s ease-in-out infinite;
+}
+.chat-last.typing-state::after{
+  content:"";
+  position:absolute;
+  right:1px;
+  bottom:2px;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:6px 0 0 rgba(255,255,255,.55),12px 0 0 rgba(255,255,255,.25);
+  animation:homeTypingDots 1s ease-in-out infinite;
+}
+@keyframes homeTypingPulse{
+  0%,100%{opacity:.72}
+  50%{opacity:1}
+}
+@keyframes homeTypingDots{
+  0%,100%{opacity:.35;transform:translateX(0)}
+  50%{opacity:1;transform:translateX(-2px)}
+}
 .typing-dots{display:inline-flex;align-items:center;gap:3px;height:12px}
 .typing-dots i{
   width:4px;height:4px;border-radius:50%;background:#bfc1c9;
@@ -964,7 +1044,7 @@ body{
   .bottom-nav{width:calc(100% - 50px);height:60px;border-radius:30px}
 }
 @media (prefers-reduced-motion:reduce){
-  .bottom-nav,.bottom-nav::before,.bottom-nav::after,.bottom-nav .nav-btn,.bottom-nav .nav-btn::before,.bottom-nav .nav-btn svg{animation:none !important;transition:none !important}
+  .bottom-nav,.bottom-nav::before,.bottom-nav::after,.bottom-nav .nav-btn,.bottom-nav .nav-btn::before,.bottom-nav .nav-btn svg,.typing-word i,.chat-last.typing-state,.chat-last.typing-state::after{animation:none !important;transition:none !important}
 }
 
 
@@ -3723,7 +3803,7 @@ function setHomeTyping(partnerId,show){
   if(!last)return;
   clearTimeout(homeTypingTimers.get(String(partnerId)));
   if(show){
-    last.textContent="در حال نوشتن";
+    last.textContent="typing";
     last.classList.add("typing-state");
     homeTypingTimers.set(String(partnerId),setTimeout(()=>setHomeTyping(partnerId,false),2600));
   }else{
@@ -4159,7 +4239,9 @@ async function openChat(partner){
       <div class="chat-title">${esc(partner.display_name)}</div>
       <div class="chat-last-seen">last seen recently</div>
       <div id="typingIndicator" class="chat-typing" aria-live="polite">
-        <span>در حال نوشتن</span>
+        <span class="typing-word" aria-label="typing">
+          <i>t</i><i>y</i><i>p</i><i>i</i><i>n</i><i>g</i>
+        </span>
         <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
       </div>
     </div>
@@ -5952,5 +6034,41 @@ body[data-khat-theme] .chat-last-seen{
 }
 </style>
 
+
+<style id="khatmin-final-chat-status-center">
+/* FINAL: name + status must stay perfectly centered under the name */
+.chat-header > .chat-center-panel .chat-user-meta{
+  width:100% !important;
+  max-width:none !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+.chat-header > .chat-center-panel .chat-title{
+  width:100% !important;
+  text-align:center !important;
+}
+.chat-header > .chat-center-panel .chat-last-seen{
+  position:relative !important;
+  left:auto !important;
+  right:auto !important;
+  width:100% !important;
+  margin:0 !important;
+  text-align:center !important;
+  align-self:center !important;
+  line-height:14px !important;
+}
+.chat-header > .chat-center-panel .chat-typing{
+  left:50% !important;
+  right:auto !important;
+  top:26px !important;
+  transform:translate(-50%,5px) !important;
+  justify-content:center !important;
+  width:max-content !important;
+}
+.chat-header > .chat-center-panel .chat-typing.show{
+  transform:translate(-50%,0) !important;
+}
+</style>
 </body>
 </html>
