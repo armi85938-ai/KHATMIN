@@ -4488,10 +4488,31 @@ function toggleUserProfileHeartActions(event){
   const btn=event?.currentTarget || document.querySelector(".user-profile-more.chat-heart-button");
   if(!btn) return;
   const opening=!btn.classList.contains("heart-actions-open");
-  btn.classList.toggle("heart-actions-open",opening);
-  btn.setAttribute("aria-expanded",opening?"true":"false");
   const actions=btn.querySelector(".chat-heart-actions");
-  if(actions) actions.setAttribute("aria-hidden",opening?"false":"true");
+  clearTimeout(btn._heartCloseTimer);
+
+  if(opening){
+    btn.classList.remove("heart-actions-closing");
+    btn.classList.add("heart-actions-open","heart-shock");
+    btn.setAttribute("aria-expanded","true");
+    if(actions){
+      actions.setAttribute("aria-hidden","false");
+      actions.classList.remove("heart-actions-closing");
+    }
+    setTimeout(()=>btn.classList.remove("heart-shock"),280);
+  }else{
+    btn.classList.remove("heart-actions-open");
+    btn.classList.add("heart-actions-closing","heart-shock");
+    btn.setAttribute("aria-expanded","false");
+    if(actions){
+      actions.setAttribute("aria-hidden","true");
+      actions.classList.add("heart-actions-closing");
+    }
+    btn._heartCloseTimer=setTimeout(()=>{
+      btn.classList.remove("heart-actions-closing","heart-shock");
+      actions?.classList.remove("heart-actions-closing");
+    },430);
+  }
 }
 
 function toggleChatHeartActions(event){
@@ -6654,6 +6675,91 @@ async function logout(){
 .user-profile-more.chat-heart-button .chat-heart-actions::before,
 .user-profile-more.chat-heart-button .chat-heart-actions::after{
   pointer-events:none;
+}
+</style>
+
+<style id="khatmin-heart-premium-motion">
+/* ===== Premium heart shock + smoother particle burst + elegant close ===== */
+.user-profile-more.chat-heart-button.heart-shock{
+  animation:khHeartShock 280ms cubic-bezier(.22,1.35,.32,1) both;
+  will-change:transform;
+}
+@keyframes khHeartShock{
+  0%{transform:scale(1) rotate(0deg)}
+  18%{transform:scale(1.14) rotate(-3deg)}
+  38%{transform:scale(.91) rotate(3deg)}
+  58%{transform:scale(1.055) rotate(-1.5deg)}
+  78%{transform:scale(.975) rotate(.7deg)}
+  100%{transform:scale(1) rotate(0deg)}
+}
+
+.user-profile-more.chat-heart-button .chat-heart-actions{
+  transition:opacity 150ms ease, visibility 0s linear 430ms;
+}
+.user-profile-more.chat-heart-button.heart-actions-closing .chat-heart-actions{
+  opacity:1;
+  visibility:visible;
+  animation:khHeartActionsFadeOut 420ms cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes khHeartActionsFadeOut{
+  0%{opacity:1;transform:translateX(-50%) scale(1)}
+  45%{opacity:.9;transform:translateX(-50%) scale(.94)}
+  100%{opacity:0;transform:translateX(-50%) scale(.78)}
+}
+
+/* A richer burst: each pseudo-element carries several soft particles. */
+.user-profile-more.chat-heart-button .chat-heart-actions::before,
+.user-profile-more.chat-heart-button .chat-heart-actions::after{
+  width:7px;height:7px;
+  top:-1px;
+  left:20px;
+  border-radius:50%;
+  background:rgba(255,255,255,.78);
+  filter:blur(1.5px);
+  box-shadow:
+    -15px 7px 0 rgba(205,187,255,.58),
+    16px 10px 0 rgba(255,255,255,.62),
+    -10px 27px 0 rgba(216,197,255,.46),
+    12px 31px 0 rgba(255,255,255,.48);
+  opacity:0;
+}
+.user-profile-more.chat-heart-button.heart-actions-open .chat-heart-actions::before{
+  animation:khHeartParticlesA 720ms cubic-bezier(.16,1,.3,1) both;
+}
+.user-profile-more.chat-heart-button.heart-actions-open .chat-heart-actions::after{
+  animation:khHeartParticlesB 780ms 45ms cubic-bezier(.16,1,.3,1) both;
+}
+.user-profile-more.chat-heart-button.heart-actions-closing .chat-heart-actions::before{
+  animation:khHeartParticlesCloseA 360ms cubic-bezier(.4,0,.2,1) both;
+}
+.user-profile-more.chat-heart-button.heart-actions-closing .chat-heart-actions::after{
+  animation:khHeartParticlesCloseB 390ms 20ms cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes khHeartParticlesA{
+  0%{opacity:0;transform:translate(0,0) scale(.15)}
+  22%{opacity:.95;transform:translate(-4px,9px) scale(1)}
+  62%{opacity:.7;transform:translate(-2px,27px) scale(.78)}
+  100%{opacity:0;transform:translate(-1px,49px) scale(.25)}
+}
+@keyframes khHeartParticlesB{
+  0%{opacity:0;transform:translate(0,0) scale(.15)}
+  20%{opacity:.9;transform:translate(5px,8px) scale(1)}
+  60%{opacity:.62;transform:translate(3px,30px) scale(.72)}
+  100%{opacity:0;transform:translate(1px,53px) scale(.2)}
+}
+@keyframes khHeartParticlesCloseA{
+  0%{opacity:.65;transform:translate(-1px,45px) scale(.55)}
+  100%{opacity:0;transform:translate(0,6px) scale(.05)}
+}
+@keyframes khHeartParticlesCloseB{
+  0%{opacity:.58;transform:translate(2px,50px) scale(.5)}
+  100%{opacity:0;transform:translate(0,4px) scale(.04)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .user-profile-more.chat-heart-button.heart-shock{animation:none}
+  .user-profile-more.chat-heart-button .chat-heart-actions::before,
+  .user-profile-more.chat-heart-button .chat-heart-actions::after{animation:none!important}
 }
 </style>
 
