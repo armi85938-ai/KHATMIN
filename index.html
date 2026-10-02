@@ -2540,6 +2540,243 @@ body[data-khat-theme] .msg-wrap.mine .voice-message-player::after{
   .chat-heart-action svg{width:21px;height:21px}
 }
 </style>
+
+<style id="khatmin-clean-glass-composer">
+/* فقط ظاهر کامپوزر؛ هیچ تغییری در ارسال/دریافت پیام یا دیتابیس داده نشده است. */
+.composer{
+  width:min(525px,calc(100% - 24px)) !important;
+  height:58px !important;
+  padding:6px !important;
+  gap:7px !important;
+  bottom:16px !important;
+  border-radius:31px !important;
+  display:flex !important;
+  align-items:center !important;
+  overflow:visible !important;
+  background:color-mix(in srgb,var(--theme-surface,#ffffff) 18%,transparent) !important;
+  border:1px solid color-mix(in srgb,var(--theme-text,#fff) 16%,transparent) !important;
+  box-shadow:0 16px 45px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.18) !important;
+  backdrop-filter:blur(28px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(28px) saturate(165%) !important;
+  transition:box-shadow .35s ease,background .35s ease !important;
+}
+.composer-input-shell{
+  min-width:0 !important;
+  flex:1 1 auto !important;
+  height:46px !important;
+  display:flex !important;
+  align-items:center !important;
+  border-radius:25px !important;
+  overflow:hidden !important;
+  background:color-mix(in srgb,var(--theme-surface,#fff) 14%,transparent) !important;
+  border:1px solid color-mix(in srgb,var(--theme-text,#fff) 10%,transparent) !important;
+  backdrop-filter:blur(22px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(22px) saturate(165%) !important;
+  transition:flex-basis .42s cubic-bezier(.22,1,.36,1),background .3s ease,border-color .3s ease !important;
+}
+.composer input#messageInput{
+  width:100% !important;
+  min-width:0 !important;
+  height:100% !important;
+  padding:0 15px !important;
+  border:0 !important;
+  outline:0 !important;
+  background:transparent !important;
+  color:var(--theme-text,#fff) !important;
+  font-size:14px !important;
+  font-weight:500 !important;
+  direction:ltr !important;
+}
+.composer input#messageInput::placeholder{
+  color:var(--theme-muted,rgba(255,255,255,.65)) !important;
+  opacity:.92 !important;
+}
+.composer-attach,
+.composer-action{
+  position:relative !important;
+  z-index:3 !important;
+  width:46px !important;
+  height:46px !important;
+  min-width:46px !important;
+  flex:0 0 46px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  display:grid !important;
+  place-items:center !important;
+  color:var(--theme-accent,#9b76e4) !important;
+  background:color-mix(in srgb,var(--theme-surface,#fff) 20%,transparent) !important;
+  border:1px solid color-mix(in srgb,var(--theme-accent,#9b76e4) 32%,transparent) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 5px 16px rgba(0,0,0,.12) !important;
+  backdrop-filter:blur(20px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(20px) saturate(165%) !important;
+  transition:
+    width .42s cubic-bezier(.22,1,.36,1),
+    min-width .42s cubic-bezier(.22,1,.36,1),
+    flex-basis .42s cubic-bezier(.22,1,.36,1),
+    margin .42s cubic-bezier(.22,1,.36,1),
+    opacity .24s ease,
+    transform .42s cubic-bezier(.22,1,.36,1),
+    color .25s ease,
+    background .25s ease !important;
+}
+.composer-attach svg{width:24px !important;height:24px !important}
+.composer-action svg{width:23px !important;height:23px !important}
+.composer-attach:hover,
+.composer-action:hover{
+  color:var(--theme-accent2,var(--theme-accent,#9b76e4)) !important;
+  background:color-mix(in srgb,var(--theme-accent,#9b76e4) 15%,transparent) !important;
+}
+.composer:focus-within{
+  box-shadow:0 20px 55px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+.composer:focus-within .composer-attach{
+  width:0 !important;
+  min-width:0 !important;
+  flex-basis:0 !important;
+  margin-left:-7px !important;
+  margin-right:-7px !important;
+  opacity:0 !important;
+  transform:scale(.55) translateX(-8px) !important;
+  pointer-events:none !important;
+  border-width:0 !important;
+}
+.composer:focus-within .composer-input-shell{
+  background:color-mix(in srgb,var(--theme-surface,#fff) 19%,transparent) !important;
+  border-color:color-mix(in srgb,var(--theme-text,#fff) 16%,transparent) !important;
+}
+body[data-khat-theme^="light-"] .composer{
+  box-shadow:0 16px 45px rgba(40,25,60,.14),inset 0 1px 0 rgba(255,255,255,.72) !important;
+}
+body[data-khat-theme^="light-"] .composer-attach,
+body[data-khat-theme^="light-"] .composer-action{
+  color:var(--theme-accent) !important;
+}
+@media(max-width:600px){
+  .composer{width:calc(100% - 16px) !important;bottom:10px !important;height:56px !important}
+  .composer-attach,.composer-action{width:44px !important;min-width:44px !important;flex-basis:44px !important;height:44px !important}
+  .composer-input-shell{height:44px !important}
+}
+</style>
+
+<style id="khatmin-voice-final-style">
+.composer{
+  width:min(525px,calc(100% - 24px)) !important;
+}
+.composer.recording .composer-attach,
+.composer.recording:focus-within .composer-attach{
+  width:46px !important;
+  min-width:46px !important;
+  flex:0 0 46px !important;
+  flex-basis:46px !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  opacity:1 !important;
+  transform:scale(1) !important;
+  pointer-events:auto !important;
+  border-width:1px !important;
+  display:grid !important;
+}
+.composer-attach.voice-cancel{
+  color:var(--theme-accent,#9b76e4) !important;
+  background:color-mix(in srgb,var(--theme-accent,#9b76e4) 16%,transparent) !important;
+  border-color:color-mix(in srgb,var(--theme-accent,#9b76e4) 38%,transparent) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 6px 18px rgba(0,0,0,.16) !important;
+}
+.composer-attach.voice-cancel:hover{
+  background:color-mix(in srgb,var(--theme-accent,#9b76e4) 24%,transparent) !important;
+  transform:scale(1.05) !important;
+}
+.composer-attach.voice-cancel:active{transform:scale(.91) !important}
+.composer-attach .trash-icon{
+  width:23px !important;height:23px !important;
+}
+.composer.recording .composer-input-shell{
+  flex:1 1 auto !important;
+}
+.composer.recording .voice-recorder-ui{
+  display:flex !important;
+}
+</style>
+
+<style id="khatmin-voice-recording-polish">
+/* Recording mode: fixed width — the message field never stretches. */
+.composer.recording{
+  width:min(525px,calc(100% - 24px)) !important;
+}
+.composer.recording .composer-attach,
+.composer.recording:focus-within .composer-attach{
+  width:46px !important;
+  min-width:46px !important;
+  flex:0 0 46px !important;
+  flex-basis:46px !important;
+  margin:0 !important;
+  opacity:1 !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  border-width:1px !important;
+}
+.composer.recording .composer-input-shell,
+.composer.recording:focus-within .composer-input-shell{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+/* Hide the text field while recording, replacing "Message" with the indicator. */
+.composer.recording #messageInput{
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+.composer.recording .voice-recorder-ui{
+  position:absolute !important;
+  inset:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:9px !important;
+  padding:0 !important;
+  background:transparent !important;
+  border-radius:inherit !important;
+  pointer-events:none !important;
+}
+.composer.recording .voice-recorder-dot{
+  width:9px !important;
+  height:9px !important;
+  min-width:9px !important;
+  border-radius:50% !important;
+  background:#ff3b4e !important;
+  box-shadow:0 0 5px rgba(255,59,78,.9),0 0 12px rgba(255,59,78,.62) !important;
+  animation:khatminVoicePulse 1.05s ease-in-out infinite !important;
+}
+.composer.recording .voice-recorder-time{
+  color:var(--theme-text,#fff) !important;
+  font-size:13px !important;
+  font-weight:600 !important;
+  font-variant-numeric:tabular-nums !important;
+  letter-spacing:.3px !important;
+  direction:ltr !important;
+}
+.composer.recording .voice-recorder-label{display:none !important}
+@keyframes khatminVoicePulse{
+  0%,100%{opacity:.38;transform:scale(.72);box-shadow:0 0 4px rgba(255,59,78,.55),0 0 8px rgba(255,59,78,.35)}
+  50%{opacity:1;transform:scale(1);box-shadow:0 0 7px rgba(255,59,78,1),0 0 17px rgba(255,59,78,.72)}
+}
+.composer.recording .composer-attach.voice-cancel{
+  color:var(--theme-accent,#9b76e4) !important;
+  background:color-mix(in srgb,var(--theme-accent,#9b76e4) 15%,transparent) !important;
+  border-color:color-mix(in srgb,var(--theme-accent,#9b76e4) 36%,transparent) !important;
+}
+.composer.recording .composer-action.voice-recording{
+  opacity:1 !important;
+  transform:none !important;
+}
+@media(max-width:600px){
+  .composer.recording .composer-attach,
+  .composer.recording:focus-within .composer-attach{
+    width:44px !important;min-width:44px !important;flex-basis:44px !important;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -2672,7 +2909,6 @@ let messageGesture=null;
 let notificationChannel=null;
 let activeChatNotification=null;
 let replyingToNotification=null;
-let notificationWakeTimer=null;
 
 /* ===== Fast local cache =====
    The browser keeps previously loaded contacts/messages in IndexedDB.
@@ -3378,103 +3614,74 @@ async function deleteChatNotification(){
 
 async function loadIncomingChatNotification(){
   if(!currentUser||!chatPartner)return;
-  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
   const now=new Date().toISOString();
-  const r=await supabaseClient.from("chat_notifications")
-    .select("*")
-    .eq("sender_id",chatPartner.id)
-    .eq("receiver_id",currentUser.id)
-    .lte("scheduled_at",now)
-    .gt("expires_at",now)
-    .order("scheduled_at",{ascending:false})
-    .limit(1)
-    .maybeSingle();
-  if(r.error){
-    console.warn("chat notification load error:",r.error);
-    return;
-  }
-  activeIncomingNotification=r.data||null;
-  renderIncomingNotification(activeIncomingNotification);
+  const {data,error}=await supabaseClient.from("chat_notifications").select("*")
+    .eq("sender_id",chatPartner.id).eq("receiver_id",currentUser.id).lte("scheduled_at",now).gt("expires_at",now)
+    .order("scheduled_at",{ascending:false}).limit(1).maybeSingle();
+  if(error){if(!/relation .*chat_notifications.*does not exist/i.test(error.message||""))console.warn("NOTIFICATION LOAD:",error);return;}
+  activeIncomingNotification=data||null;
+  renderIncomingNotification(data);
 }
 
-function scheduleIncomingNotificationWake(notification){
-  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
-  if(!notification)return;
-  const scheduled=new Date(notification.scheduled_at).getTime();
-  const now=Date.now();
-  if(!Number.isFinite(scheduled)||scheduled<=now){
-    loadIncomingChatNotification().catch(()=>{});
-    return;
+function renderIncomingNotification(n){
+  const host=document.getElementById("chatNotificationHost"); if(!host)return;
+  if(!n){host.innerHTML="";return;}
+  host.innerHTML=`<div class="chat-notification-banner ${notificationThemeClass(n.theme)}" data-notification-id="${esc(n.id)}" onclick="openNotificationReply('${esc(n.id)}')">
+    <div class="chat-notification-banner-top"><span class="chat-notification-theme-dot">${notificationThemeIcon(n.theme)}</span><div><div class="chat-notification-banner-label">اعلان جدید از ${esc(chatPartner?.display_name||"کاربر")}</div><div class="chat-notification-banner-reply">برای پاسخ، روی اعلان بزن</div></div></div>
+    <div class="chat-notification-banner-text">${esc(n.content)}</div>
+  </div>`;
+  if(!n.seen_at){
+    setTimeout(()=>{
+      triggerNotificationThemeEffect(n.theme);
+      supabaseClient.from("chat_notifications").update({seen_at:new Date().toISOString()}).eq("id",n.id).eq("receiver_id",currentUser.id).is("seen_at",null).then(()=>{});
+    },260);
   }
-  const delay=Math.min(Math.max(scheduled-now,0),2147483647);
-  notificationWakeTimer=setTimeout(()=>{
-    notificationWakeTimer=null;
-    loadIncomingChatNotification().catch(()=>{});
-  },delay);
+}
+
+function triggerNotificationThemeEffect(theme){
+  const symbols=theme==="heart"?["♥","♡","❤","💗","💜"]:theme==="cry"?["💧","💦","﹏"]:theme==="laugh"?["☻","☺","✦","✧"]:[];
+  if(!symbols.length)return;
+  const layer=document.createElement("div");layer.className="chat-notify-particles";document.body.appendChild(layer);
+  for(let i=0;i<30;i++){
+    const el=document.createElement("span");el.className="chat-notify-particle";el.textContent=symbols[i%symbols.length];
+    el.style.setProperty("--x",`${Math.round((Math.random()-.5)*90)}vw`);el.style.setProperty("--y",`${Math.round((Math.random()-.2)*80)}vh`);
+    el.style.setProperty("--sz",`${12+Math.round(Math.random()*25)}px`);el.style.setProperty("--op",`${.35+Math.random()*.55}`);el.style.setProperty("--delay",`${Math.round(Math.random()*500)}ms`);el.style.setProperty("--r",`${Math.round((Math.random()-.5)*80)}deg`);
+    layer.appendChild(el);
+  }
+  setTimeout(()=>layer.remove(),3900);
+}
+
+function openNotificationReply(id){
+  const banner=document.querySelector(`.chat-notification-banner[data-notification-id="${CSS.escape(String(id))}"]`); if(!banner)return;
+  const n=activeIncomingNotification && String(activeIncomingNotification.id)===String(id)?activeIncomingNotification:null;
+  if(!n)return;
+  replyingToNotification=n;cancelEditOnly();
+  const bar=document.getElementById("replyBar"); if(!bar)return;
+  document.getElementById("replyBarLabel").textContent="پاسخ به اعلان";
+  document.getElementById("replyBarContent").textContent=n.content;
+  document.getElementById("replyBarIcon").textContent=notificationThemeIcon(n.theme);
+  bar.classList.remove("editing");bar.classList.add("show");
+  document.getElementById("messageInput")?.focus();
 }
 
 function subscribeChatNotifications(){
-  if(notificationChannel){
-    supabaseClient.removeChannel(notificationChannel).catch(()=>{});
-    notificationChannel=null;
-  }
+  if(notificationChannel){supabaseClient.removeChannel(notificationChannel).catch(()=>{});notificationChannel=null;}
   if(!currentUser||!chatPartner)return;
-
   notificationChannel=supabaseClient.channel(`chat-notifications-${currentUser.id}-${chatPartner.id}`)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.new;
-      if(!n)return;
-      const isIncoming=String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id);
-      const isOutgoing=String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id);
-      if(isIncoming){
-        const scheduled=new Date(n.scheduled_at).getTime();
-        if(Number.isFinite(scheduled)&&scheduled>Date.now()){
-          scheduleIncomingNotificationWake(n);
-        }else{
-          activeIncomingNotification=n;
-          renderIncomingNotification(n);
-        }
-      }
-      if(isOutgoing){
-        activeChatNotification=n;
-      }
+      const n=payload.new;if(!n)return;
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=n;renderIncomingNotification(n);}
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.new;
-      if(!n)return;
-      const isIncoming=String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id);
-      const isOutgoing=String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id);
-      if(isIncoming){
-        const scheduled=new Date(n.scheduled_at).getTime();
-        if(Number.isFinite(scheduled)&&scheduled>Date.now()){
-          scheduleIncomingNotificationWake(n);
-          renderIncomingNotification(null);
-        }else{
-          activeIncomingNotification=n;
-          renderIncomingNotification(n);
-        }
-      }
-      if(isOutgoing){
-        activeChatNotification=n;
-      }
+      const n=payload.new;if(!n)return;
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=n;renderIncomingNotification(n);}
+      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){activeChatNotification=n;}
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"chat_notifications"},payload=>{
-      const n=payload.old;
-      if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){
-        if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
-        activeIncomingNotification=null;
-        renderIncomingNotification(null);
-      }
-      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){
-        activeChatNotification=null;
-      }
-    })
-    .subscribe((status)=>{
-      if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
-        console.warn("chat notification realtime:",status);
-      }
-    });
+      const n=payload.old;if(!n)return;
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=null;renderIncomingNotification(null);}
+      if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){activeChatNotification=null;}
+    }).subscribe();
 }
 
 let activeIncomingNotification=null;
@@ -3539,11 +3746,18 @@ async function openChat(partner){
         <button class="reply-bar-close" type="button" onclick="cancelMessageMode()" aria-label="بستن">×</button>
       </div>
       <form id="composer" class="composer">
-        <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="پیامت را بنویس...">
-        <div id="voiceRecorderUI" class="voice-recorder-ui" aria-live="polite" aria-hidden="true">
-          <span class="voice-recorder-dot" aria-hidden="true"></span>
-          <span id="voiceRecorderTime" class="voice-recorder-time">00:00</span>
-          <span class="voice-recorder-label">در حال ضبط ویس</span>
+        <button id="attachButton" class="composer-attach" type="button" aria-label="پیوست" title="پیوست">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M8.2 12.7l6.25-6.25a3.25 3.25 0 0 1 4.6 4.6l-7.3 7.3a5 5 0 0 1-7.07-7.07l7.3-7.3a6.75 6.75 0 0 1 9.55 9.55l-7.3 7.3"
+              stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="composer-input-shell">
+          <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="Message">
+          <div id="voiceRecorderUI" class="voice-recorder-ui" aria-live="polite" aria-hidden="true">
+            <span class="voice-recorder-dot" aria-hidden="true"></span>
+            <span id="voiceRecorderTime" class="voice-recorder-time">00:00</span>
+          </div>
         </div>
         <button id="sendButton" class="composer-action is-voice" type="button" aria-label="ضبط ویس">${icons.voiceMic}</button>
       </form>
@@ -4322,8 +4536,6 @@ async function requestBlockUser(userId){
 }
 
 async function closeChatAndHome(){
-  if(notificationWakeTimer){clearTimeout(notificationWakeTimer);notificationWakeTimer=null;}
-  activeIncomingNotification=null;
   if(voiceRecording)stopVoiceRecording(false);
   stopTyping();clearTypingState();clearMessagePress();closeMessageSheet();cancelMessageMode();
   if(realtimeChannel){try{await supabaseClient.removeChannel(realtimeChannel)}catch(e){}realtimeChannel=null}
@@ -4367,13 +4579,36 @@ function setVoiceComposerState(recording){
   const composer=document.getElementById("composer");
   const input=document.getElementById("messageInput");
   const ui=document.getElementById("voiceRecorderUI");
+  const attach=document.getElementById("attachButton");
   if(!composer)return;
+
   composer.classList.toggle("recording",!!recording);
+
   if(ui)ui.classList.toggle("show",!!recording);
   if(ui)ui.setAttribute("aria-hidden",recording?"false":"true");
+
   if(input){
     input.setAttribute("aria-hidden",recording?"true":"false");
     if(recording)input.blur();
+  }
+
+  if(attach){
+    attach.classList.toggle("voice-cancel",!!recording);
+    if(recording){
+      attach.setAttribute("aria-label","لغو ضبط ویس");
+      attach.setAttribute("title","لغو ضبط ویس");
+      attach.innerHTML=`<svg class="trash-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5.5 7.5h13M9 7.5V5.7c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v1.8M8 10.2v7.4c0 .77.63 1.4 1.4 1.4h5.2c.77 0 1.4-.63 1.4-1.4v-7.4M10.3 10.2v6.1M13.7 10.2v6.1"
+          stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }else{
+      attach.setAttribute("aria-label","پیوست");
+      attach.setAttribute("title","پیوست");
+      attach.innerHTML=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8.2 12.7l6.25-6.25a3.25 3.25 0 0 1 4.6 4.6l-7.3 7.3a5 5 0 0 1-7.07-7.07l7.3-7.3a6.75 6.75 0 0 1 9.55 9.55l-7.3 7.3"
+          stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
   }
 }
 
@@ -4423,6 +4658,8 @@ async function toggleVoiceRecording(){
     const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(x=>MediaRecorder.isTypeSupported?.(x));
     voiceChunks=[];
     voiceShouldSend=false;
+    const timerEl=document.getElementById("voiceRecorderTime");
+    if(timerEl)timerEl.textContent="00:00";
     voiceRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
     voiceRecorder.ondataavailable=e=>{if(e.data?.size)voiceChunks.push(e.data)};
     voiceRecorder.onstop=async()=>{
@@ -4907,5 +5144,21 @@ async function logout(){
 }
 
 </style>
+
+<script id="khatmin-voice-trash-wire">
+(function(){
+  const attach=document.getElementById("attachButton");
+  if(!attach)return;
+  attach.addEventListener("click",function(e){
+    if(!voiceRecording)return;
+    e.preventDefault();
+    e.stopPropagation();
+    voiceShouldSend=false;
+    if(voiceRecorder){
+      try{voiceRecorder.stop()}catch(err){}
+    }
+  },true);
+})();
+</script>
 </body>
 </html>
