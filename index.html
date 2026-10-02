@@ -2654,23 +2654,36 @@ body[data-khat-theme] .msg-wrap.mine .voice-message-player::after{
   -webkit-backdrop-filter:blur(22px) saturate(165%) !important;
   transition:flex-basis .42s cubic-bezier(.22,1,.36,1),background .3s ease,border-color .3s ease !important;
 }
-.composer input#messageInput{
+.composer #messageInput{
   width:100% !important;
   min-width:0 !important;
   height:100% !important;
-  padding:0 15px !important;
+  min-height:46px !important;
+  max-height:46px !important;
+  resize:none !important;
+  overflow-y:auto !important;
+  padding:9px 15px !important;
   border:0 !important;
   outline:0 !important;
   background:transparent !important;
   color:var(--theme-text,#fff) !important;
+  font-family:inherit !important;
   font-size:14px !important;
   font-weight:500 !important;
-  direction:ltr !important;
+  line-height:1.9 !important;
+  direction:rtl !important;
+  text-align:right !important;
+  box-sizing:border-box !important;
 }
-.composer input#messageInput::placeholder{
+.composer #messageInput::placeholder{
   color:var(--theme-muted,rgba(255,255,255,.65)) !important;
   opacity:.92 !important;
 }
+
+/* Text composer: Enter creates a new line; sending stays on the send/voice button. */
+.composer #messageInput::-webkit-scrollbar{width:3px}
+.composer #messageInput::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+
 .composer-attach,
 .composer-action{
   position:relative !important;
@@ -3282,6 +3295,36 @@ body[data-khat-theme^="light-"] .composer-action{
 }
 </style>
 
+
+<style id="khatmin-typing-final-polish">
+/* Typing status: light themes = black, dark themes = light. Only dots animate. */
+body[data-khat-theme^="light-"] .chat-header > .chat-center-panel .chat-typing{
+  color:#000 !important;
+}
+body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .chat-typing{
+  color:#fff !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-word i{
+  animation:none !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i{
+  animation:typingDotBounce .72s ease-in-out infinite !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child(2){animation-delay:.12s !important}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child(3){animation-delay:.24s !important}
+.chat-header > .chat-center-panel .chat-user-meta.typing-active .chat-title{
+  transform:translateY(-4px) !important;
+}
+.chat-header > .chat-center-panel .chat-typing{
+  transform:translate(-50%,0) !important;
+}
+.chat-header > .chat-center-panel .chat-typing.show{
+  transform:translate(-50%,0) !important;
+}
+@media (prefers-reduced-motion: reduce){
+  body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i{animation:none !important}
+}
+</style>
 </head>
 <body>
 
@@ -4273,7 +4316,7 @@ async function openChat(partner){
           </svg>
         </button>
         <div class="composer-input-shell">
-          <input id="messageInput" maxlength="5000" autocomplete="off" placeholder="Message">
+          <textarea id="messageInput" maxlength="5000" autocomplete="off" placeholder="Message" rows="1" spellcheck="false"></textarea>
           <div id="voiceRecorderUI" class="voice-recorder-ui" aria-live="polite" aria-hidden="true">
             <span class="voice-recorder-dot" aria-hidden="true"></span>
             <span id="voiceRecorderTime" class="voice-recorder-time">00:00</span>
@@ -4371,6 +4414,7 @@ async function openChat(partner){
     e.preventDefault();e.stopPropagation();toggleVoiceRecording();
   });
   updateComposerAction();
+  resizeMessageComposer();
   lastChatReactionWord="";
   clearTimeout(chatReactionTimer);
   document.getElementById("messageInput").addEventListener("keydown",e=>{ if(e.key==="Escape"){ stopTyping(); closeDeleteConfirm(); closeMessageSheet(); } });
@@ -4660,14 +4704,34 @@ function checkChatReactionWords(){
   },2600);
 }
 
+function resizeMessageComposer(){
+  const input=document.getElementById("messageInput");
+  const composer=document.getElementById("composer");
+  const shell=composer?.querySelector(".composer-input-shell");
+  if(!input||!composer||!shell||composer.classList.contains("recording"))return;
+  input.style.height="46px";
+  const max=120;
+  const next=Math.max(46,Math.min(input.scrollHeight,max));
+  input.style.height=next+"px";
+  shell.style.height=Math.max(46,next)+"px";
+  composer.style.height=Math.max(58,next+12)+"px";
+  const multiline=next>46;
+  composer.classList.toggle("is-multiline",multiline);
+  input.style.overflowY=(input.scrollHeight>max)?"auto":"hidden";
+}
+
 function handleTypingInput(){
   const input=document.getElementById("messageInput");
   const composer=document.getElementById("composer");
+  resizeMessageComposer();
   if(composer) composer.classList.toggle("has-text",!!String(input?.value||"").trim());
   updateComposerAction();
+  resizeMessageComposer();
   if(!input || !input.value.length){
     if(composer) composer.classList.remove("has-text");
-    stopTyping();checkChatReactionWords();return;
+    stopTyping();checkChatReactionWords();
+    resizeMessageComposer();
+    return;
   }
   checkChatReactionWords();
   if(!isLocalTyping){isLocalTyping=true;broadcastTyping(true)}
@@ -5289,108 +5353,113 @@ async function sendMessage(e){
   if(!content)return;
 
   stopTyping();
-  input.disabled=true;
-  if(button) button.disabled=true;
 
-  try{
-    if(editingMessageId){
+  if(editingMessageId){
+    input.disabled=true;
+    if(button)button.disabled=true;
+    try{
       const ok=await editMessage(editingMessageId,content);
       if(!ok)return;
       cancelMessageMode();
       input.focus();
       return;
+    }finally{
+      input.disabled=false;
+      if(button)button.disabled=false;
     }
-
-    // قبل از INSERT هر دو شناسه را از profiles تأیید می‌کنیم تا خطای FK به کاربر نمایش داده نشود.
-    const {data:senderProfile,senderError}=await (async()=>{
-      const r=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url,bio").eq("id",currentUser.id).maybeSingle();
-      return {data:r.data,senderError:r.error};
-    })();
-    if(senderError || !senderProfile?.id){
-      sessionStorage.removeItem("love_profile");
-      currentUser=null;
-      alert("اطلاعات حساب با دیتابیس هماهنگ نیست. لطفاً یک‌بار خارج شوید و دوباره وارد شوید.");
-      return;
-    }
-
-    const {data:receiverProfile, error:receiverError}=await supabaseClient
-      .from("profiles")
-      .select("id")
-      .eq("id",chatPartner.id)
-      .maybeSingle();
-    if(receiverError || !receiverProfile?.id){
-      alert("این مخاطب دیگر در فهرست کاربران وجود ندارد. فهرست گفتگوها را تازه‌سازی کنید.");
-      return;
-    }
-
-    const payload={
-      sender_id:senderProfile.id,
-      receiver_id:receiverProfile.id,
-      content:content
-    };
-
-    if(replyingToMessage?.id){
-      payload.reply_to_id=replyingToMessage.id;
-    }
-    if(replyingToNotification?.id){
-      payload.notification_reply_to_id=replyingToNotification.id;
-      payload.notification_reply_text=replyingToNotification.content||"";
-      payload.notification_reply_theme=replyingToNotification.theme||"none";
-    }
-
-    // مهم: ذخیره پیام را از SELECT ستون‌های اختیاری جدا می‌کنیم.
-    // این باعث می‌شود نبودن edited_at/reply_to_id/... مانع ارسال پیام نشود.
-    let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
-
-    // اگر ستون‌های اختیاری reply در دیتابیس موجود نبودند، پیام اصلی را بدون آن ستون‌ها ذخیره/دریافت کن.
-    if(result.error && /notification_reply_text|notification_reply_to_id|notification_reply_theme|reply_to_id|column .* does not exist/i.test(result.error.message||"")){
-      const basicPayload={
-        sender_id:currentUser.id,
-        receiver_id:receiverProfile.id,
-        content:content
-      };
-      result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
-    }
-
-    if(result.error){
-      console.error("SEND MESSAGE ERROR:",result.error);
-      alert("پیام ارسال نشد:\n"+(result.error.message||"خطای ناشناخته"));
-      return;
-    }
-
-    const saved=result.data;
-    const box=document.getElementById("messages");
-
-    if(saved && box){
-      messageCache.set(String(saved.id),saved);
-      await cacheMessages([saved]);
-      if(box.querySelector(".empty"))box.innerHTML="";
-      if(!document.querySelector(`[data-msg-id="${CSS.escape(String(saved.id))}"]`)){
-        box.insertAdjacentHTML("beforeend",renderMessage(saved));
-        attachMessageGestures();
-        bindVoicePlayers();
-      }
-      box.scrollTop=box.scrollHeight;
-    }
-
-    input.value="";updateComposerAction();
-    replyingToMessage=null;
-    document.getElementById("replyBar")?.classList.remove("show");
-    const icon=document.getElementById("replyBarIcon");
-    if(icon)icon.textContent="↩";
-    input.focus();
-
-    // The new message is already in IndexedDB and in the live cache; no full-history SELECT is needed.
-
-  }catch(err){
-    console.error("SEND MESSAGE UNEXPECTED ERROR:",err);
-    alert("خطا در ارسال پیام:\n"+(err?.message||"خطای ناشناخته"));
-  }finally{
-    input.disabled=false;
-    if(button)button.disabled=false;
   }
-}
 
+  /* Optimistic UI: the bubble leaves the composer immediately. The database
+     insert continues in the background, so network latency is not visible. */
+  const replySnapshot=replyingToMessage;
+  const notificationReply=replyingToNotification;
+  const tempId=`local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const tempMessage={
+    id:tempId,
+    sender_id:currentUser.id,
+    receiver_id:chatPartner.id,
+    content,
+    created_at:new Date().toISOString(),
+    read_at:null,
+    _optimistic:true
+  };
+  const box=document.getElementById("messages");
+  if(box){
+    box.querySelector(".empty")?.remove();
+    box.insertAdjacentHTML("beforeend",renderMessage(tempMessage));
+    attachMessageGestures();
+    bindVoicePlayers();
+    box.scrollTop=box.scrollHeight;
+  }
+  input.value="";
+  input.style.height="46px";
+  const shell=document.querySelector("#composer .composer-input-shell");
+  if(shell)shell.style.height="46px";
+  const composer=document.getElementById("composer");
+  if(composer){
+    composer.classList.remove("has-text","is-multiline");
+    composer.style.height="58px";
+  }
+  updateComposerAction();
+  resizeMessageComposer();
+  replyingToMessage=null;
+  document.getElementById("replyBar")?.classList.remove("show");
+  const icon=document.getElementById("replyBarIcon");
+  if(icon)icon.textContent="↩";
+  input.focus();
+
+  /* Do not block the UI while Supabase validates/inserts the row. */
+  (async()=>{
+    try{
+      const {data:senderProfile,senderError}=await (async()=>{
+        const r=await supabaseClient.from("profiles").select("id,username,display_name,avatar_url,bio").eq("id",currentUser.id).maybeSingle();
+        return {data:r.data,senderError:r.error};
+      })();
+      if(senderError || !senderProfile?.id)throw new Error("اطلاعات حساب با دیتابیس هماهنگ نیست.");
+
+      const {data:receiverProfile,error:receiverError}=await supabaseClient
+        .from("profiles").select("id").eq("id",chatPartner.id).maybeSingle();
+      if(receiverError || !receiverProfile?.id)throw new Error("این مخاطب دیگر در فهرست کاربران وجود ندارد.");
+
+      const payload={sender_id:senderProfile.id,receiver_id:receiverProfile.id,content};
+      if(replySnapshot?.id)payload.reply_to_id=replySnapshot.id;
+      if(notificationReply?.id){
+        payload.notification_reply_to_id=notificationReply.id;
+        payload.notification_reply_text=notificationReply.content||"";
+        payload.notification_reply_theme=notificationReply.theme||"none";
+      }
+
+      let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
+      if(result.error && /notification_reply_text|notification_reply_to_id|notification_reply_theme|reply_to_id|column .* does not exist/i.test(result.error.message||"")){
+        const basicPayload={sender_id:currentUser.id,receiver_id:receiverProfile.id,content};
+        result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
+      }
+      if(result.error)throw result.error;
+
+      const saved=result.data;
+      const tempEl=box?.querySelector(`[data-msg-id="${CSS.escape(tempId)}"]`);
+      if(saved){
+        messageCache.set(String(saved.id),saved);
+        await cacheMessages([saved]);
+        if(tempEl){
+          tempEl.outerHTML=renderMessage(saved);
+          attachMessageGestures();
+          bindVoicePlayers();
+        }else if(box && !box.querySelector(`[data-msg-id="${CSS.escape(String(saved.id))}"]`)){
+          box.insertAdjacentHTML("beforeend",renderMessage(saved));
+          attachMessageGestures();
+          bindVoicePlayers();
+        }
+      }
+      if(notificationReply)replyingToNotification=null;
+    }catch(err){
+      console.error("SEND MESSAGE BACKGROUND ERROR:",err);
+      const tempEl=box?.querySelector(`[data-msg-id="${CSS.escape(tempId)}"]`);
+      tempEl?.remove();
+      alert("پیام ارسال نشد:\n"+(err?.message||"خطای اتصال"));
+    }
+  })();
+}
 function playWaterTransition(fromRect,toRect){
   const old=document.querySelector('.nav-liquid-flight');
   if(old) old.remove();
@@ -6070,5 +6139,308 @@ body[data-khat-theme] .chat-last-seen{
   transform:translate(-50%,0) !important;
 }
 </style>
+<style id="khatmin-message-bubble-reference-skin">
+/* Reference-style text bubbles only. Voice-message styles are intentionally untouched. */
+.msg-wrap .msg:not(.voice-msg){
+  display:block !important;
+  width:max-content !important;
+  max-width:min(78%,330px) !important;
+  min-width:0 !important;
+  padding:8px 11px 5px !important;
+  border-radius:18px !important;
+  border:1px solid rgba(100,82,50,.10) !important;
+  box-shadow:0 5px 15px rgba(65,49,33,.07), inset 0 1px 0 rgba(255,255,255,.38) !important;
+  font-size:calc(13px * var(--text-scale,1)) !important;
+  line-height:1.72 !important;
+  overflow:visible !important;
+  white-space:pre-wrap !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg){
+  background:linear-gradient(145deg,#fff8d9 0%,#ffefb9 100%) !important;
+  color:#4d4439 !important;
+  border-color:rgba(150,119,56,.16) !important;
+  border-bottom-right-radius:7px !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg)::after{
+  right:-6px !important;
+  left:auto !important;
+  bottom:0 !important;
+  width:12px !important;
+  height:12px !important;
+  background:#ffefb9 !important;
+  clip-path:polygon(0 0,100% 100%,0 100%) !important;
+  box-shadow:2px 2px 4px rgba(65,49,33,.025) !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg){
+  background:linear-gradient(145deg,#ffffff 0%,#f8f6f3 100%) !important;
+  color:#4d4a46 !important;
+  border-color:rgba(95,87,75,.10) !important;
+  border-bottom-left-radius:7px !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg)::after{
+  left:-6px !important;
+  right:auto !important;
+  bottom:0 !important;
+  width:12px !important;
+  height:12px !important;
+  background:#f8f6f3 !important;
+  clip-path:polygon(100% 0,100% 100%,0 100%) !important;
+}
+.msg-wrap .msg:not(.voice-msg) .msg-footer{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:4px !important;
+  width:100% !important;
+  min-height:10px !important;
+  margin:1px 0 0 !important;
+  padding:0 !important;
+  opacity:.78 !important;
+  direction:ltr !important;
+}
+.msg-wrap .msg:not(.voice-msg) .msg-time,
+.msg-wrap .msg:not(.voice-msg) .msg-edited{
+  font-size:calc(8px * var(--text-scale,1)) !important;
+  line-height:10px !important;
+  color:#9b7e72 !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg) .msg-status{
+  color:#b98b9b !important;
+  text-shadow:none !important;
+  margin-inline-end:0 !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg) .msg-status{display:none !important}
+@media(max-width:520px){
+  .msg-wrap .msg:not(.voice-msg){max-width:min(84%,330px) !important}
+}
+</style>
+
+<style id="khatmin-v6-message-composer-polish">
+/* V6: theme-aware ticks, unified message bubbles, optimistic text send, growing multiline composer. */
+.msg.mine:not(.voice-msg)::after,
+.msg.theirs:not(.voice-msg)::after{display:none!important}
+
+body[data-khat-theme] .msg-status.sent{
+  color:color-mix(in srgb,var(--theme-accent) 58%,var(--theme-muted))!important;
+  text-shadow:0 0 6px color-mix(in srgb,var(--theme-accent) 18%,transparent)!important;
+}
+body[data-khat-theme] .msg-status.delivered{
+  color:color-mix(in srgb,var(--theme-accent) 78%,var(--theme-text))!important;
+  text-shadow:0 0 7px color-mix(in srgb,var(--theme-accent) 22%,transparent)!important;
+}
+body[data-khat-theme] .msg-status.seen{
+  color:var(--theme-accent)!important;
+  text-shadow:0 0 8px var(--theme-glow)!important;
+}
+body:not([data-khat-theme]) .msg-status.sent{color:#b28acb!important}
+body:not([data-khat-theme]) .msg-status.delivered{color:#9d74bf!important}
+body:not([data-khat-theme]) .msg-status.seen{color:#c58ee8!important}
+
+.composer:not(.recording){
+  min-height:58px!important;
+  height:auto!important;
+  max-height:198px!important;
+  align-items:flex-end!important;
+  overflow:visible!important;
+  border-radius:30px!important;
+  transition:height .22s ease, min-height .22s ease, max-height .22s ease, box-shadow .25s ease, background .25s ease!important;
+}
+.composer:not(.recording) .composer-input-shell{
+  height:auto!important;
+  min-height:46px!important;
+  max-height:174px!important;
+  align-items:flex-end!important;
+  overflow:hidden!important;
+  border-radius:24px!important;
+}
+.composer:not(.recording) #messageInput{
+  height:46px!important;
+  min-height:46px!important;
+  max-height:154px!important;
+  overflow-y:hidden!important;
+  box-sizing:border-box!important;
+  padding-top:9px!important;
+  padding-bottom:9px!important;
+  scrollbar-width:thin;
+}
+.composer:not(.recording).is-multiline #messageInput{overflow-y:auto!important}
+.composer:not(.recording).is-multiline .composer-input-shell{align-items:flex-end!important}
+.composer:not(.recording).is-multiline{border-radius:28px!important}
+.composer:not(.recording) .composer-action,
+.composer:not(.recording) .composer-attach{flex:none!important}
+
+@media(max-width:600px){
+  .composer:not(.recording){max-height:190px!important}
+  .composer:not(.recording) .composer-input-shell{max-height:166px!important}
+  .composer:not(.recording) #messageInput{max-height:146px!important}
+}
+</style>
+
+<style id="khatmin-v7-composer-position-fix">
+/* V7: keep the composer in its normal resting position; only multiline grows upward. */
+#composer.composer:not(.recording){
+  left:50% !important;
+  bottom:17px !important;
+  width:min(560px,calc(100% - 28px)) !important;
+  min-height:58px !important;
+  height:58px !important;
+  max-height:132px !important;
+  padding:8px !important;
+  gap:8px !important;
+  align-items:center !important;
+  box-sizing:border-box !important;
+  border-radius:22px !important;
+  overflow:visible !important;
+  transform:translateX(-50%) !important;
+}
+#composer.composer:not(.recording) .composer-input-shell{
+  height:46px !important;
+  min-height:46px !important;
+  max-height:120px !important;
+  align-items:center !important;
+  border-radius:25px !important;
+  overflow:hidden !important;
+}
+#composer.composer:not(.recording) #messageInput{
+  height:46px !important;
+  min-height:46px !important;
+  max-height:108px !important;
+  padding-top:9px !important;
+  padding-bottom:9px !important;
+  line-height:1.65 !important;
+  overflow-y:hidden !important;
+}
+#composer.composer:not(.recording).is-multiline{
+  height:auto !important;
+  min-height:58px !important;
+  max-height:132px !important;
+  align-items:flex-end !important;
+}
+#composer.composer:not(.recording).is-multiline .composer-input-shell{
+  height:auto !important;
+  min-height:46px !important;
+  max-height:120px !important;
+  align-items:flex-end !important;
+}
+#composer.composer:not(.recording).is-multiline #messageInput{
+  max-height:108px !important;
+  overflow-y:auto !important;
+}
+@media(max-width:600px){
+  #composer.composer:not(.recording){
+    width:calc(100% - 16px) !important;
+    bottom:10px !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:126px !important;
+  }
+}
+</style>
+
+
+<style id="khatmin-center-only-v10">
+/* V10: only nudge the center floating panel slightly toward the true visual center. */
+.chat-header > .chat-center-panel{
+  transform:translateX(8px) !important;
+}
+.chat-header > .chat-center-panel:active{
+  transform:translateX(8px) scale(.97) !important;
+}
+</style>
 </body>
 </html>
+<style id="continuous-message-bubbles">
+/* ===== Continuous message bubbles: no detached triangle ===== */
+.msg-wrap .msg:not(.voice-msg)::after,
+.msg-wrap .msg:not(.voice-msg)::before{
+  display:none !important;
+  content:none !important;
+}
+.msg-wrap .msg:not(.voice-msg){
+  overflow:hidden !important;
+  border-radius:20px !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg){
+  border-bottom-right-radius:7px !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg){
+  border-bottom-left-radius:7px !important;
+}
+</style>
+
+<style id="khatmin-voice-trash-theme-final">
+/* Final trash/cancel button polish: theme-aware, no recording/data logic changes. */
+body[data-khat-theme] #composer.composer.recording .composer-attach.voice-cancel,
+body[data-khat-theme] #composer.composer.recording .composer-attach.voice-cancel:hover,
+body[data-khat-theme] #composer.composer.recording:focus-within .composer-attach.voice-cancel{
+  color:var(--theme-accent) !important;
+  background:color-mix(in srgb,var(--theme-accent) 13%,transparent) !important;
+  border-color:color-mix(in srgb,var(--theme-accent) 34%,transparent) !important;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--theme-accent) 14%,transparent), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+body[data-khat-theme] #composer.composer.recording .composer-attach.voice-cancel .trash-icon,
+body[data-khat-theme] #composer.composer.recording .composer-attach.voice-cancel .trash-icon path{
+  color:var(--theme-accent) !important;
+  stroke:var(--theme-accent) !important;
+}
+#composer.composer.recording .composer-attach.voice-cancel .trash-icon{
+  pointer-events:none !important;
+}
+</style>
+
+<script id="khatmin-voice-trash-cancel-final">
+(function(){
+  function wireTrashCancel(){
+    const attach=document.getElementById("attachButton");
+    if(!attach || attach.dataset.trashCancelFinal === "1") return;
+    attach.dataset.trashCancelFinal="1";
+
+    const cancelRecording=()=>{
+      if(!voiceRecording && !attach.classList.contains("voice-cancel")) return;
+      voiceShouldSend=false;
+      if(voiceRecorder){
+        try{voiceRecorder.stop()}catch(err){
+          console.warn("VOICE CANCEL STOP ERROR:",err);
+        }
+      }else{
+        voiceRecording=false;
+        stopVoiceTimer();
+        setVoiceComposerState(false);
+        updateComposerAction();
+      }
+    };
+
+    attach.addEventListener("pointerdown",function(e){
+      if(!voiceRecording && !attach.classList.contains("voice-cancel")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      cancelRecording();
+    },true);
+
+    attach.addEventListener("click",function(e){
+      if(!voiceRecording && !attach.classList.contains("voice-cancel")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      cancelRecording();
+    },true);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",wireTrashCancel,{once:true});
+  }else{
+    wireTrashCancel();
+  }
+})();
+</script>
+
+<style id="khatmin-center-only-v11">
+/* Only correction requested: move the existing center panel left to the true visual center. */
+.chat-header > .chat-center-panel{
+  transform:translateX(-17px) !important;
+}
+.chat-header > .chat-center-panel:active{
+  transform:translateX(-17px) scale(.97) !important;
+}
+</style>
