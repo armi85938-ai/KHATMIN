@@ -2777,6 +2777,431 @@ body[data-khat-theme^="light-"] .composer-action{
   }
 }
 </style>
+
+<style id="khatmin-voice-fixed-ui">
+/* ===== Voice recording UI — visual-only override =====
+   No database, Supabase, message payload, or recording logic is changed here. */
+
+.composer,
+.composer.recording{
+  width:min(525px,calc(100% - 24px)) !important;
+  height:58px !important;
+  min-height:58px !important;
+  max-height:58px !important;
+  flex:none !important;
+  transform:translateX(-50%) !important;
+  transition:box-shadow .35s ease,background .35s ease !important;
+}
+
+/* Never let focus/recording animate the paperclip out and resize the message field. */
+.composer.recording:focus-within .composer-attach,
+.composer.recording .composer-attach{
+  width:46px !important;
+  min-width:46px !important;
+  max-width:46px !important;
+  flex:0 0 46px !important;
+  flex-basis:46px !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  opacity:1 !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  border-width:1px !important;
+  display:grid !important;
+}
+
+/* Recording mode: the input shell keeps exactly the same footprint. */
+.composer.recording .composer-input-shell,
+.composer.recording:focus-within .composer-input-shell{
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  flex:1 1 auto !important;
+  flex-basis:auto !important;
+  height:46px !important;
+  overflow:hidden !important;
+}
+
+/* The Message input itself must not participate in layout while recording. */
+.composer.recording #messageInput{
+  display:none !important;
+  width:0 !important;
+  min-width:0 !important;
+  max-width:0 !important;
+  flex:0 0 0 !important;
+}
+
+/* Timer stays centered inside the existing Message box. */
+.composer.recording .voice-recorder-ui{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:9px !important;
+  padding:0 !important;
+  margin:0 !important;
+  pointer-events:none !important;
+}
+
+/* Recording button: red, compact, fixed — it never changes the composer width. */
+.composer.recording .composer-action.voice-recording{
+  width:42px !important;
+  min-width:42px !important;
+  max-width:42px !important;
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+  flex:0 0 42px !important;
+  border-radius:50% !important;
+  padding:0 !important;
+  background:#ff3347 !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+  box-shadow:0 6px 18px rgba(255,51,71,.34),inset 0 1px 0 rgba(255,255,255,.25) !important;
+  opacity:1 !important;
+  transform:none !important;
+  display:grid !important;
+  place-items:center !important;
+}
+.composer.recording .composer-action.voice-recording:hover{
+  background:#ff263b !important;
+  color:#fff !important;
+  transform:scale(1.03) !important;
+}
+.composer.recording .composer-action.voice-recording:active{
+  transform:scale(.92) !important;
+}
+.composer.recording .composer-action.voice-recording svg{
+  width:20px !important;
+  height:20px !important;
+  stroke:#fff !important;
+}
+
+/* Trash icon replaces the paperclip while recording. */
+.composer.recording .composer-attach.voice-cancel{
+  color:#fff !important;
+  background:rgba(255,255,255,.07) !important;
+  border-color:rgba(255,255,255,.16) !important;
+}
+.composer.recording .composer-attach.voice-cancel:hover{
+  color:#ff5b6b !important;
+  background:rgba(255,59,78,.12) !important;
+}
+.composer.recording .composer-attach .trash-icon{
+  width:22px !important;
+  height:22px !important;
+}
+
+/* Make the red recording dot + timer crisp and stable. */
+.composer.recording .voice-recorder-dot{
+  width:8px !important;
+  height:8px !important;
+  min-width:8px !important;
+  flex:0 0 8px !important;
+  background:#ff3347 !important;
+}
+.composer.recording .voice-recorder-time{
+  min-width:52px !important;
+  color:#fff !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  font-variant-numeric:tabular-nums !important;
+  direction:ltr !important;
+  text-align:center !important;
+}
+
+/* Mobile: same fixed height and same visual proportions. */
+@media(max-width:600px){
+  .composer,
+  .composer.recording{
+    width:calc(100% - 16px) !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    bottom:10px !important;
+  }
+  .composer.recording .composer-attach,
+  .composer.recording:focus-within .composer-attach{
+    width:44px !important;
+    min-width:44px !important;
+    max-width:44px !important;
+    flex-basis:44px !important;
+  }
+  .composer.recording .composer-action.voice-recording{
+    width:42px !important;
+    min-width:42px !important;
+    max-width:42px !important;
+    flex-basis:42px !important;
+    height:42px !important;
+  }
+}
+</style>
+
+
+<style id="khatmin-pv-voice-final">
+/* FINAL PV VOICE UI ONLY — no data/database/recording logic changed. */
+
+/* Keep the private-chat composer physically the same size while recording. */
+#composer.composer,
+#composer.composer.recording{
+  width:min(525px,calc(100% - 24px)) !important;
+  height:58px !important;
+  min-height:58px !important;
+  max-height:58px !important;
+  padding:6px !important;
+  gap:7px !important;
+  flex:none !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+
+/* Recording layout is locked to: trash | message/timer box | red send. */
+#composer.composer.recording{
+  display:grid !important;
+  grid-template-columns:46px minmax(0,1fr) 42px !important;
+  align-items:center !important;
+}
+
+#composer.composer.recording .composer-attach,
+#composer.composer.recording:focus-within .composer-attach{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  width:46px !important;
+  min-width:46px !important;
+  max-width:46px !important;
+  height:46px !important;
+  min-height:46px !important;
+  max-height:46px !important;
+  flex:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  display:grid !important;
+  border-width:1px !important;
+}
+
+/* No expansion/shrink animation can affect the message box during recording. */
+#composer.composer.recording .composer-input-shell,
+#composer.composer.recording:focus-within .composer-input-shell{
+  grid-column:2 !important;
+  grid-row:1 !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:46px !important;
+  min-height:46px !important;
+  max-height:46px !important;
+  flex:none !important;
+  flex-basis:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  transition:none !important;
+}
+
+#composer.composer.recording #messageInput{
+  display:none !important;
+  width:0 !important;
+  min-width:0 !important;
+  max-width:0 !important;
+  flex:none !important;
+}
+
+/* The timer is the only content shown inside the Message box. */
+#composer.composer.recording .voice-recorder-ui{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+  pointer-events:none !important;
+  background:transparent !important;
+}
+#composer.composer.recording .voice-recorder-dot,
+#composer.composer.recording .voice-recorder-label{
+  display:none !important;
+}
+#composer.composer.recording .voice-recorder-time{
+  display:block !important;
+  min-width:52px !important;
+  margin:0 !important;
+  color:var(--theme-text,#fff) !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  text-align:center !important;
+  direction:ltr !important;
+  font-variant-numeric:tabular-nums !important;
+  letter-spacing:.3px !important;
+}
+
+/* Paperclip becomes the trash/cancel button. */
+#composer.composer.recording .composer-attach.voice-cancel,
+#composer.composer.recording:focus-within .composer-attach.voice-cancel{
+  color:#fff !important;
+  background:rgba(255,255,255,.07) !important;
+  border-color:rgba(255,255,255,.16) !important;
+}
+#composer.composer.recording .composer-attach .trash-icon{
+  width:22px !important;
+  height:22px !important;
+}
+
+/* Voice button becomes the red send button. */
+#composer.composer.recording .composer-action.voice-recording{
+  grid-column:3 !important;
+  grid-row:1 !important;
+  width:42px !important;
+  min-width:42px !important;
+  max-width:42px !important;
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+  flex:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  display:grid !important;
+  place-items:center !important;
+  opacity:1 !important;
+  transform:none !important;
+  background:#ff3347 !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+  box-shadow:0 6px 18px rgba(255,51,71,.34),inset 0 1px 0 rgba(255,255,255,.25) !important;
+}
+#composer.composer.recording .composer-action.voice-recording svg{
+  width:20px !important;
+  height:20px !important;
+  stroke:#fff !important;
+}
+
+@media(max-width:600px){
+  #composer.composer,
+  #composer.composer.recording{
+    width:calc(100% - 16px) !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    bottom:10px !important;
+  }
+  #composer.composer.recording{
+    grid-template-columns:44px minmax(0,1fr) 42px !important;
+  }
+  #composer.composer.recording .composer-attach,
+  #composer.composer.recording:focus-within .composer-attach{
+    width:44px !important;
+    min-width:44px !important;
+    max-width:44px !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+  }
+}
+</style>
+
+
+<style id="khatmin-final-message-focus-behavior">
+/*
+  Final composer behavior:
+  - Clicking/focusing an empty Message field does NOT hide the paperclip.
+  - Only real text makes the input area expand into the paperclip space.
+  - The outer composer width stays fixed, so it never grows excessively.
+  - Recording mode remains controlled by the existing recording styles.
+*/
+.composer:not(.recording){
+  width:min(525px,calc(100% - 24px)) !important;
+  transition:box-shadow .25s ease,background .25s ease !important;
+}
+
+.composer:not(.recording) .composer-attach{
+  width:46px !important;
+  min-width:46px !important;
+  flex:0 0 46px !important;
+  flex-basis:46px !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  opacity:1 !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  border-width:1px !important;
+}
+
+/* Focus alone is intentionally neutral: the paperclip stays visible. */
+.composer:not(.recording):focus-within .composer-attach{
+  width:46px !important;
+  min-width:46px !important;
+  flex:0 0 46px !important;
+  flex-basis:46px !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  opacity:1 !important;
+  transform:none !important;
+  pointer-events:auto !important;
+  border-width:1px !important;
+}
+
+/* Empty field: normal size, no artificial expansion. */
+.composer:not(.recording):not(.has-text) .composer-input-shell{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+
+/* Text exists: only the input shell takes the paperclip's old space.
+   The outer composer itself does not become wider. */
+.composer:not(.recording).has-text .composer-attach{
+  width:0 !important;
+  min-width:0 !important;
+  flex:0 0 0 !important;
+  flex-basis:0 !important;
+  margin-left:-3px !important;
+  margin-right:-3px !important;
+  opacity:0 !important;
+  transform:scale(.72) !important;
+  pointer-events:none !important;
+  border-width:0 !important;
+}
+
+.composer:not(.recording).has-text .composer-input-shell{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+/* Keep the expansion subtle and stable on mobile too. */
+@media(max-width:600px){
+  .composer:not(.recording){
+    width:calc(100% - 16px) !important;
+  }
+  .composer:not(.recording) .composer-attach,
+  .composer:not(.recording):focus-within .composer-attach{
+    width:44px !important;
+    min-width:44px !important;
+    flex-basis:44px !important;
+  }
+  .composer:not(.recording).has-text .composer-attach{
+    width:0 !important;
+    min-width:0 !important;
+    flex-basis:0 !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -4132,8 +4557,13 @@ function checkChatReactionWords(){
 
 function handleTypingInput(){
   const input=document.getElementById("messageInput");
+  const composer=document.getElementById("composer");
+  if(composer) composer.classList.toggle("has-text",!!String(input?.value||"").trim());
   updateComposerAction();
-  if(!input || !input.value.length){stopTyping();checkChatReactionWords();return;}
+  if(!input || !input.value.length){
+    if(composer) composer.classList.remove("has-text");
+    stopTyping();checkChatReactionWords();return;
+  }
   checkChatReactionWords();
   if(!isLocalTyping){isLocalTyping=true;broadcastTyping(true)}
   clearTimeout(typingTimer);
@@ -4639,6 +5069,8 @@ function updateComposerAction(){
     button.setAttribute("aria-label","ضبط ویس");
     button.innerHTML=icons.voiceMic;
   }
+  const composer=document.getElementById("composer");
+  if(composer) composer.classList.toggle("has-text",hasText);
 }
 
 async function toggleVoiceRecording(){
