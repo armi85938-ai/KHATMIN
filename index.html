@@ -5028,7 +5028,10 @@ function renderMessage(m){
   const voiceParts=isVoice ? voiceRaw.split("||__KHATMIN_DURATION__") : ["", ""];
   const voiceSrc=isVoice ? voiceParts[0] : "";
   const voiceStoredDuration=isVoice && voiceParts[1] ? Number(voiceParts[1]) : 0;
-  const imageSrc=isImage ? m.content.slice("__KHATMIN_IMAGE_URL__".length) : "";
+  const imagePayload=isImage ? m.content.slice("__KHATMIN_IMAGE_URL__".length) : "";
+  const imageParts=isImage ? imagePayload.split("||__KHATMIN_CAPTION__") : ["",""];
+  const imageSrc=imageParts[0]||"";
+  const imageCaption=imageParts.length>1 ? imageParts.slice(1).join("||__KHATMIN_CAPTION__") : "";
   const voiceBars=Array.from({length:30},(_,i)=>{
     const heights=[34,52,68,44,78,58,88,48,70,38,62,82,52,72,94,58,76,46,66,86,54,72,42,64,82,50,70,40,58,76];
     return `<span class="voice-bar" style="--h:${heights[i]}%;--d:${(i%7)*70}ms"></span>`;
@@ -5044,7 +5047,7 @@ function renderMessage(m){
         <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
       </div>`
     : isImage
-      ? `${replyPreviewHtml(m)}<div class="chat-image-message"><img src="${esc(imageSrc)}" alt="عکس" loading="lazy" onclick="window.open('${esc(imageSrc)}','_blank')"></div>`
+      ? `${replyPreviewHtml(m)}<div class="chat-image-message"><img src="${esc(imageSrc)}" alt="عکس" loading="lazy" onclick="window.open('${esc(imageSrc)}','_blank')">${imageCaption?`<div class="chat-image-caption">${esc(imageCaption)}</div>`:""}</div>`
       : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
   const body=`<span class="${cls}${deleted?" deleted":""}${isVoice?" voice-msg":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
@@ -7158,7 +7161,10 @@ body[data-khat-theme^="light-"] .chat-typing .typing-dots i{background:#111!impo
 <style id="khatmin-v14-image-message">
 .chat-image-message{max-width:min(280px,72vw);border-radius:18px;overflow:hidden;margin:2px 0 1px;background:var(--theme-surface,#fff);border:1px solid color-mix(in srgb,var(--theme-text,#fff) 10%,transparent);box-shadow:0 8px 24px rgba(0,0,0,.12);}
 .chat-image-message img{display:block;width:100%;height:auto;max-height:360px;object-fit:cover;cursor:pointer;}
+</style><style id="khatmin-image-caption-style">
+.chat-image-caption{padding:8px 10px 2px;font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;color:inherit}
 </style>
+
 <style id="khatmin-v13-ticks-and-attachment">
 /* V13: unified theme-colored ticks + polished bottom attachment sheet. */
 body[data-khat-theme] .msg-status,
@@ -7214,235 +7220,125 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
 }
 </style>
 
-<style id="khatmin-v16-photo-editor">
-/* KHATMIN — fullscreen photo crop editor */
+<style id="khatmin-v17-photo-editor">
+/* KHATMIN — Android-first fullscreen photo + caption */
 .khat-photo-editor-backdrop{
-  position:fixed; inset:0; z-index:99999;
-  background:#08090d;
-  display:none; direction:rtl;
-  width:100vw; height:100dvh;
-  overflow:hidden;
+  position:fixed;inset:0;z-index:99999;display:none;
+  width:100vw;height:100dvh;min-height:100vh;
+  background:#07080c;direction:rtl;overflow:hidden;
 }
-.khat-photo-editor-backdrop.show{
-  display:block;
-  animation:kpeFullIn .2s ease-out;
-}
-@keyframes kpeFullIn{from{opacity:0;transform:scale(1.015)}to{opacity:1;transform:scale(1)}}
+.khat-photo-editor-backdrop.show{display:block;animation:kpeIn .18s ease-out}
+@keyframes kpeIn{from{opacity:0}to{opacity:1}}
 
 .khat-photo-editor{
-  position:relative;
-  width:100vw; height:100dvh;
-  min-height:100vh;
-  overflow:hidden;
-  background:#08090d;
-  color:#fff;
-  display:flex;
-  flex-direction:column;
+  position:relative;width:100%;height:100%;min-height:100dvh;
+  overflow:hidden;background:#07080c;color:#fff;
+  font-family:inherit;
 }
-
 .kpe-head{
-  position:absolute; z-index:20; top:0; left:0; right:0;
-  height:76px;
-  padding:max(12px,env(safe-area-inset-top)) 18px 10px;
-  display:flex; align-items:flex-end; justify-content:space-between;
-  pointer-events:none;
-  background:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,0));
+  position:absolute;z-index:5;top:0;left:0;right:0;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(0,0,0,.62),transparent);
 }
-.kpe-head > *{pointer-events:auto}
-.kpe-head-title{font-size:16px;font-weight:850;letter-spacing:-.2px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
-.kpe-head-sub{display:none}
+.kpe-title{font-size:15px;font-weight:900;text-shadow:0 2px 10px #000}
 .kpe-close{
   width:42px;height:42px;border:0;border-radius:50%;
-  background:rgba(255,255,255,.14);
+  color:#fff;background:rgba(255,255,255,.14);
   border:1px solid rgba(255,255,255,.16);
-  color:#fff;font-size:27px;line-height:1;
-  cursor:pointer;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  box-shadow:0 8px 24px rgba(0,0,0,.22);
-}
-
-.kpe-stage-wrap{
-  position:relative; flex:1; min-height:0;
-  width:100%; padding:0;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  font-size:27px;line-height:1;cursor:pointer;
 }
 .kpe-stage{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  overflow:hidden; background:#08090d;
-  touch-action:none;
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;background:#07080c;
 }
-#kpeCanvas{
-  display:block; width:100%; height:100%;
-  touch-action:none;
-}
-.kpe-stage::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse at center,transparent 48%,rgba(0,0,0,.28) 100%);
-}
-
-/* Manual crop frame */
-.kpe-crop{
-  position:absolute;
-  left:7%; top:13%;
-  width:86%; height:74%;
-  min-width:90px; min-height:90px;
-  border:2px solid rgba(255,255,255,.98);
-  box-shadow:0 0 0 9999px rgba(0,0,0,.42),0 0 28px rgba(0,0,0,.25);
-  touch-action:none;
-  cursor:move;
-  z-index:8;
-}
-.kpe-crop::before,.kpe-crop::after{
-  content:"";position:absolute;pointer-events:none;inset:0;
-  background:
-    linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.28) 33.2%,rgba(255,255,255,.28) 33.5%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.28) 66.5%,rgba(255,255,255,.28) 66.8%,transparent 66.8%),
-    linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.28) 33.2%,rgba(255,255,255,.28) 33.5%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.28) 66.5%,rgba(255,255,255,.28) 66.8%,transparent 66.8%);
-}
-.kpe-corner{
-  position:absolute;width:22px;height:22px;z-index:3;
-  border-color:#fff;border-style:solid;
-  filter:drop-shadow(0 2px 5px rgba(0,0,0,.45));
-}
-.kpe-corner.tl{top:-2px;left:-2px;border-width:4px 0 0 4px;border-radius:5px 0 0 0}
-.kpe-corner.tr{top:-2px;right:-2px;border-width:4px 4px 0 0;border-radius:0 5px 0 0}
-.kpe-corner.bl{bottom:-2px;left:-2px;border-width:0 0 4px 4px;border-radius:0 0 0 5px}
-.kpe-corner.br{bottom:-2px;right:-2px;border-width:0 4px 4px 0;border-radius:0 0 5px 0}
-.kpe-crop-hint{
-  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
-  z-index:4;padding:7px 12px;border-radius:999px;
-  background:rgba(0,0,0,.45);color:#fff;font-size:11px;
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  white-space:nowrap;pointer-events:none;opacity:.82;
-}
+#kpeCanvas{width:100%;height:100%;display:block;object-fit:contain}
 
 .kpe-bottom{
-  position:absolute;z-index:20;left:0;right:0;bottom:0;
-  padding:10px 16px max(16px,env(safe-area-inset-bottom));
-  background:linear-gradient(0deg,rgba(0,0,0,.78),rgba(0,0,0,0));
-  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  position:absolute;z-index:6;left:0;right:0;bottom:0;
+  padding:12px 12px calc(env(safe-area-inset-bottom) + 12px);
+  background:linear-gradient(0deg,rgba(0,0,0,.84) 0%,rgba(0,0,0,.68) 58%,transparent 100%);
 }
-.kpe-bottom-tools{
-  display:flex;align-items:center;gap:8px;
-  padding:5px 8px;border-radius:22px;
-  background:rgba(25,27,33,.72);
-  border:1px solid rgba(255,255,255,.12);
+.kpe-caption-row{
+  display:flex;align-items:center;gap:9px;
+  max-width:680px;margin:0 auto;
+}
+.kpe-caption{
+  flex:1;min-width:0;height:50px;border:1px solid rgba(255,255,255,.15);
+  border-radius:17px;padding:0 17px;
+  background:rgba(24,26,32,.82);color:#fff;outline:none;
+  font:inherit;font-size:14px;font-weight:650;
+  box-shadow:0 8px 30px rgba(0,0,0,.25);
   backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
 }
-.kpe-tool{
-  width:48px;height:44px;border:0;border-radius:15px;
-  background:transparent;color:#fff;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font:inherit;font-size:22px;
+.kpe-caption::placeholder{color:rgba(255,255,255,.62)}
+.kpe-caption:focus{
+  border-color:rgba(255,255,255,.34);
+  background:rgba(28,30,37,.92);
 }
-.kpe-tool.active{background:rgba(255,255,255,.15)}
-.kpe-filter-panel{
-  position:absolute;left:16px;right:16px;bottom:78px;
-  display:none;padding:10px 10px 9px;
-  border-radius:20px;background:rgba(20,22,29,.9);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
-  box-shadow:0 18px 50px rgba(0,0,0,.38);
+.kpe-send{
+  flex:0 0 112px;height:50px;border:0;border-radius:17px;
+  background:#fff;color:#101217;font:inherit;font-size:13px;font-weight:900;
+  cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.28);
 }
-.kpe-filter-panel.show{display:flex;gap:8px;overflow-x:auto}
-.kpe-filters{display:flex;gap:8px;overflow-x:auto;width:100%;scrollbar-width:none}
-.kpe-filters::-webkit-scrollbar{display:none}
-.kpe-filter{min-width:58px;background:transparent;border:0;color:#fff;padding:0;cursor:pointer;font:inherit;font-size:10px;opacity:.68}
-.kpe-filter.active{opacity:1}
-.kpe-filter-preview{width:58px;height:42px;border-radius:10px;background-size:cover;background-position:center;border:2px solid transparent;margin-bottom:4px}
-.kpe-filter.active .kpe-filter-preview{border-color:#fff}
-.kpe-cancel,.kpe-send{
-  height:48px;border:0;border-radius:16px;
-  padding:0 20px;font:inherit;font-weight:850;cursor:pointer;
-  box-shadow:0 10px 28px rgba(0,0,0,.25);
-}
-.kpe-cancel{background:rgba(255,255,255,.12);color:#fff;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.kpe-send{background:#fff;color:#11151c;min-width:128px}
 .kpe-send:disabled{opacity:.55;cursor:wait}
-
-.kpe-control{display:none}
-.kpe-tools{display:none}
-@media(max-width:600px){
-  .kpe-head{height:82px;padding-left:14px;padding-right:14px}
-  .kpe-crop{left:5%;top:11%;width:90%;height:78%}
-  .kpe-corner{width:24px;height:24px}
-  .kpe-bottom{padding-left:12px;padding-right:12px}
-  .kpe-cancel,.kpe-send{height:50px;border-radius:17px}
+.kpe-cancel{
+  display:block;margin:9px auto 0;border:0;background:none;color:rgba(255,255,255,.72);
+  font:inherit;font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;
+}
+.kpe-counter{
+  display:none;
+}
+@media(max-width:480px){
+  .kpe-caption-row{gap:7px}
+  .kpe-caption{height:48px;border-radius:16px;font-size:13px;padding:0 14px}
+  .kpe-send{flex-basis:98px;height:48px;border-radius:16px;font-size:12px}
 }
 </style>
 
 <div id="khatPhotoEditor" class="khat-photo-editor-backdrop" aria-hidden="true">
-  <div class="khat-photo-editor" role="dialog" aria-modal="true" aria-label="ویرایش عکس">
+  <div class="khat-photo-editor" role="dialog" aria-modal="true" aria-label="ارسال عکس">
     <div class="kpe-head">
-      <div class="kpe-head-title">برش عکس</div>
+      <div class="kpe-title">ارسال عکس</div>
       <button class="kpe-close" id="kpeClose" type="button" aria-label="بستن">×</button>
     </div>
 
-    <div class="kpe-stage-wrap">
-      <div class="kpe-stage" id="kpeStage">
-        <canvas id="kpeCanvas"></canvas>
-        <div class="kpe-crop" id="kpeCrop" aria-label="قاب برش دستی">
-          <i class="kpe-corner tl" data-corner="tl"></i>
-          <i class="kpe-corner tr" data-corner="tr"></i>
-          <i class="kpe-corner bl" data-corner="bl"></i>
-          <i class="kpe-corner br" data-corner="br"></i>
-          <span class="kpe-crop-hint">قاب را بکش یا گوشه‌ها را جابه‌جا کن</span>
-        </div>
-      </div>
+    <div class="kpe-stage" id="kpeStage">
+      <canvas id="kpeCanvas"></canvas>
     </div>
 
     <div class="kpe-bottom">
-      <div class="kpe-bottom-tools">
-        <button class="kpe-tool active" id="kpeCropTool" type="button" aria-label="برش">✂</button>
-        <button class="kpe-tool" id="kpeFilterTool" type="button" aria-label="فیلتر">☷</button>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="kpe-cancel" id="kpeCancel" type="button">انصراف</button>
+      <div class="kpe-caption-row">
+        <input id="kpeCaption" class="kpe-caption" type="text" maxlength="1000"
+               placeholder="یک کپشن بنویسید..." autocomplete="off">
         <button class="kpe-send" id="kpeSend" type="button">ارسال عکس</button>
       </div>
-    </div>
-
-    <div class="kpe-filter-panel" id="kpeFilterPanel">
-      <div class="kpe-filters" id="kpeFilters"></div>
+      <button class="kpe-cancel" id="kpeCancel" type="button">انصراف</button>
     </div>
   </div>
 </div>
 
 <script id="khatmin-v14-gallery-attachment">
 (function(){
-  if(window.__khatAttachmentV17)return;
-  window.__khatAttachmentV17=true;
-  let input=null, queue=[], editorOpen=false;
+  if(window.__khatAttachmentV18)return;
+  window.__khatAttachmentV18=true;
+  let input=null,queue=[],editorOpen=false;
 
   const $=id=>document.getElementById(id);
   const editor=$('khatPhotoEditor');
   const canvas=$('kpeCanvas');
-  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const ctx=canvas.getContext('2d');
   const stage=$('kpeStage');
-  const crop=$('kpeCrop');
+  const caption=$('kpeCaption');
 
-  const state={
-    file:null,img:null,zoom:1,filter:'original',
-    panX:0,panY:0,dragImage:false,lastX:0,lastY:0,
-    crop:{x:.07,y:.13,w:.86,h:.74},
-    cropDrag:false,resizeCorner:null,
-    cropStart:null
-  };
-
-  const filters={
-    original:{name:'اصلی',css:'none'},
-    vivid:{name:'زنده',css:'saturate(1.32) contrast(1.08)'},
-    warm:{name:'گرم',css:'sepia(.18) saturate(1.2) brightness(1.04)'},
-    cool:{name:'سرد',css:'saturate(.9) hue-rotate(12deg) contrast(1.06)'},
-    cinematic:{name:'سینمایی',css:'contrast(1.16) saturate(.9) brightness(.92)'},
-    mono:{name:'سیاه‌وسفید',css:'grayscale(1) contrast(1.08)'},
-    soft:{name:'نرم',css:'brightness(1.08) saturate(.86) contrast(.94)'},
-    dramatic:{name:'دراماتیک',css:'contrast(1.28) saturate(1.08) brightness(.94)'}
-  };
+  const state={file:null,img:null,objectUrl:null};
 
   function getInput(){
     if(input)return input;
     input=document.createElement('input');
-    input.type='file'; input.accept='image/*'; input.multiple=true;
-    input.style.display='none'; input.setAttribute('aria-hidden','true');
+    input.type='file';input.accept='image/*';input.multiple=true;
+    input.style.display='none';
     document.body.appendChild(input);
     input.addEventListener('change',()=>{
       const files=Array.from(input.files||[]);
@@ -7454,205 +7350,62 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
 
   function startQueue(files){
     if(!currentUser||!chatPartner||!supabaseClient){
-      alert('گفت‌وگو هنوز آماده نیست.'); return;
+      alert('گفت‌وگو هنوز آماده نیست.');return;
     }
-    queue=files.filter(f=>f&&f.type&&f.type.startsWith('image/')).slice(0,10);
+    queue=files.filter(f=>f?.type?.startsWith('image/')).slice(0,10);
     if(queue.length)openNext();
   }
 
-  function buildFilters(){
-    const box=$('kpeFilters');
-    if(!box)return;
-    box.innerHTML='';
-    const sample=state.img?.src||'';
-    Object.entries(filters).forEach(([key,f])=>{
-      const b=document.createElement('button');
-      b.type='button';
-      b.className='kpe-filter'+(key===state.filter?' active':'');
-      b.innerHTML=`<div class="kpe-filter-preview" style="background-image:url(${JSON.stringify(sample)});filter:${f.css}"></div><span>${f.name}</span>`;
-      b.onclick=()=>{
-        state.filter=key;
-        buildFilters();
-        draw();
-      };
-      box.appendChild(b);
-    });
-  }
-
-  function setCanvasSize(){
-    const rect=stage.getBoundingClientRect();
-    canvas.width=Math.max(320,Math.floor(rect.width*devicePixelRatio));
-    canvas.height=Math.max(320,Math.floor(rect.height*devicePixelRatio));
-    updateCropDom();
+  function resizeCanvas(){
+    const r=stage.getBoundingClientRect();
+    const d=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.max(1,Math.floor(r.width*d));
+    canvas.height=Math.max(1,Math.floor(r.height*d));
+    canvas.style.width=r.width+'px';
+    canvas.style.height=r.height+'px';
     draw();
-  }
-
-  function imageGeometry(){
-    if(!state.img)return null;
-    const w=canvas.width/devicePixelRatio;
-    const h=canvas.height/devicePixelRatio;
-    const iw=state.img.naturalWidth, ih=state.img.naturalHeight;
-    const base=Math.max(w/iw,h/ih)*state.zoom;
-    return {
-      w,h,iw,ih,base,
-      dw:iw*base,dh:ih*base,
-      left:(w-iw*base)/2+state.panX,
-      top:(h-ih*base)/2+state.panY
-    };
   }
 
   function draw(){
     if(!state.img)return;
-    const w=canvas.width,h=canvas.height;
-    ctx.clearRect(0,0,w,h);
-    ctx.save();
-    ctx.fillStyle='#08090d';
-    ctx.fillRect(0,0,w,h);
+    const cw=canvas.width,ch=canvas.height;
+    ctx.clearRect(0,0,cw,ch);
+    ctx.fillStyle='#07080c';ctx.fillRect(0,0,cw,ch);
 
-    const g=imageGeometry();
-    ctx.filter=filters[state.filter].css;
-    ctx.drawImage(
-      state.img,
-      g.left*devicePixelRatio,
-      g.top*devicePixelRatio,
-      g.dw*devicePixelRatio,
-      g.dh*devicePixelRatio
-    );
-    ctx.restore();
-    ctx.filter='none';
-  }
-
-  function updateCropDom(){
-    if(!crop||!stage)return;
-    const r=state.crop;
-    crop.style.left=(r.x*100)+'%';
-    crop.style.top=(r.y*100)+'%';
-    crop.style.width=(r.w*100)+'%';
-    crop.style.height=(r.h*100)+'%';
-  }
-
-  function clampCrop(r){
-    const minW=.14,minH=.14;
-    r.w=Math.max(minW,Math.min(1-r.x,r.w));
-    r.h=Math.max(minH,Math.min(1-r.y,r.h));
-    r.x=Math.max(0,Math.min(1-r.w,r.x));
-    r.y=Math.max(0,Math.min(1-r.h,r.y));
-    return r;
-  }
-
-  function beginCropInteraction(e){
-    e.preventDefault();
-    e.stopPropagation();
-    const rect=stage.getBoundingClientRect();
-    const target=e.target.closest?.('[data-corner]');
-    state.cropStart={
-      x:e.clientX,y:e.clientY,
-      r:{...state.crop}
-    };
-    if(target){
-      state.resizeCorner=target.dataset.corner;
-      state.cropDrag=false;
-    }else{
-      state.cropDrag=true;
-      state.resizeCorner=null;
-    }
-    crop.setPointerCapture?.(e.pointerId);
-  }
-
-  function moveCropInteraction(e){
-    if(!state.cropStart)return;
-    const rect=stage.getBoundingClientRect();
-    const dx=(e.clientX-state.cropStart.x)/rect.width;
-    const dy=(e.clientY-state.cropStart.y)/rect.height;
-    const base={...state.cropStart.r};
-
-    if(state.cropDrag){
-      state.crop=clampCrop({
-        x:base.x+dx,y:base.y+dy,w:base.w,h:base.h
-      });
-    }else{
-      let r={...base};
-      const c=state.resizeCorner;
-      if(c.includes('l')){
-        const nx=Math.max(0,Math.min(base.x+base.w-.14,base.x+dx));
-        r.x=nx;r.w=base.x+base.w-nx;
-      }
-      if(c.includes('r')){
-        r.w=Math.max(.14,Math.min(1-base.x,base.w+dx));
-      }
-      if(c.includes('t')){
-        const ny=Math.max(0,Math.min(base.y+base.h-.14,base.y+dy));
-        r.y=ny;r.h=base.y+base.h-ny;
-      }
-      if(c.includes('b')){
-        r.h=Math.max(.14,Math.min(1-base.y,base.h+dy));
-      }
-      state.crop=clampCrop(r);
-    }
-    updateCropDom();
-  }
-
-  function endCropInteraction(e){
-    state.cropStart=null;
-    state.cropDrag=false;
-    state.resizeCorner=null;
-    try{crop.releasePointerCapture?.(e.pointerId)}catch(_){}
-  }
-
-  function beginImagePan(e){
-    if(e.target!==stage && e.target!==canvas)return;
-    state.dragImage=true;
-    state.lastX=e.clientX; state.lastY=e.clientY;
-    stage.setPointerCapture?.(e.pointerId);
-  }
-
-  function moveImagePan(e){
-    if(!state.dragImage)return;
-    state.panX+=e.clientX-state.lastX;
-    state.panY+=e.clientY-state.lastY;
-    state.lastX=e.clientX; state.lastY=e.clientY;
-    draw();
-  }
-
-  function endImagePan(e){
-    state.dragImage=false;
-    try{stage.releasePointerCapture?.(e.pointerId)}catch(_){}
+    const iw=state.img.naturalWidth,ih=state.img.naturalHeight;
+    const scale=Math.min(cw/iw,ch/ih);
+    const dw=iw*scale,dh=ih*scale;
+    const x=(cw-dw)/2,y=(ch-dh)/2;
+    ctx.drawImage(state.img,x,y,dw,dh);
   }
 
   function openNext(){
-    if(!queue.length){
-      editorOpen=false;
-      editor.classList.remove('show');
-      editor.setAttribute('aria-hidden','true');
-      return;
-    }
+    if(!queue.length){closeEditor(false);return;}
     const file=queue.shift();
-    if(file.size>12*1024*1024){
-      alert('یکی از عکس‌ها بیشتر از ۱۲ مگابایت است و ارسال نشد.');
+    if(file.size>15*1024*1024){
+      alert('این عکس بیشتر از ۱۵ مگابایت است.');
       return openNext();
     }
 
     const img=new Image();
+    const objectUrl=URL.createObjectURL(file);
     img.onload=()=>{
-      state.file=file;
-      state.img=img;
-      state.zoom=1;
-      state.filter='original';
-      state.panX=0;
-      state.panY=0;
-      state.crop={x:.07,y:.13,w:.86,h:.74};
+      state.file=file;state.img=img;state.objectUrl=objectUrl;
+      caption.value='';
       editorOpen=true;
       editor.classList.add('show');
       editor.setAttribute('aria-hidden','false');
-      $('kpeFilterPanel')?.classList.remove('show');
-      buildFilters();
-      requestAnimationFrame(setCanvasSize);
+      requestAnimationFrame(()=>{
+        resizeCanvas();
+        setTimeout(()=>caption.focus({preventScroll:true}),180);
+      });
     };
     img.onerror=()=>{
-      alert('این عکس در مرورگر قابل ویرایش نیست.');
+      URL.revokeObjectURL(objectUrl);
+      alert('این عکس در مرورگر قابل نمایش نیست.');
       openNext();
     };
-    img.src=URL.createObjectURL(file);
+    img.src=objectUrl;
   }
 
   function closeEditor(clearQueue=true){
@@ -7660,122 +7413,83 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
     editorOpen=false;
     editor.classList.remove('show');
     editor.setAttribute('aria-hidden','true');
-    $('kpeFilterPanel')?.classList.remove('show');
-    if(state.img){
-      URL.revokeObjectURL(state.img.src);
-      state.img=null;
-    }
+    if(state.objectUrl)URL.revokeObjectURL(state.objectUrl);
+    state.objectUrl=null;state.img=null;state.file=null;
+    caption.value='';
   }
 
   async function uploadEdited(){
     if(!state.img||!state.file)return;
     const btn=$('kpeSend');
-    btn.disabled=true;
-    btn.textContent='در حال ارسال…';
+    btn.disabled=true;btn.textContent='در حال ارسال…';
 
     try{
-      const rect=stage.getBoundingClientRect();
-      const g=imageGeometry();
-      const sx=Math.max(0,(state.crop.x*rect.width-g.left)/g.base);
-      const sy=Math.max(0,(state.crop.y*rect.height-g.top)/g.base);
-      const sw=Math.min(state.img.naturalWidth-sx,(state.crop.w*rect.width)/g.base);
-      const sh=Math.min(state.img.naturalHeight-sy,(state.crop.h*rect.height)/g.base);
-
-      if(sw<=1||sh<=1)throw new Error('ناحیه برش معتبر نیست.');
-
-      const maxSide=1800;
-      const scale=Math.min(1,maxSide/Math.max(sw,sh));
-      const outW=Math.max(1,Math.round(sw*scale));
-      const outH=Math.max(1,Math.round(sh*scale));
-      const exportCanvas=document.createElement('canvas');
-      exportCanvas.width=outW;
-      exportCanvas.height=outH;
-      const exportCtx=exportCanvas.getContext('2d');
-      exportCtx.filter=filters[state.filter].css;
-      exportCtx.drawImage(state.img,sx,sy,sw,sh,0,0,outW,outH);
-
       const blob=await new Promise((resolve,reject)=>{
-        exportCanvas.toBlob(b=>b?resolve(b):reject(new Error('ساخت عکس انجام نشد')),'image/jpeg',.92);
+        const c=document.createElement('canvas');
+        const max=2000;
+        const scale=Math.min(1,max/Math.max(state.img.naturalWidth,state.img.naturalHeight));
+        c.width=Math.round(state.img.naturalWidth*scale);
+        c.height=Math.round(state.img.naturalHeight*scale);
+        const x=c.getContext('2d');
+        x.drawImage(state.img,0,0,c.width,c.height);
+        c.toBlob(b=>b?resolve(b):reject(new Error('ساخت عکس انجام نشد')),'image/jpeg',.93);
       });
 
       const base=(state.file.name||'photo')
-        .replace(/\.[^.]+$/,'')
-        .replace(/[^a-zA-Z0-9_-]+/g,'-')
-        .slice(0,35)||'photo';
-
+        .replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,35)||'photo';
       const path=`${String(currentUser.id)}/images/${Date.now()}-${crypto.randomUUID?.()||Math.random().toString(36).slice(2)}-${base}.jpg`;
-      const {error:uploadError}=await supabaseClient.storage
-        .from('voice-messages')
-        .upload(path,blob,{contentType:'image/jpeg',cacheControl:'3600',upsert:false});
 
+      const {error:uploadError}=await supabaseClient.storage
+        .from('voice-messages').upload(path,blob,{contentType:'image/jpeg',cacheControl:'3600',upsert:false});
       if(uploadError)throw uploadError;
 
       const {data:urlData}=supabaseClient.storage.from('voice-messages').getPublicUrl(path);
       const url=urlData?.publicUrl||'';
       if(!url)throw new Error('آدرس عکس ساخته نشد.');
 
-      const ok=await sendRawMessage('__KHATMIN_IMAGE_URL__'+url);
+      const cap=String(caption.value||'').trim();
+      const payload='__KHATMIN_IMAGE_URL__'+url+(cap?'||__KHATMIN_CAPTION__'+cap:'');
+      const ok=await sendRawMessage(payload);
       if(!ok){
         await supabaseClient.storage.from('voice-messages').remove([path]).catch(()=>{});
+        return;
       }
 
       closeEditor(false);
       openNext();
     }catch(e){
-      console.error('PHOTO EDITOR UPLOAD ERROR:',e);
+      console.error('PHOTO UPLOAD ERROR:',e);
       alert('عکس ارسال نشد:\n'+(e?.message||'خطای ناشناخته'));
     }finally{
-      btn.disabled=false;
-      btn.textContent='ارسال عکس';
+      btn.disabled=false;btn.textContent='ارسال عکس';
     }
   }
-
-  crop.addEventListener('pointerdown',beginCropInteraction);
-  crop.addEventListener('pointermove',moveCropInteraction);
-  crop.addEventListener('pointerup',endCropInteraction);
-  crop.addEventListener('pointercancel',endCropInteraction);
-
-  stage.addEventListener('pointerdown',beginImagePan);
-  stage.addEventListener('pointermove',moveImagePan);
-  stage.addEventListener('pointerup',endImagePan);
-  stage.addEventListener('pointercancel',endImagePan);
 
   $('kpeSend').onclick=uploadEdited;
   $('kpeCancel').onclick=()=>closeEditor(true);
   $('kpeClose').onclick=()=>closeEditor(true);
 
-  $('kpeFilterTool').onclick=()=>{
-    $('kpeFilterPanel')?.classList.toggle('show');
-  };
-
-  $('kpeCropTool').onclick=()=>{
-    $('kpeFilterPanel')?.classList.remove('show');
-  };
+  caption.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();uploadEdited();}
+  });
 
   editor.addEventListener('click',e=>{
     if(e.target===editor)closeEditor(true);
   });
 
-  window.addEventListener('resize',()=>{
-    if(editorOpen)setCanvasSize();
-  });
+  window.addEventListener('resize',()=>{if(editorOpen)resizeCanvas();});
 
   function wire(){
     const attach=document.getElementById('attachButton');
     if(!attach)return;
     attach.addEventListener('click',e=>{
       if(window.voiceRecording||attach.classList.contains('voice-cancel'))return;
-      e.preventDefault();
-      e.stopPropagation();
-      getInput().click();
+      e.preventDefault();e.stopPropagation();getInput().click();
     });
   }
 
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',wire,{once:true});
-  }else{
-    wire();
-  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});
+  else wire();
 
   window.openKhatAttachmentSheet=()=>getInput().click();
 })();
