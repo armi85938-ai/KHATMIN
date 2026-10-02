@@ -1678,6 +1678,36 @@ body{
 </style>
 
 <style>
+
+/* ===== Settings redesign: compact top + per-field save checks ===== */
+.settings-shell-mode .content{padding-top:0!important}
+.settings-page{padding-top:0!important}
+.settings-page-head-clean{justify-content:space-between!important;align-items:center!important;margin:0 2px 12px!important;padding:0!important}
+.settings-page-head-clean h1{margin:0!important;font-size:calc(28px * var(--text-scale,1));line-height:1.1!important}
+.settings-page-head-clean .settings-head-orb{flex:0 0 50px}
+.settings-page-head-clean + .settings-profile-card{margin-top:0!important}
+.settings-input-wrap{position:relative;display:block}
+.settings-input-wrap input,.settings-input-wrap textarea{padding-left:54px!important}
+.settings-inline-save{position:absolute;left:10px;top:50%;transform:translateY(-50%) scale(.86);width:34px;height:34px;border:1px solid rgba(120,124,135,.22);border-radius:50%;display:grid;place-items:center;background:rgba(120,124,135,.12);color:rgba(105,109,120,.72);box-shadow:0 5px 14px rgba(90,94,105,.08),inset 0 1px 0 rgba(255,255,255,.45);cursor:pointer;opacity:0;animation:settingsCheckIn .24s ease forwards;transition:transform .18s ease,filter .18s ease,opacity .18s ease}
+.settings-inline-save:hover{transform:translateY(-50%) scale(1.04);filter:brightness(1.08)}
+.settings-inline-save:active{transform:translateY(-50%) scale(.94)}
+.settings-inline-save svg{width:18px;height:18px;stroke:currentColor}
+.settings-inline-save-textarea{top:auto;bottom:10px;transform:scale(.86)}
+.settings-inline-save-textarea:hover{transform:scale(1.04)}
+.settings-inline-save-textarea:active{transform:scale(.94)}
+.settings-inline-save[hidden]{display:none!important}
+.settings-inline-save.saving{opacity:.6!important;pointer-events:none}
+.settings-inline-save.saved{animation:settingsCheckSaved .38s ease}
+@keyframes settingsCheckIn{from{opacity:0;transform:translateY(-50%) scale(.55)}to{opacity:1;transform:translateY(-50%) scale(1)}}
+@keyframes settingsCheckSaved{0%{transform:translateY(-50%) scale(1)}45%{transform:translateY(-50%) scale(1.16)}100%{transform:translateY(-50%) scale(1)}}
+.settings-inline-save-textarea.saved{animation:settingsCheckSavedText .38s ease}
+@keyframes settingsCheckSavedText{0%{transform:scale(1)}45%{transform:scale(1.16)}100%{transform:scale(1)}}
+@media(max-width:600px){
+  .settings-page{padding:0 12px 118px!important}
+  .settings-page-head-clean{margin:0 0 10px!important}
+  .settings-page-head-clean h1{font-size:calc(25px * var(--text-scale,1))}
+}
+
 /* ===== Final Liquid Glass navigation + settings polish ===== */
 .bottom-nav{
   background:transparent !important;
@@ -1843,6 +1873,7 @@ body[data-khat-theme] .settings-head-orb{color:var(--theme-accent)!important}
 body[data-khat-theme] .settings-field input,
 body[data-khat-theme] .settings-field textarea{background:color-mix(in srgb,var(--theme-bg) 72%,transparent)!important;color:var(--theme-text)!important;border-color:var(--theme-border)!important}
 body[data-khat-theme] .settings-save{background:var(--theme-accent)!important;color:#fff!important}
+body[data-khat-theme] .settings-inline-save{background:rgba(120,124,135,.12)!important;color:rgba(105,109,120,.72)!important;border-color:rgba(120,124,135,.22)!important;box-shadow:0 5px 14px rgba(90,94,105,.08),inset 0 1px 0 rgba(255,255,255,.45)!important}
 body[data-khat-theme] .bottom-nav{background:color-mix(in srgb,var(--theme-surface) 88%,transparent)!important;border-color:var(--theme-border)!important}
 body[data-khat-theme] .nav-btn.active{color:var(--theme-accent)!important}
 body[data-khat-theme] .msg.mine{background:linear-gradient(145deg,color-mix(in srgb,var(--theme-accent) 82%,white),var(--theme-accent2))!important;color:#fff!important;border-color:transparent!important}
@@ -1922,6 +1953,7 @@ body[data-khat-theme] .settings-textarea{background:var(--theme-bg)!important;co
 body[data-khat-theme] .settings-field input::placeholder,
 body[data-khat-theme] .settings-field textarea::placeholder{color:var(--theme-muted)!important}
 body[data-khat-theme] .settings-save{background:linear-gradient(135deg,var(--theme-accent),var(--theme-accent2))!important;color:var(--theme-strong)!important;box-shadow:0 10px 28px var(--theme-glow)!important}
+body[data-khat-theme] .settings-inline-save{background:rgba(120,124,135,.12)!important;color:rgba(105,109,120,.72)!important;border-color:rgba(120,124,135,.22)!important}
 body[data-khat-theme] .settings-menu-icon,
 body[data-khat-theme] .settings-head-orb{color:var(--theme-accent)!important}
 
@@ -3744,15 +3776,16 @@ async function loadApp(){
 }
 
 function shell(content,active="chat"){
+  const settingsMode=active==="settings";
   return `
-  <div class="app">
-    <div class="top">
+  <div class="app ${settingsMode?"settings-shell-mode":""}">
+    <div class="top ${settingsMode?"settings-shell-top":""}">
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
       </div>
 
     </div>
-    <div class="top-divider" aria-hidden="true"></div>
+    <div class="top-divider ${settingsMode?"settings-shell-divider":""}" aria-hidden="true"></div>
     <div class="content">${content}</div>
     <nav class="bottom-nav" aria-label="ناوبری پیام‌رسان">
       <button class="nav-btn ${active==="chat"?"active":""}" data-nav="chat" onclick="navPulse(this,'chat')" aria-label="پیام‌ها">${icons.chat}</button>
@@ -3781,11 +3814,8 @@ async function renderSettings(){
 
   const content=`
     <section class="settings-page" dir="rtl">
-      <div class="settings-page-head">
-        <div>
-          <h1>تنظیمات</h1>
-          <p>حساب کاربری، حریم خصوصی و ظاهر برنامه</p>
-        </div>
+      <div class="settings-page-head settings-page-head-clean">
+        <h1>تنظیمات</h1>
         <div class="settings-head-orb">${icons.settings}</div>
       </div>
 
@@ -3798,15 +3828,20 @@ async function renderSettings(){
         <input id="settingsAvatarInput" type="file" accept="image/*" hidden onchange="handleSettingsAvatar(this)">
 
         <div class="settings-profile-fields">
-          <label class="settings-field">
+          <label class="settings-field settings-field-saveable">
             <span>نام</span>
-            <input id="settingsDisplayName" maxlength="60" value="${esc(p.display_name||p.username||"")}" placeholder="نام شما">
+            <div class="settings-input-wrap">
+              <input id="settingsDisplayName" maxlength="60" value="${esc(p.display_name||p.username||"")}" placeholder="نام شما" oninput="markSettingsFieldDirty('display_name')">
+              <button id="settingsDisplayNameSave" class="settings-inline-save" type="button" aria-label="ذخیره نام" onclick="saveSettingsField('display_name')" hidden>${icons.check || '✓'}</button>
+            </div>
           </label>
-          <label class="settings-field">
+          <label class="settings-field settings-field-saveable">
             <span>بیوگرافی</span>
-            <textarea id="settingsBio" maxlength="160" rows="2" placeholder="چند کلمه درباره خودت...">${esc(p.bio||"")}</textarea>
+            <div class="settings-input-wrap settings-textarea-wrap">
+              <textarea id="settingsBio" maxlength="160" rows="2" placeholder="چند کلمه درباره خودت..." oninput="markSettingsFieldDirty('bio')">${esc(p.bio||"")}</textarea>
+              <button id="settingsBioSave" class="settings-inline-save settings-inline-save-textarea" type="button" aria-label="ذخیره بیوگرافی" onclick="saveSettingsField('bio')" hidden>${icons.check || '✓'}</button>
+            </div>
           </label>
-          <button class="settings-save" type="button" onclick="saveSettingsProfile()">ذخیره تغییرات</button>
         </div>
       </section>
 
@@ -3831,6 +3866,50 @@ async function renderSettings(){
     </section>`;
 
   document.getElementById('app').innerHTML=shell(content,'settings');
+}
+
+function markSettingsFieldDirty(field){
+  const inputId=field==='display_name'?'settingsDisplayName':'settingsBio';
+  const btnId=field==='display_name'?'settingsDisplayNameSave':'settingsBioSave';
+  const input=document.getElementById(inputId);
+  const btn=document.getElementById(btnId);
+  if(!input||!btn)return;
+
+  const current=String(currentUser?.profile?.[field]??'').trim();
+  const typed=String(input.value??'').trim();
+
+  // Only show the checkmark when the user has actually changed the value.
+  btn.hidden=(typed===current);
+}
+
+async function saveSettingsField(field){
+  if(!currentUser?.id)return;
+  const isName=field==='display_name';
+  const input=document.getElementById(isName?'settingsDisplayName':'settingsBio');
+  const btn=document.getElementById(isName?'settingsDisplayNameSave':'settingsBioSave');
+  const value=(input?.value||'').trim();
+  if(isName && !value){alert('لطفاً نام را وارد کنید.');return;}
+  if(!input)return;
+  if(btn){btn.disabled=true;btn.classList.add('saving');}
+
+  const {data,error}=await supabaseClient
+    .from('profiles')
+    .update({[field]:value})
+    .eq('id',currentUser.id)
+    .select('id,username,display_name,avatar_url,bio')
+    .maybeSingle();
+
+  if(error || !data){
+    console.error('SAVE PROFILE FIELD ERROR:',error||'No profile row was updated');
+    if(btn){btn.disabled=false;btn.classList.remove('saving');}
+    alert(error?.message ? 'ذخیره انجام نشد:\n'+error.message : 'تغییرات در دیتابیس ذخیره نشد.');
+    return;
+  }
+
+  currentUser={profile:{...currentUser.profile,...data},id:currentUser.id};
+  sessionStorage.setItem('love_profile',JSON.stringify(currentUser.profile));
+  if(btn){btn.disabled=false;btn.classList.remove('saving');btn.classList.add('saved');}
+  setTimeout(()=>{if(btn){btn.hidden=true;btn.classList.remove('saved')}},700);
 }
 
 let pendingSettingsAvatar="";
