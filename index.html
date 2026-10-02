@@ -3873,6 +3873,104 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
 .chat-notify-reply-preview{margin-bottom:5px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.48);border-right:3px solid color-mix(in srgb,var(--theme-accent,#8b61d4) 60%,white);font-size:10px;line-height:1.65;opacity:.78}
 @media(max-width:520px){.chat-notify-panel{width:calc(100vw - 18px);border-radius:25px;padding:14px}.chat-notify-theme-row{gap:6px}.chat-notify-theme{min-height:59px}.chat-notification-banner{margin-left:8px;margin-right:8px}}
 
+/* ===== KHATMIN floating home notification experience ===== */
+.home-notify-heart-mode:before{
+  content:"";position:fixed;inset:0;z-index:5180;pointer-events:none;
+  background:radial-gradient(circle at 50% 28%,rgba(255,211,231,.24),transparent 28%),linear-gradient(180deg,rgba(255,226,239,.13),rgba(244,190,216,.06));
+  animation:homeHeartVeil 4.9s ease both;
+}
+.home-notify-heart-mode #app{
+  animation:homeHeartScreenPulse 4.9s ease both;
+}
+.home-notify-heart-mode #chatList{
+  filter:saturate(1.18);
+}
+.home-notification-float{
+  position:fixed;inset:0;z-index:5200;display:flex;align-items:flex-start;justify-content:center;
+  padding:clamp(74px,12vh,120px) 14px 24px;pointer-events:none;
+  animation:homeNotifyFloatIn .62s cubic-bezier(.16,1,.3,1) both;
+}
+.home-notification-float.closing{animation:homeNotifyFloatOut .38s ease forwards}
+.home-notification-float-card{
+  pointer-events:auto;width:min(430px,calc(100vw - 28px));min-height:92px;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;
+  padding:13px 14px;border:1px solid rgba(255,255,255,.72);border-radius:26px;
+  background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(248,242,255,.58));
+  box-shadow:0 28px 80px rgba(54,35,83,.20),inset 0 1px 0 rgba(255,255,255,.95);
+  backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);
+  color:var(--theme-text,#4f4352);font-family:inherit;text-align:right;cursor:pointer;
+  transform:translateY(0);transition:transform .22s ease,box-shadow .22s ease;
+}
+.home-notification-float-card:active{transform:scale(.975)}
+.home-notification-float.theme-heart .home-notification-float-card{
+  border-color:rgba(231,117,166,.40);
+  box-shadow:0 28px 85px rgba(211,91,143,.22),0 0 55px rgba(236,119,171,.13),inset 0 1px 0 rgba(255,255,255,.96);
+}
+.home-notification-float-icon{
+  width:50px;height:50px;border-radius:18px;display:grid;place-items:center;
+  font-size:25px;font-weight:950;background:rgba(255,255,255,.66);
+  box-shadow:0 10px 25px rgba(80,45,120,.11),inset 0 1px 0 rgba(255,255,255,.9);
+}
+.home-notification-float.theme-heart .home-notification-float-icon{
+  color:#df6f9e;background:linear-gradient(145deg,rgba(255,225,239,.92),rgba(255,246,251,.70));
+  animation:homeHeartIconBeat 1.25s ease-in-out infinite;
+}
+.home-notification-float-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.home-notification-float-label{font-size:10px;font-weight:950;opacity:.60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.home-notification-float-text{margin-top:4px;font-size:14px;font-weight:850;line-height:1.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.home-notification-float-hint{margin-top:3px;font-size:9px;opacity:.48;font-weight:800}
+.home-notification-float-arrow{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);font-size:18px;font-weight:900;transform:rotate(180deg);
+}
+.home-notification-particles{position:fixed;inset:0;z-index:5190;pointer-events:none;overflow:hidden}
+.home-notification-particle{position:absolute;left:var(--left);bottom:-12vh;font-size:var(--size);opacity:0;
+  filter:drop-shadow(0 8px 14px rgba(201,79,136,.20));
+  animation:homeHeartFloat var(--duration) cubic-bezier(.17,.76,.22,1) var(--delay) forwards;
+}
+@keyframes homeNotifyFloatIn{from{opacity:0;transform:translateY(-22px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes homeNotifyFloatOut{to{opacity:0;transform:translateY(-12px) scale(.97)}}
+@keyframes homeHeartIconBeat{0%,100%{transform:scale(1)}18%{transform:scale(1.12)}34%{transform:scale(.98)}50%{transform:scale(1.06)}}
+@keyframes homeHeartFloat{0%{opacity:0;transform:translate3d(0,0,0) scale(.45) rotate(0deg)}12%{opacity:.88}100%{opacity:0;transform:translate3d(var(--drift),-115vh,0) scale(1.12) rotate(var(--rot))}}
+@keyframes homeHeartScreenPulse{0%{box-shadow:inset 0 0 0 rgba(238,125,175,0)}18%{box-shadow:inset 0 0 90px rgba(238,125,175,.09)}100%{box-shadow:inset 0 0 0 rgba(238,125,175,0)}}
+@keyframes homeHeartVeil{0%,100%{opacity:0}14%{opacity:1}78%{opacity:1}}
+.khatmin-floating-toast{
+  position:fixed;z-index:5400;left:50%;bottom:max(86px,8vh);transform:translate(-50%,18px) scale(.94);
+  display:flex;align-items:center;gap:9px;max-width:calc(100vw - 32px);padding:11px 16px;border-radius:999px;
+  color:#fff;background:linear-gradient(145deg,rgba(55,45,72,.94),rgba(38,31,52,.92));
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 45px rgba(20,14,30,.30),inset 0 1px 0 rgba(255,255,255,.15);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-size:11px;font-weight:850;opacity:0;
+  pointer-events:none;transition:opacity .32s ease,transform .42s cubic-bezier(.16,1,.3,1);
+}
+.khatmin-floating-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+.khatmin-toast-icon{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);font-weight:950}
+.chat-notification-host{position:relative;z-index:20}
+@media(max-width:520px){
+  .home-notification-float{padding-top:72px}
+  .home-notification-float-card{border-radius:23px;min-height:86px;padding:11px 12px;gap:9px}
+  .home-notification-float-icon{width:45px;height:45px;border-radius:16px}
+  .home-notification-float-text{font-size:12.5px}
+}
+
+/* ===== KHATMIN pinned 24h home notification ===== */
+.home-notification-wrap{display:none;margin:0 10px 12px;position:relative;z-index:8}
+.home-notification-wrap.has-items{display:block}
+.home-pinned-notification{width:100%;min-height:72px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 11px;border:1px solid rgba(255,255,255,.72);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(248,242,255,.56));box-shadow:0 12px 30px rgba(65,45,105,.11),inset 0 1px 0 rgba(255,255,255,.95);backdrop-filter:blur(24px) saturate(155%);-webkit-backdrop-filter:blur(24px) saturate(155%);color:var(--theme-text,#4f4352);font:inherit;text-align:right;cursor:pointer;transition:transform .22s ease,box-shadow .22s ease}
+.home-pinned-notification:active{transform:scale(.985)}
+.home-pinned-notification:hover{transform:translateY(-1px);box-shadow:0 16px 34px rgba(65,45,105,.14),inset 0 1px 0 rgba(255,255,255,.98)}
+.home-pinned-notification.theme-heart{border-color:rgba(223,111,158,.28)}
+.home-pinned-notification.theme-cry{border-color:rgba(79,155,210,.28)}
+.home-pinned-notification.theme-laugh{border-color:rgba(217,159,53,.28)}
+.home-pinned-notification-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.62);box-shadow:0 8px 18px rgba(70,45,120,.09),inset 0 1px 0 rgba(255,255,255,.92);font-size:20px}
+.home-pinned-notification.theme-heart .home-pinned-notification-icon{color:#df6f9e;background:linear-gradient(145deg,#ffe0ec,#fff7fb)}
+.home-pinned-notification-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+.home-pinned-notification-top{display:flex;align-items:center;gap:8px;min-width:0}
+.home-pinned-notification-top b{font-size:10px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-pinned-notification-pin{font-size:8px;opacity:.48;white-space:nowrap}
+.home-pinned-notification-text{font-size:12px;line-height:1.75;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-pinned-notification-arrow{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.72);font-size:17px;transform:rotate(180deg)}
+.home-push-permission{margin-top:7px;border:1px solid rgba(255,255,255,.68);border-radius:999px;padding:8px 13px;background:rgba(255,255,255,.52);color:var(--theme-text,#4f4352);font:inherit;font-size:9px;font-weight:900;cursor:pointer;box-shadow:0 7px 18px rgba(70,45,120,.07)}
+@media(max-width:520px){.home-notification-wrap{margin-left:8px;margin-right:8px}.home-pinned-notification{min-height:68px;border-radius:20px;padding:9px}.home-pinned-notification-icon{width:39px;height:39px}.home-pinned-notification-text{font-size:11.5px}}
+
 /* ===== KHATMIN home notification center ===== */
 .home-notification-wrap{
   margin:0 12px 10px;
@@ -4033,6 +4131,12 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
 const SUPABASE_URL="https://xycgmffmbuelkznfqojd.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_qJqGFIFoFHB3XqTgI0eBRA_GQ9YDWaY";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+/* ===== Optional Web Push registration ===== */
+const KHATMIN_VAPID_PUBLIC_KEY="";
+async function registerKhatminPush(){try{if(!('serviceWorker' in navigator))return null;return await navigator.serviceWorker.register('./sw.js',{scope:'./'});}catch(e){console.warn('WEB PUSH REGISTER:',e);return null}}
+async function requestKhatminPushPermission(){try{if(!('Notification' in window))return;const p=await Notification.requestPermission();if(p==='granted')await registerKhatminPush();}catch(e){}}
+async function showPushNotification(n){try{if(!('Notification' in window)||Notification.permission!=='granted')return;const reg=await navigator.serviceWorker?.ready;if(reg?.showNotification)await reg.showNotification(`اعلان جدید از ${homeNotificationProfile(n.sender_id)?.display_name||'کاربر'}`,{body:n.content||'',tag:`khatmin-${n.id}`,data:{notificationId:n.id}});}catch(e){}}
+
 
 let currentUser=null;
 let chatPartner=null;
@@ -4294,6 +4398,7 @@ async function loadApp(){
   }
 
   document.getElementById("loginScreen").classList.add("hidden");
+  registerKhatminPush().catch(()=>{});
   await renderHome();
 }
 
@@ -4537,99 +4642,177 @@ function homeNotificationTime(date){
   }catch(e){return "";}
 }
 
-function renderHomeNotifications(list){
+function notificationCacheKey(){return `khatmin-home-notifications-${currentUser?.id||""}`;}
+function notificationSeenKey(id){return `khatmin-home-notification-seen-${currentUser?.id||""}-${id}`;}
+function getCachedHomeNotifications(){
+  if(!currentUser?.id)return [];
+  try{
+    const raw=localStorage.getItem(notificationCacheKey());
+    const list=raw?JSON.parse(raw):[];
+    const now=Date.now();
+    return (Array.isArray(list)?list:[]).filter(n=>n&&new Date(n.expires_at).getTime()>now&&new Date(n.scheduled_at).getTime()<=now);
+  }catch(e){return []}
+}
+function cacheHomeNotifications(list){
+  if(!currentUser?.id)return;
+  try{
+    const now=Date.now();
+    const fresh=(list||[]).filter(n=>n&&new Date(n.expires_at).getTime()>now&&new Date(n.scheduled_at).getTime()<=now).slice(0,20);
+    localStorage.setItem(notificationCacheKey(),JSON.stringify(fresh));
+  }catch(e){}
+}
+function notificationWasSeenLocally(id){try{return localStorage.getItem(notificationSeenKey(id))==="1"}catch(e){return false}}
+function markNotificationLocallySeen(id){try{localStorage.setItem(notificationSeenKey(id),"1")}catch(e){}}
+
+function renderHomeNotifications(){
   const host=document.getElementById("homeNotificationHost");
   if(!host)return;
-  const items=(list||[]).filter(Boolean);
-  host.classList.toggle("has-items",items.length>0);
-  if(!items.length){host.innerHTML="";return;}
-
-  const cards=items.map(n=>{
-    const p=homeNotificationProfile(n.sender_id);
-    const senderName=p?.display_name||p?.username||"کاربر";
-    const unread=!n.seen_at;
-    return `<button type="button" class="home-notification-card ${notificationThemeClass(n.theme)} ${unread?"unread":""}" data-notification-id="${esc(n.id)}" onclick="openHomeNotification('${esc(n.id)}')">
-      <span class="home-notification-icon">${notificationThemeIcon(n.theme)}</span>
-      <span class="home-notification-copy">
-        <span class="home-notification-sender"><span class="home-notification-sender-dot"></span>${esc(senderName)}</span>
-        <span class="home-notification-text">${esc(n.content)}</span>
-        <span class="home-notification-time">${homeNotificationTime(n.scheduled_at||n.created_at)}${unread?" • جدید":""}</span>
+  const now=Date.now();
+  homeNotifications=(homeNotifications||[]).filter(n=>n&&new Date(n.expires_at).getTime()>now&&new Date(n.scheduled_at).getTime()<=now);
+  host.classList.toggle("has-items",homeNotifications.length>0);
+  host.innerHTML=homeNotifications.map(n=>{
+    const sender=homeNotificationProfile(n.sender_id);
+    const name=sender?.display_name||sender?.username||"کاربر";
+    const theme=n.theme||"none";
+    return `<button type="button" class="home-pinned-notification ${notificationThemeClass(theme)}" onclick="openHomeNotification('${esc(n.id)}')">
+      <span class="home-pinned-notification-icon">${notificationThemeIcon(theme)}</span>
+      <span class="home-pinned-notification-copy">
+        <span class="home-pinned-notification-top"><b>اعلان از ${esc(name)}</b><span class="home-pinned-notification-pin">📌 سنجاق‌شده</span></span>
+        <span class="home-pinned-notification-text">${esc(n.content||"")}</span>
       </span>
-      <span class="home-notification-arrow">‹</span>
+      <span class="home-pinned-notification-arrow">‹</span>
     </button>`;
   }).join("");
+  if('Notification' in window && Notification.permission==='default' && homeNotifications.length){
+    host.insertAdjacentHTML('beforeend',`<button type="button" class="home-push-permission" onclick="requestKhatminPushPermission?.()">🔔 فعال‌کردن اعلان روی گوشی</button>`);
+  }
+}
 
-  host.innerHTML=`<div class="home-notification-head">
-      <div class="home-notification-title">
-        <span class="home-notification-title-orb">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9.7c0-3.1-1.7-5.3-4.2-6V3a1.8 1.8 0 0 0-3.6 0v.7C7.7 4.4 6 6.6 6 9.7v3.2l-2 2.5h16l-2-2.5V9.7Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.4 17.2a2.8 2.8 0 0 0 5.2 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        </span>
-        <span>اعلان‌ها</span>
-      </div>
-      <span class="home-notification-count">${items.length}</span>
-    </div>
-    <div class="home-notification-list">${cards}</div>`;
+function showFirstSeenHomeNotificationEffect(n){
+  if(!n||notificationWasSeenLocally(n.id))return;
+  markNotificationLocallySeen(n.id);
+  showHomeNotificationToast(n);
+}
+
+function clearHomeNotificationEffect(){
+  clearTimeout(window.__khatminHomeNotifyTimer);
+  document.body.classList.remove("home-notify-heart-mode");
+  document.querySelectorAll(".home-notification-float,.home-notification-particles").forEach(el=>el.remove());
+}
+
+function showHomeNotificationToast(n){
+  if(!n)return;
+  const sender=homeNotificationProfile(n.sender_id);
+  const senderName=sender?.display_name||sender?.username||"کاربر";
+  window.__khatminActiveHomeNotification=n;
+  clearHomeNotificationEffect();
+
+  const theme=n.theme||"none";
+  const layer=document.createElement("div");
+  layer.className=`home-notification-float ${notificationThemeClass(theme)}`;
+  layer.dataset.notificationId=String(n.id);
+  layer.innerHTML=`
+    <button type="button" class="home-notification-float-card" aria-label="پاسخ به اعلان">
+      <span class="home-notification-float-icon">${notificationThemeIcon(theme)}</span>
+      <span class="home-notification-float-copy">
+        <span class="home-notification-float-label">اعلان جدید از ${esc(senderName)}</span>
+        <span class="home-notification-float-text">${esc(n.content||"")}</span>
+        <span class="home-notification-float-hint">برای ریپلای لمس کن</span>
+      </span>
+      <span class="home-notification-float-arrow">‹</span>
+    </button>`;
+  document.body.appendChild(layer);
+
+  const open=()=>openHomeNotification(n.id);
+  layer.querySelector(".home-notification-float-card")?.addEventListener("click",open,{once:true});
+
+  if(theme==="heart"){
+    document.body.classList.add("home-notify-heart-mode");
+    const particles=document.createElement("div");
+    particles.className="home-notification-particles";
+    document.body.appendChild(particles);
+    const symbols=["♥","♡","❤","💗","💞","💓"];
+    for(let i=0;i<46;i++){
+      const el=document.createElement("span");
+      el.className="home-notification-particle";
+      el.textContent=symbols[i%symbols.length];
+      el.style.setProperty("--left",`${Math.random()*100}%`);
+      el.style.setProperty("--size",`${14+Math.random()*25}px`);
+      el.style.setProperty("--delay",`${Math.random()*850}ms`);
+      el.style.setProperty("--duration",`${2.8+Math.random()*2.2}s`);
+      el.style.setProperty("--drift",`${(Math.random()-.5)*180}px`);
+      el.style.setProperty("--rot",`${(Math.random()-.5)*70}deg`);
+      particles.appendChild(el);
+    }
+  }else if(theme!=="none"){
+    triggerNotificationThemeEffect(theme);
+  }
+
+  window.__khatminHomeNotifyTimer=setTimeout(()=>{
+    layer.classList.add("closing");
+    setTimeout(()=>layer.remove(),380);
+    document.body.classList.remove("home-notify-heart-mode");
+    document.querySelectorAll(".home-notification-particles").forEach(el=>el.remove());
+  },theme==="heart"?5200:4300);
 }
 
 async function loadHomeNotifications(){
-  const host=document.getElementById("homeNotificationHost");
-  if(!host||!currentUser?.id)return;
-  const now=new Date().toISOString();
-  const {data,error}=await supabaseClient.from("chat_notifications")
-    .select("*")
-    .eq("receiver_id",currentUser.id)
-    .lte("scheduled_at",now)
-    .gt("expires_at",now)
-    .order("scheduled_at",{ascending:false})
-    .limit(20);
+  if(!currentUser?.id)return;
 
-  if(error){
-    if(!/relation .*chat_notifications.*does not exist|column .* does not exist/i.test(error.message||"")){
-      console.warn("HOME NOTIFICATIONS LOAD:",error);
+  // Paint cached notifications immediately. They remain pinned until expires_at (24h).
+  homeNotifications=getCachedHomeNotifications();
+  renderHomeNotifications();
+  if(homeNotifications[0]&&!notificationWasSeenLocally(homeNotifications[0].id))showFirstSeenHomeNotificationEffect(homeNotifications[0]);
+
+  // Refresh in background; never block the home screen on this request.
+  try{
+    const now=new Date().toISOString();
+    const {data,error}=await supabaseClient.from("chat_notifications")
+      .select("*")
+      .eq("receiver_id",currentUser.id)
+      .lte("scheduled_at",now)
+      .gt("expires_at",now)
+      .order("scheduled_at",{ascending:false})
+      .limit(20);
+    if(error){
+      if(!/relation .*chat_notifications.*does not exist|column .* does not exist/i.test(error.message||""))console.warn("HOME NOTIFICATIONS LOAD:",error);
+      return;
     }
-    homeNotifications=[];
-    renderHomeNotifications([]);
-    return;
-  }
-
-  homeNotifications=data||[];
-
-  // Profiles are normally already cached by renderChats. Keep a small in-memory
-  // copy here so notification cards can show the sender without another query.
-  let profiles=window.__khatminHomeProfiles||[];
-  const missingIds=[...new Set(homeNotifications.map(n=>String(n.sender_id||"")).filter(Boolean))]
-    .filter(id=>!profiles.some(p=>String(p.id)===id));
-
-  if(missingIds.length){
-    try{
-      const {data:missing,error:pErr}=await supabaseClient.from("profiles")
-        .select("id,username,display_name,avatar_url,bio")
-        .in("id",missingIds);
-      if(!pErr)profiles=[...profiles,...(missing||[])];
-    }catch(e){}
-  }
-
-  window.__khatminHomeProfiles=profiles;
-  renderHomeNotifications(homeNotifications);
+    homeNotifications=data||[];
+    cacheHomeNotifications(homeNotifications);
+    renderHomeNotifications();
+    const newest=homeNotifications[0];
+    if(newest&&!notificationWasSeenLocally(newest.id))showFirstSeenHomeNotificationEffect(newest);
+  }catch(e){console.warn("HOME NOTIFICATIONS BACKGROUND LOAD:",e)}
 }
 
 async function openHomeNotification(id){
-  const n=homeNotifications.find(x=>String(x.id)===String(id));
+  const n=homeNotifications.find(x=>String(x.id)===String(id)) || window.__khatminActiveHomeNotification;
   if(!n)return;
-
-  if(!n.seen_at){
-    n.seen_at=new Date().toISOString();
-    renderHomeNotifications(homeNotifications);
-    supabaseClient.from("chat_notifications")
-      .update({seen_at:n.seen_at})
-      .eq("id",n.id)
-      .eq("receiver_id",currentUser.id)
-      .is("seen_at",null)
-      .then(()=>{});
-  }
+  clearHomeNotificationEffect();
+  markNotificationLocallySeen(n.id);
+  n.seen_at=n.seen_at||new Date().toISOString();
+  // Opening an announcement does NOT remove its pinned card; it stays until expires_at.
+  cacheHomeNotifications(homeNotifications);
+  renderHomeNotifications();
+  supabaseClient.from("chat_notifications")
+    .update({seen_at:n.seen_at})
+    .eq("id",n.id).eq("receiver_id",currentUser.id).is("seen_at",null).then(()=>{});
 
   const p=homeNotificationProfile(n.sender_id);
-  if(p) await openChat(p);
+  if(!p)return;
+  await openChat(p);
+  replyingToNotification=n;
+  replyingToMessage=null;
+  const bar=document.getElementById("replyBar");
+  if(bar){
+    document.getElementById("replyBarLabel").textContent="پاسخ به اعلان";
+    document.getElementById("replyBarContent").textContent=n.content||"";
+    document.getElementById("replyBarIcon").textContent=notificationThemeIcon(n.theme);
+    bar.classList.remove("editing");
+    bar.classList.add("show");
+  }
+  document.getElementById("messageInput")?.focus();
 }
 
 async function subscribeHomeInbox(){
@@ -4657,15 +4840,21 @@ async function subscribeHomeInbox(){
       if(existing>=0)homeNotifications.splice(existing,1);
       homeNotifications.unshift(n);
       homeNotifications=homeNotifications.slice(0,20);
+      cacheHomeNotifications(homeNotifications);
+      renderHomeNotifications();
+      window.__khatminActiveHomeNotification=n;
+      const finish=()=>showFirstSeenHomeNotificationEffect(n);
       const profile=homeNotificationProfile(n.sender_id);
       if(!profile){
         supabaseClient.from("profiles").select("id,username,display_name,avatar_url,bio").eq("id",n.sender_id).maybeSingle().then(r=>{
           if(r.data)window.__khatminHomeProfiles=[...(window.__khatminHomeProfiles||[]),r.data];
-          renderHomeNotifications(homeNotifications);
+          renderHomeNotifications();
+          finish();
         });
       }else{
-        renderHomeNotifications(homeNotifications);
+        finish();
       }
+      showPushNotification?.(n).catch?.(()=>{});
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"chat_notifications"},payload=>{
       const n=payload.new;
@@ -4680,13 +4869,15 @@ async function subscribeHomeInbox(){
         homeNotifications.unshift(n);
       }
       homeNotifications=homeNotifications.slice(0,20);
-      renderHomeNotifications(homeNotifications);
+      cacheHomeNotifications(homeNotifications);
+      renderHomeNotifications();
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"chat_notifications"},payload=>{
       const n=payload.old;
       if(!n || String(n.receiver_id)!==String(currentUser.id))return;
       homeNotifications=homeNotifications.filter(x=>String(x.id)!==String(n.id));
-      renderHomeNotifications(homeNotifications);
+      cacheHomeNotifications(homeNotifications);
+      renderHomeNotifications();
     })
     .subscribe(status=>console.log("Home inbox realtime:",status));
 }
@@ -4921,6 +5112,19 @@ function setNotificationTheme(theme){
   document.querySelectorAll(".chat-notify-theme").forEach(b=>b.classList.toggle("active",b.dataset.theme===theme));
 }
 
+function showKhatminToast(message,tone="success"){
+  document.querySelectorAll(".khatmin-floating-toast").forEach(el=>el.remove());
+  const toast=document.createElement("div");
+  toast.className=`khatmin-floating-toast toast-${tone}`;
+  toast.innerHTML=`<span class="khatmin-toast-icon">${tone==="success"?"✓":"!"}</span><span>${esc(message)}</span>`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(()=>toast.classList.add("show"));
+  setTimeout(()=>{
+    toast.classList.remove("show");
+    setTimeout(()=>toast.remove(),360);
+  },2800);
+}
+
 function openNotificationComposer(event){
   if(event){event.preventDefault();event.stopPropagation();}
   if(!chatPartner||!currentUser)return;
@@ -4978,7 +5182,7 @@ async function saveChatNotification(){
   if(result.error){alert("ذخیره اعلان انجام نشد:\n"+(result.error.message||"خطای اتصال"));return;}
   activeChatNotification=result.data;
   closeNotificationComposer();
-  alert(scheduledAt.getTime()<=Date.now()+1000?"اعلان ارسال شد ♡":"اعلان برای زمان انتخابی تنظیم شد ⏱️");
+  showKhatminToast(scheduledAt.getTime()<=Date.now()+1000?"اعلان ارسال شد ♡":"اعلان برای زمان انتخابی تنظیم شد ⏱️", "success");
 }
 
 async function deleteChatNotification(){
@@ -5116,6 +5320,7 @@ async function openChat(partner){
     </span>
   </button>
 </header>
+      <div id="chatNotificationHost" class="chat-notification-host"></div>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
       <div id="replyBar" class="reply-bar" aria-live="polite">
         <div id="replyBarIcon" class="reply-bar-icon">↩</div>
