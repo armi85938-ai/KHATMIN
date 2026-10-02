@@ -7383,4 +7383,39 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
 .msg-wrap.theirs .voice-message-player .voice-play-btn{order:1 !important;}
 .msg-wrap.theirs .voice-message-player .voice-wave{order:2 !important;}
 .msg-wrap.theirs .voice-message-player .voice-duration{order:3 !important;}
+
+/* KHATMIN — Settings full-page backdrop fix */
+#settingsPage,
+#settingsPageOverlay,
+.settings-page,
+.settings-overlay {
+  box-sizing: border-box;
+}
+
+#settingsPage {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100vh !important;
+  overflow: hidden !important;
+  background: var(--app-bg, var(--background, #f7f7fb)) !important;
+  z-index: 9000 !important;
+}
+
+#settingsPage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: inherit;
+}
+
+#settingsPage > * {
+  position: relative;
+  z-index: 1;
+}
+
 </style>
