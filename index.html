@@ -3325,6 +3325,52 @@ body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child
   body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i{animation:none !important}
 }
 </style>
+
+<style id="khatmin-v19-composer-typing-fix">
+/* Android composer polish: vertically center the empty placeholder and hide the caret until text exists. */
+.composer #messageInput{
+  line-height:1.35 !important;
+  padding:10px 15px 9px !important;
+  text-align:right !important;
+  caret-color:transparent !important;
+}
+.composer.has-text #messageInput{caret-color:var(--theme-text,#111)!important;}
+body[data-khat-theme^="dark-"] .composer.has-text #messageInput{caret-color:var(--theme-text,#fff)!important;}
+
+/* Typing indicator: the word stays still; only the three dots bounce. */
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-word i{
+  animation:none !important;
+  transform:none !important;
+  opacity:1 !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:4px !important;
+  height:14px !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i{
+  display:block !important;
+  width:4px !important;
+  height:4px !important;
+  min-width:4px !important;
+  min-height:4px !important;
+  border-radius:50% !important;
+  opacity:.35 !important;
+  transform:translateY(0) !important;
+  animation:khatminTypingDotBounce .72s ease-in-out infinite !important;
+  will-change:transform,opacity !important;
+}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child(1){animation-delay:0s !important}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child(2){animation-delay:.12s !important}
+body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child(3){animation-delay:.24s !important}
+@keyframes khatminTypingDotBounce{
+  0%,60%,100%{transform:translateY(0);opacity:.35}
+  30%{transform:translateY(-4px);opacity:1}
+}
+body[data-khat-theme^="light-"] .chat-header > .chat-center-panel .typing-dots i{background:#111 !important}
+body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{background:#fff !important}
+</style>
 </head>
 <body>
 
@@ -4537,9 +4583,12 @@ function renderMessage(m){
     : "";
   const isVoice=!deleted && typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__"));
   const isImage=!deleted && typeof m.content==="string" && m.content.startsWith("__KHATMIN_IMAGE_URL__");
-  const voiceSrc=isVoice
+  const voiceRaw=isVoice
     ? (m.content.startsWith("__KHATMIN_VOICE_URL__") ? m.content.slice("__KHATMIN_VOICE_URL__".length) : m.content.slice("__KHATMIN_VOICE__".length))
     : "";
+  const voiceParts=isVoice ? voiceRaw.split("||__KHATMIN_DURATION__") : ["", ""];
+  const voiceSrc=isVoice ? voiceParts[0] : "";
+  const voiceStoredDuration=isVoice && voiceParts[1] ? Number(voiceParts[1]) : 0;
   const imageSrc=isImage ? m.content.slice("__KHATMIN_IMAGE_URL__".length) : "";
   const voiceBars=Array.from({length:30},(_,i)=>{
     const heights=[34,52,68,44,78,58,88,48,70,38,62,82,52,72,94,58,76,46,66,86,54,72,42,64,82,50,70,40,58,76];
@@ -4552,7 +4601,7 @@ function renderMessage(m){
           <svg class="voice-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.8v12.4a1 1 0 0 0 1.52.85l9.6-6.2a1 1 0 0 0 0-1.68l-9.6-6.2A1 1 0 0 0 8 5.8Z"/></svg>
         </button>
         <div class="voice-wave" onclick="seekVoiceMessage('${esc(voiceId)}',event)" aria-hidden="true">${voiceBars}</div>
-        <span class="voice-duration">00:00</span>
+        <span class="voice-duration" data-stored-duration="${Number.isFinite(voiceStoredDuration)&&voiceStoredDuration>0?voiceStoredDuration:0}">${voiceStoredDuration>0?formatVoiceDuration(voiceStoredDuration):"00:00"}</span>
         <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
       </div>`
     : isImage
@@ -4578,17 +4627,20 @@ function updateVoiceMessageUI(audio){
   const btn=player.querySelector(".voice-play-btn");
   const duration=player.querySelector(".voice-duration");
   const bars=[...player.querySelectorAll(".voice-bar")];
+  const storedDuration=duration ? Number(duration.dataset.storedDuration||0) : 0;
   const current=Number(audio.currentTime);
   const total=Number(audio.duration);
-  const hasTotal=Number.isFinite(total)&&total>0;
+  const metadataTotal=Number.isFinite(total)&&total>0?total:0;
+  const hasTotal=metadataTotal>0 || (Number.isFinite(storedDuration)&&storedDuration>0);
+  const effectiveTotal=metadataTotal>0?metadataTotal:storedDuration;
   const safeCurrent=Number.isFinite(current)&&current>=0?current:0;
   const playing=!audio.paused&&!audio.ended;
   const ended=!!audio.ended;
-  const remaining=hasTotal?Math.max(0,total-safeCurrent):0;
+  const remaining=hasTotal?Math.max(0,effectiveTotal-safeCurrent):0;
   if(duration){
-    duration.textContent=formatVoiceDuration(playing||(!ended&&safeCurrent>0)?remaining:hasTotal?total:0);
+    duration.textContent=formatVoiceDuration(playing||(!ended&&safeCurrent>0)?remaining:hasTotal?effectiveTotal:0);
   }
-  const ratio=hasTotal?Math.max(0,Math.min(1,safeCurrent/total)):0;
+  const ratio=hasTotal?Math.max(0,Math.min(1,safeCurrent/effectiveTotal)):0;
   bars.forEach((bar,i)=>bar.classList.toggle("active",i<Math.round(ratio*bars.length)));
   player.classList.toggle("playing",playing);
   if(btn){
@@ -4599,12 +4651,45 @@ function updateVoiceMessageUI(audio){
   }
 }
 
+async function resolveVoiceDuration(audio){
+  if(!audio)return;
+  const player=audio.closest(".voice-message-player");
+  const durationEl=player?.querySelector(".voice-duration");
+  if(!durationEl)return;
+  const stored=Number(durationEl.dataset.storedDuration||0);
+  if(Number.isFinite(stored)&&stored>0){
+    durationEl.textContent=formatVoiceDuration(stored);
+    return;
+  }
+  const apply=()=>{
+    const d=Number(audio.duration);
+    if(Number.isFinite(d)&&d>0){
+      const seconds=Math.max(1,Math.round(d));
+      durationEl.dataset.storedDuration=String(seconds);
+      durationEl.textContent=formatVoiceDuration(seconds);
+      updateVoiceMessageUI(audio);
+      return true;
+    }
+    return false;
+  };
+  if(apply())return;
+  try{audio.preload="auto";audio.load();}catch(_){}
+  let tries=0;
+  const timer=setInterval(()=>{
+    tries++;
+    if(apply()||tries>=30)clearInterval(timer);
+  },250);
+}
+
 function bindVoicePlayers(root=document){
   root.querySelectorAll?.(".voice-message-player audio").forEach(audio=>{
     if(audio.dataset.bound)return;
     audio.dataset.bound="1";
-    audio.addEventListener("loadedmetadata",()=>updateVoiceMessageUI(audio));
-    audio.addEventListener("durationchange",()=>updateVoiceMessageUI(audio));
+    audio.preload="auto";
+    audio.addEventListener("loadedmetadata",()=>{updateVoiceMessageUI(audio);resolveVoiceDuration(audio)});
+    audio.addEventListener("durationchange",()=>{updateVoiceMessageUI(audio);resolveVoiceDuration(audio)});
+    audio.addEventListener("loadeddata",()=>{updateVoiceMessageUI(audio);resolveVoiceDuration(audio)});
+    audio.addEventListener("canplay",()=>{updateVoiceMessageUI(audio);resolveVoiceDuration(audio)});
     audio.addEventListener("timeupdate",()=>updateVoiceMessageUI(audio));
     audio.addEventListener("play",()=>{
       document.querySelectorAll(".voice-message-player audio").forEach(other=>{if(other!==audio&&!other.paused){other.pause();}});
@@ -4612,8 +4697,12 @@ function bindVoicePlayers(root=document){
     });
     audio.addEventListener("pause",()=>updateVoiceMessageUI(audio));
     audio.addEventListener("ended",()=>{audio.currentTime=0;updateVoiceMessageUI(audio)});
-    audio.addEventListener("error",()=>updateVoiceMessageUI(audio));
+    audio.addEventListener("error",()=>{
+      updateVoiceMessageUI(audio);
+      resolveVoiceDuration(audio);
+    });
     updateVoiceMessageUI(audio);
+    resolveVoiceDuration(audio);
   });
 }
 
@@ -5220,6 +5309,15 @@ function setVoiceComposerState(recording){
           stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
     }else{
+      /* The composer is rebuilt dynamically, so bind the gallery picker here. */
+      attach.onclick = function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof window.openKhatAttachmentSheet === "function"){
+          window.openKhatAttachmentSheet();
+        }
+        return false;
+      };
       attach.setAttribute("aria-label","پیوست");
       attach.setAttribute("title","پیوست");
       attach.innerHTML=`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -5324,7 +5422,7 @@ async function toggleVoiceRecording(){
           alert("آدرس ویس ساخته نشد. لطفاً دوباره تلاش کنید.");
           return;
         }
-        const ok=await sendRawMessage("__KHATMIN_VOICE_URL__"+voiceUrl);
+        const ok=await sendRawMessage("__KHATMIN_VOICE_URL__"+voiceUrl+"||__KHATMIN_DURATION__"+duration);
         if(!ok){
           // اگر درج پیام در دیتابیس شکست خورد، فایل بی‌استفاده را هم پاک می‌کنیم.
           await supabaseClient.storage.from("voice-messages").remove([path]).catch(()=>{});
