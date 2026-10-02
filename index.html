@@ -1220,7 +1220,7 @@ body{
 .settings-page{
   width:min(760px,100%);
   margin:0 auto;
-  padding:8px 16px 118px;
+  padding:0 16px 118px;
   color:#fff;
 }
 .settings-page-head{
@@ -1296,7 +1296,7 @@ body{
     max-width:none;
     box-sizing:border-box;
     min-height:calc(100vh - 105px);
-    padding:8px 12px 118px;
+    padding:0 12px 118px;
     margin:0;
     overflow:hidden;
   }
@@ -1673,34 +1673,6 @@ body{
 @media(max-width:520px){
   .msg-wrap .msg.voice-msg{max-width:90%}
   .voice-message-player{width:min(310px,82vw);min-width:210px;height:60px}
-}
-
-/* ===== Android: contacts + settings are fixed, non-scroll screens ===== */
-@media(max-width:600px){
-  .chat-shell-mode,
-  .settings-shell-mode{
-    height:100dvh!important;
-    min-height:100dvh!important;
-    max-height:100dvh!important;
-    overflow:hidden!important;
-  }
-  .chat-shell-mode .content,
-  .settings-shell-mode .content{
-    height:calc(100dvh - 105px)!important;
-    max-height:calc(100dvh - 105px)!important;
-    overflow:hidden!important;
-    overscroll-behavior:none!important;
-    touch-action:pan-x pan-y;
-  }
-  .chat-shell-mode .chat-list,
-  .settings-shell-mode .settings-page{
-    overflow:hidden!important;
-    overscroll-behavior:none!important;
-  }
-  /* The settings title/logo row is intentionally removed; content starts at the top. */
-  .settings-shell-mode .settings-page{
-    padding-top:0!important;
-  }
 }
 
 </style>
@@ -3431,6 +3403,33 @@ body[data-khat-theme] .chat-header > .chat-center-panel .typing-dots i:nth-child
 body[data-khat-theme^="light-"] .chat-header > .chat-center-panel .typing-dots i{background:#111 !important}
 body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{background:#fff !important}
 </style>
+
+<style id="khatmin-settings-mobile-final-polish">
+/* Final settings mobile polish — visual only. No app/login/data logic changed. */
+.settings-shell-mode,
+.settings-shell-mode .content,
+.settings-shell-mode .settings-page{
+  background:var(--theme-bg, #f5f1fb) !important;
+}
+
+/* Give the settings screen a little more breathing room from the browser top edge. */
+.settings-shell-mode .settings-page{
+  padding-top:28px !important;
+  min-height:calc(100vh - 105px) !important;
+  box-sizing:border-box !important;
+}
+
+@media(max-width:600px){
+  .settings-shell-mode .settings-page{
+    padding-top:30px !important;
+    padding-bottom:118px !important;
+    min-height:calc(100vh - 105px) !important;
+  }
+  .settings-shell-mode .settings-page-head-clean{
+    margin-top:0 !important;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -3806,7 +3805,7 @@ async function loadApp(){
 function shell(content,active="chat"){
   const settingsMode=active==="settings";
   return `
-  <div class="app ${settingsMode?"settings-shell-mode":"chat-shell-mode"}">
+  <div class="app ${settingsMode?"settings-shell-mode":""}">
     <div class="top ${settingsMode?"settings-shell-top":""}">
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
