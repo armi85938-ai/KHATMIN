@@ -3500,6 +3500,78 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
 </div>
 
 <div id="avatarCropBackdrop" class="avatar-crop-backdrop" onclick="closeAvatarCrop(event)"><div class="avatar-crop-modal" role="dialog" aria-modal="true" aria-label="برش عکس پروفایل" onclick="event.stopPropagation()"><div class="avatar-crop-title">برش عکس پروفایل</div><div id="avatarCropStage" class="avatar-crop-stage"><img id="avatarCropImage" class="avatar-crop-image" alt="پیش‌نمایش عکس"></div><div class="avatar-crop-controls"><span>کوچک</span><input id="avatarCropZoom" type="range" min="1" max="3" step=".01" value="1" aria-label="بزرگنمایی"><span>بزرگ</span></div><div class="avatar-crop-actions"><button type="button" class="avatar-crop-cancel" onclick="closeAvatarCrop()">انصراف</button><button type="button" class="avatar-crop-save" onclick="applyAvatarCrop()">برش و استفاده</button></div></div></div><div id="app"></div>
+
+<style id="appearance-theme-drawer-css">
+/* ===== KHATMIN animated theme drawer ===== */
+.appearance-theme-section{overflow:visible!important}
+
+.appearance-theme-toggle{
+  width:100%;height:28px;margin:2px 0 0;padding:0;border:0;background:transparent;
+  display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer;
+  color:var(--theme-muted);-webkit-tap-highlight-color:transparent;
+  transition:color .25s ease,transform .25s ease;
+}
+.appearance-theme-toggle:hover{color:var(--theme-accent)}
+.appearance-theme-toggle:active{transform:scale(.97)}
+.appearance-theme-toggle-line{
+  height:1px;flex:1;max-width:170px;
+  background:linear-gradient(90deg,transparent,var(--theme-border),transparent);
+}
+.appearance-theme-toggle-icon{
+  width:34px;height:22px;border-radius:12px;
+  display:grid;place-items:center;
+  border:1px solid var(--theme-border);
+  background:linear-gradient(145deg,var(--theme-surface),var(--theme-surface2));
+  color:var(--theme-accent);font-size:19px;font-weight:900;line-height:1;
+  box-shadow:0 8px 22px var(--theme-glow);
+  transform:translateY(-1px);
+  transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .3s ease;
+}
+.appearance-theme-toggle[aria-expanded="true"] .appearance-theme-toggle-icon{
+  transform:rotate(180deg) translateY(1px);
+  box-shadow:0 12px 30px var(--theme-glow);
+}
+.appearance-theme-drawer{
+  display:grid;grid-template-rows:0fr;
+  opacity:0;transform:translateY(-8px) scale(.985);
+  transition:grid-template-rows .55s cubic-bezier(.16,1,.3,1),opacity .28s ease,transform .55s cubic-bezier(.16,1,.3,1);
+}
+.appearance-theme-drawer-inner{
+  min-height:0;overflow:hidden;
+  padding:0 3px;
+  transition:padding .55s cubic-bezier(.16,1,.3,1);
+}
+.appearance-theme-drawer-label{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:0 2px 10px;color:var(--theme-muted);font-size:10px;
+  opacity:0;transform:translateY(-5px);
+  transition:opacity .25s ease .05s,transform .4s ease .05s;
+}
+.appearance-theme-drawer .appearance-themes{
+  opacity:0;transform:translateY(-8px);
+  transition:opacity .22s ease,transform .5s cubic-bezier(.16,1,.3,1);
+}
+.appearance-theme-drawer.open{
+  grid-template-rows:1fr;opacity:1;transform:none;
+}
+.appearance-theme-drawer.open .appearance-theme-drawer-inner{
+  padding:3px 3px 10px;
+}
+.appearance-theme-drawer.open .appearance-theme-drawer-label{
+  opacity:1;transform:none;
+}
+.appearance-theme-drawer.open .appearance-themes{
+  opacity:1;transform:none;transition-delay:.08s;
+}
+.appearance-size-section{
+  transition:margin-top .55s cubic-bezier(.16,1,.3,1),transform .55s cubic-bezier(.16,1,.3,1);
+}
+@media(max-width:700px){
+  .appearance-theme-toggle{height:26px}
+  .appearance-theme-toggle-line{max-width:90px}
+  .appearance-theme-toggle-icon{width:32px;height:21px}
+}
+</style>
 <div id="appearanceOverlay" class="appearance-overlay" aria-hidden="true" dir="rtl">
   <div class="appearance-top">
     <div class="appearance-title"><div><h2>فضای ظاهری</h2><span>ظاهر برنامه را دقیقاً مطابق سلیقه خودت تنظیم کن</span></div></div>
@@ -3513,7 +3585,22 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
         <button id="appearanceLightMode" class="appearance-mode" type="button" onclick="setAppearanceMode('light')"><span class="mode-orb light-orb"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="7.2" fill="currentColor"/><circle cx="24" cy="24" r="12.2" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".22"/><path d="M24 5.5v5M24 37.5v5M5.5 24h5M37.5 24h5M10.9 10.9l3.6 3.6M33.5 33.5l3.6 3.6M37.1 10.9l-3.6 3.6M14.5 33.5l-3.6 3.6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg></span><span class="mode-copy"><b>روشن</b></span><span class="mode-check">✓</span></button>
       </div>
 
-      <div class="appearance-themes" id="appearanceThemeGrid"></div>
+      <button id="appearanceThemeToggle" class="appearance-theme-toggle" type="button"
+        onclick="toggleAppearanceThemes()" aria-expanded="false" aria-controls="appearanceThemeDrawer"
+        aria-label="نمایش تم‌های بیشتر">
+        <span class="appearance-theme-toggle-line"></span>
+        <span class="appearance-theme-toggle-icon" aria-hidden="true">⌄</span>
+        <span class="appearance-theme-toggle-line"></span>
+      </button>
+
+      <div class="appearance-theme-drawer" id="appearanceThemeDrawer" aria-hidden="true">
+        <div class="appearance-theme-drawer-inner">
+          <div class="appearance-theme-drawer-label">
+            <span>انتخاب رنگ و حال‌وهوا</span><span>✦</span>
+          </div>
+          <div class="appearance-themes" id="appearanceThemeGrid"></div>
+        </div>
+      </div>
     </section>
     <section class="appearance-section appearance-size-section">
       <div class="appearance-section-heading"><div><h3>اندازه متن</h3></div><span class="appearance-heading-mark">Aa</span></div>
@@ -5855,7 +5942,16 @@ function openAppearanceSettings(){
   applyAppearance(); const a=readAppearance(); const o=document.getElementById("appearanceOverlay"); if(!o)return;
   const range=document.getElementById("appearanceFontRange"); if(range)range.value=String(a.scale||1); updateAppearanceFontLabel(a.scale||1); renderAppearanceThemes(); o.classList.add("show");o.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
 }
-function closeAppearanceSettings(){const o=document.getElementById("appearanceOverlay");if(!o)return;o.classList.remove("show");o.setAttribute("aria-hidden","true");document.body.style.overflow="";}
+function toggleAppearanceThemes(force){
+  const drawer=document.getElementById("appearanceThemeDrawer");
+  const toggle=document.getElementById("appearanceThemeToggle");
+  if(!drawer||!toggle)return;
+  const open=typeof force==="boolean"?force:!drawer.classList.contains("open");
+  drawer.classList.toggle("open",open);
+  drawer.setAttribute("aria-hidden",String(!open));
+  toggle.setAttribute("aria-expanded",String(open));
+}
+function closeAppearanceSettings(){const o=document.getElementById("appearanceOverlay");if(!o)return;toggleAppearanceThemes(false);o.classList.remove("show");o.setAttribute("aria-hidden","true");document.body.style.overflow="";}
 function updateAppearanceFontLabel(v){const n=Math.round(Number(v)*100);const el=document.getElementById("appearanceFontValue");if(el)el.textContent=n+"٪";const p=document.querySelector(".appearance-size-preview");if(p)p.style.fontSize=`calc(22px * ${Number(v)||1})`}
 function previewAppearanceFont(v){const scale=Math.min(1.2,Math.max(.85,Number(v)||1));document.documentElement.style.setProperty("--text-scale",scale);updateAppearanceFontLabel(scale);saveAppearance()}
 function setAppearanceMode(mode){const current=document.body.dataset.khatTheme||"dark-purple";const list=APPEARANCE_THEMES[mode];const theme=list.some(x=>x[0]===current)?current:list[0][0];selectAppearanceTheme(theme)}
