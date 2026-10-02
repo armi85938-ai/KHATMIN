@@ -5235,16 +5235,16 @@ async function sendMessage(e){
 
     // مهم: ذخیره پیام را از SELECT ستون‌های اختیاری جدا می‌کنیم.
     // این باعث می‌شود نبودن edited_at/reply_to_id/... مانع ارسال پیام نشود.
-    let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at,notification_reply_to_id,notification_reply_text,notification_reply_theme").single();
+    let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
 
-    // اگر ستون reply_to_id در دیتابیس وجود نداشت، پیام را بدون reply ذخیره کن.
-    if(result.error && payload.reply_to_id && /reply_to_id|column .* does not exist/i.test(result.error.message||"")){
+    // اگر ستون‌های اختیاری reply در دیتابیس موجود نبودند، پیام اصلی را بدون آن ستون‌ها ذخیره/دریافت کن.
+    if(result.error && /notification_reply_text|notification_reply_to_id|notification_reply_theme|reply_to_id|column .* does not exist/i.test(result.error.message||"")){
       const basicPayload={
         sender_id:currentUser.id,
-        receiver_id:chatPartner.id,
+        receiver_id:receiverProfile.id,
         content:content
       };
-      result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at,read_at,notification_reply_to_id,notification_reply_text,notification_reply_theme").single();
+      result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
     }
 
     if(result.error){
@@ -5592,5 +5592,26 @@ async function logout(){
   },true);
 })();
 </script>
+
+<style id="khatmin-sent-voice-button-right-v2">
+/* Sent voice: play button on the RIGHT; waveform in the middle; time on the LEFT.
+   The player's base direction is RTL, so order 1 is the rightmost position. */
+.msg.mine .voice-message-player {
+  direction: rtl !important;
+}
+.msg.mine .voice-message-player .voice-play-btn {
+  order: 1 !important;
+  flex: 0 0 38px !important;
+}
+.msg.mine .voice-message-player .voice-wave {
+  order: 2 !important;
+}
+.msg.mine .voice-message-player .voice-duration {
+  order: 3 !important;
+}
+
+/* Received voice messages deliberately retain their original rules/layout. */
+</style>
+
 </body>
 </html>
