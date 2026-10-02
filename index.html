@@ -3585,6 +3585,16 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
   }
 }
 </style>
+
+<style id="khatmin-notification-reply-preview-v2">
+.reply-notification-rich{display:flex;flex-direction:column;gap:2px}.reply-notification-rich .reply-notification-kicker{font-size:9px;font-weight:800;opacity:.62;display:block}.reply-notification-rich strong{font-size:13px;font-weight:850;line-height:1.55;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reply-bar-icon{box-shadow:0 8px 22px rgba(0,0,0,.12)}
+.chat-notify-reply-preview{display:flex;align-items:center;gap:9px;margin:0 0 8px;padding:8px 10px;border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.055));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);max-width:100%;overflow:hidden;direction:rtl;text-align:right;}
+.chat-notify-reply-preview-icon{width:27px;height:27px;display:grid;place-items:center;flex:0 0 27px;border-radius:9px;background:rgba(255,255,255,.09);font-size:15px;line-height:1;}
+.chat-notify-reply-preview-copy{min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.35;}
+.chat-notify-reply-preview-copy b{font-size:9px;font-weight:900;opacity:.72;}
+.chat-notify-reply-preview-copy span{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;}
+.msg.theirs .chat-notify-reply-preview,.msg.mine .chat-notify-reply-preview{margin-bottom:8px;}
+</style>
 </head>
 <body>
 
@@ -4197,11 +4207,30 @@ async function localCachePutAll(store,rows){
 async function localCacheDelete(store,key){try{const db=await openLocalCache();await new Promise((resolve,reject)=>{const tx=db.transaction(store,"readwrite");tx.objectStore(store).delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}}
 function profileCacheKey(userId,partnerId){return `${String(userId)}:${String(partnerId)}`}
 function messageCacheKey(userId,messageId){return `${String(userId)}:${String(messageId)}`}
-async function getCachedProfiles(){return (await localCacheGetAll("profiles",`${currentUser.id}:`)).map(x=>x.profile).filter(Boolean)}
-async function cacheProfiles(profiles){await localCachePutAll("profiles",(profiles||[]).map(profile=>({key:profileCacheKey(currentUser.id,profile.id),profile}))) }
-async function getCachedMessages(partnerId){return (await localCacheGetAll("messages",`${currentUser.id}:${String(partnerId)}:`)).map(x=>x.message).filter(Boolean).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))}
-async function cacheMessages(messages){await localCachePutAll("messages",(messages||[]).filter(Boolean).map(message=>({key:messageCacheKey(currentUser.id,message.id).replace(`${currentUser.id}:`,`${currentUser.id}:${String(message.sender_id===currentUser.id?message.receiver_id:message.sender_id)}:`),message}))) }
-async function getCachedAllMessages(){return (await localCacheGetAll("messages",`${currentUser.id}:`)).map(x=>x.message).filter(Boolean)}
+function fastProfilesKey(){return `khatmin-fast-profiles-${currentUser?.id||""}`}
+function fastMessagesKey(partnerId){return `khatmin-fast-messages-${currentUser?.id||""}-${String(partnerId||"")}`}
+function fastAllMessagesKey(){return `khatmin-fast-all-messages-${currentUser?.id||""}`}
+function getFastCachedProfiles(){try{const raw=localStorage.getItem(fastProfilesKey());const rows=raw?JSON.parse(raw):[];return Array.isArray(rows)?rows:[]}catch(e){return []}}
+function getFastCachedMessages(partnerId){try{const raw=localStorage.getItem(fastMessagesKey(partnerId));const rows=raw?JSON.parse(raw):[];return Array.isArray(rows)?rows.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)):[]}catch(e){return []}}
+function getFastCachedAllMessages(){try{const raw=localStorage.getItem(fastAllMessagesKey());const rows=raw?JSON.parse(raw):[];return Array.isArray(rows)?rows:[]}catch(e){return []}}
+function writeFastProfiles(profiles){try{localStorage.setItem(fastProfilesKey(),JSON.stringify((profiles||[]).filter(Boolean)))}catch(e){}}
+function writeFastMessages(messages){
+  if(!currentUser?.id)return;
+  const grouped=new Map();
+  const all=getFastCachedAllMessages();
+  (all||[]).forEach(m=>grouped.set(String(m.id),m));
+  (messages||[]).filter(Boolean).forEach(m=>grouped.set(String(m.id),m));
+  const merged=Array.from(grouped.values()).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  try{localStorage.setItem(fastAllMessagesKey(),JSON.stringify(merged.slice(-1200)))}catch(e){}
+  const byPartner=new Map();
+  merged.forEach(m=>{const pid=String(m.sender_id)===String(currentUser.id)?String(m.receiver_id):String(m.sender_id);if(!byPartner.has(pid))byPartner.set(pid,[]);byPartner.get(pid).push(m)});
+  byPartner.forEach((rows,pid)=>{try{localStorage.setItem(fastMessagesKey(pid),JSON.stringify(rows.slice(-300)))}catch(e){}});
+}
+async function getCachedProfiles(){const fast=getFastCachedProfiles();if(fast.length)return fast;const rows=(await localCacheGetAll("profiles",`${currentUser.id}:`)).map(x=>x.profile).filter(Boolean);if(rows.length)writeFastProfiles(rows);return rows}
+async function cacheProfiles(profiles){writeFastProfiles(profiles);await localCachePutAll("profiles",(profiles||[]).map(profile=>({key:profileCacheKey(currentUser.id,profile.id),profile}))) }
+async function getCachedMessages(partnerId){const fast=getFastCachedMessages(partnerId);if(fast.length)return fast;const rows=(await localCacheGetAll("messages",`${currentUser.id}:${String(partnerId)}:`)).map(x=>x.message).filter(Boolean).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));if(rows.length)writeFastMessages(rows);return rows}
+async function cacheMessages(messages){writeFastMessages(messages);await localCachePutAll("messages",(messages||[]).filter(Boolean).map(message=>({key:messageCacheKey(currentUser.id,message.id).replace(`${currentUser.id}:`,`${currentUser.id}:${String(message.sender_id===currentUser.id?message.receiver_id:message.sender_id)}:`),message}))) }
+async function getCachedAllMessages(){const fast=getFastCachedAllMessages();if(fast.length)return fast;const rows=(await localCacheGetAll("messages",`${currentUser.id}:`)).map(x=>x.message).filter(Boolean);if(rows.length)writeFastMessages(rows);return rows}
 function mergeMessagesIntoCache(list,extra){
   const map=new Map((list||[]).map(m=>[String(m.id),m]));
   (extra||[]).forEach(m=>map.set(String(m.id),m));
@@ -4887,10 +4916,11 @@ async function renderHome(){
   window.__khatminHomeProfiles=[];
   homeNotifications=[];
   app.innerHTML=shell(`<div id="homeNotificationHost" class="home-notification-wrap"></div><div id="chatList" class="chat-list"><div class="empty">در حال آماده‌سازی...</div></div>`,"chat");
-  await renderChats();
-  window.__khatminHomeProfiles=await getCachedProfiles();
-  await loadHomeNotifications();
-  await subscribeHomeInbox();
+  // Do not block the home screen on IndexedDB/network. Cached cards paint first.
+  renderChats().catch(e=>console.warn("CHAT LIST LOAD:",e));
+  window.__khatminHomeProfiles=getFastCachedProfiles();
+  loadHomeNotifications().catch(e=>console.warn("HOME NOTIFICATIONS LOAD:",e));
+  subscribeHomeInbox().catch(e=>console.warn("HOME INBOX SUBSCRIBE:",e));
 }
 
 function getReadKey(partnerId){return `khatmin-chat-read-${currentUser?.id||""}-${partnerId}`;}
@@ -4919,7 +4949,8 @@ async function renderChats(){
   if(!list||!currentUser)return;
 
   // Paint the cached contacts immediately. The database sync happens in the background.
-  let profiles=await getCachedProfiles();
+  let profiles=getFastCachedProfiles();
+  if(!profiles.length){ profiles=await getCachedProfiles(); }
   const myId=String(currentUser?.id||"");
   const myUsername=String(currentUser?.profile?.username||"").trim().toLowerCase();
   profiles=(profiles||[]).filter(p=>{
@@ -4951,7 +4982,7 @@ async function renderChats(){
     list.innerHTML=cards.length?cards.join(""):"<div class=\"empty\">مخاطب دیگری پیدا نشد.</div>";
   };
 
-  const cachedMessages=await getCachedAllMessages();
+  const cachedMessages=getFastCachedAllMessages();
   if(profiles.length) renderCards(cachedMessages);
   else list.innerHTML=`<div class="empty">در حال آماده‌سازی...</div>`;
 
@@ -4961,24 +4992,39 @@ async function renderChats(){
       .from("profiles").select("id,username,display_name,avatar_url,bio")
       .neq("id",currentUser.id).order("display_name");
     if(pErr)throw pErr;
-    profiles=(freshProfiles||[]);
+    profiles=(freshProfiles||[]).filter(p=>{
+      const pid=String(p?.id||"");
+      const pun=String(p?.username||"").trim().toLowerCase();
+      return pid && pid!==myId && (!myUsername || pun!==myUsername);
+    }).sort((a,b)=>String(a.display_name||a.username).localeCompare(String(b.display_name||b.username),'fa'));
     await cacheProfiles(profiles);
+
+    // مخاطبین نباید به موفق بودن کوئری پیام‌ها وابسته باشند.
+    renderCards(await getCachedAllMessages());
 
     const allCached=await getCachedAllMessages();
     const latestCached=allCached.reduce((max,m)=>Math.max(max,new Date(m.created_at).getTime()),0);
     let query=supabaseClient.from("messages")
-      .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone,read_at,notification_reply_to_id,notification_reply_text,notification_reply_theme")
+      .select("id,sender_id,receiver_id,content,created_at,edited_at,reply_to_id,deleted_for_everyone,read_at")
       .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
       .order("created_at",{ascending:true});
     if(latestCached)query=query.gt("created_at",new Date(latestCached).toISOString());
     let {data:newMessages,error:mErr}=await query;
-    if(mErr && /column .* does not exist/i.test(mErr.message||"")){
-      let fallback=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at,read_at,notification_reply_to_id,notification_reply_text,notification_reply_theme")
-        .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`).order("created_at",{ascending:true});
-      if(latestCached)fallback=fallback.gt("created_at",new Date(latestCached).toISOString());
-      const r=await fallback;newMessages=r.data;mErr=r.error;
-    }
     if(mErr)throw mErr;
+
+    // ستون‌های ریپلای اعلان اختیاری هستند؛ نبودنشان نباید مخاطبین را خراب کند.
+    if((newMessages||[]).length){
+      try{
+        const ids=newMessages.map(m=>m.id).filter(Boolean);
+        const extra=await supabaseClient.from("messages")
+          .select("id,notification_reply_to_id,notification_reply_text,notification_reply_theme")
+          .in("id",ids);
+        if(!extra.error && extra.data){
+          const extraMap=new Map(extra.data.map(x=>[String(x.id),x]));
+          newMessages=newMessages.map(m=>({...m,...(extraMap.get(String(m.id))||{})}));
+        }
+      }catch(e){}
+    }
     await cacheMessages(newMessages||[]);
     renderCards(await getCachedAllMessages());
   }catch(err){
@@ -5193,18 +5239,34 @@ async function deleteChatNotification(){
   activeChatNotification=null;closeNotificationComposer();
 }
 
+function chatNotificationLocalKey(partnerId,notificationId){return `khatmin-chat-notification-${currentUser?.id||""}-${partnerId||""}-${notificationId||""}`;}
+function saveChatNotificationLocal(n){if(!currentUser?.id||!n?.id)return;try{localStorage.setItem(chatNotificationLocalKey(n.sender_id,n.id),JSON.stringify(n));}catch(e){}}
+function removeChatNotificationLocal(partnerId,notificationId){try{localStorage.removeItem(chatNotificationLocalKey(partnerId,notificationId));}catch(e){}}
+function getChatNotificationLocal(partnerId,notificationId){if(!currentUser?.id||!partnerId||!notificationId)return null;try{const raw=localStorage.getItem(chatNotificationLocalKey(partnerId,notificationId));return raw?JSON.parse(raw):null;}catch(e){return null}}
+function getChatNotificationsLocal(partnerId){if(!currentUser?.id||!partnerId)return [];const out=[],prefix=`khatmin-chat-notification-${currentUser.id}-${partnerId}-`;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(prefix)){try{const n=JSON.parse(localStorage.getItem(k)||"null");if(n)out.push(n);}catch(e){}}}}catch(e){}return out.sort((a,b)=>new Date(b.scheduled_at||b.created_at||0)-new Date(a.scheduled_at||a.created_at||0));}
+
 async function loadIncomingChatNotification(){
   if(!currentUser||!chatPartner)return;
+  const nowMs=Date.now();
+  const cached=getChatNotificationsLocal(chatPartner.id);
+  const cachedDue=cached.find(n=>(!n.scheduled_at||new Date(n.scheduled_at).getTime()<=nowMs)&&(!n.expires_at||new Date(n.expires_at).getTime()>nowMs))||null;
+  if(cachedDue){activeIncomingNotification=cachedDue;renderIncomingNotification(cachedDue);}
+  const cachedNext=cached.filter(n=>n.scheduled_at&&new Date(n.scheduled_at).getTime()>nowMs&&(!n.expires_at||new Date(n.expires_at).getTime()>nowMs)).sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at))[0];
+  if(cachedNext)setTimeout(()=>loadIncomingChatNotification().catch(()=>{}),Math.max(500,new Date(cachedNext.scheduled_at).getTime()-Date.now()));
   const now=new Date().toISOString();
-  const {data,error}=await supabaseClient.from("chat_notifications").select("*")
-    .eq("sender_id",chatPartner.id).eq("receiver_id",currentUser.id).lte("scheduled_at",now).gt("expires_at",now)
-    .order("scheduled_at",{ascending:false}).limit(1).maybeSingle();
+  const {data,error}=await supabaseClient.from("chat_notifications").select("*").eq("sender_id",chatPartner.id).eq("receiver_id",currentUser.id).gt("expires_at",now).order("scheduled_at",{ascending:false}).limit(20);
   if(error){if(!/relation .*chat_notifications.*does not exist/i.test(error.message||""))console.warn("NOTIFICATION LOAD:",error);return;}
-  activeIncomingNotification=data||null;
-  renderIncomingNotification(data);
+  const serverIds=new Set((data||[]).map(n=>String(n.id)));
+  cached.forEach(n=>{if(n?.id&&!serverIds.has(String(n.id)))removeChatNotificationLocal(chatPartner.id,n.id);});
+  (data||[]).forEach(saveChatNotificationLocal);
+  const due=(data||[]).find(n=>!n.scheduled_at||new Date(n.scheduled_at).getTime()<=Date.now());
+  if(due){activeIncomingNotification=due;renderIncomingNotification(due);}else if(!cachedDue){activeIncomingNotification=null;renderIncomingNotification(null);}
+  const next=(data||[]).filter(n=>n.scheduled_at&&new Date(n.scheduled_at).getTime()>Date.now()).sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at))[0];
+  if(next)setTimeout(()=>loadIncomingChatNotification().catch(()=>{}),Math.max(500,new Date(next.scheduled_at).getTime()-Date.now()));
 }
 
 function renderIncomingNotification(n){
+  if(n)saveChatNotificationLocal(n);
   const host=document.getElementById("chatNotificationHost"); if(!host)return;
   if(!n){host.innerHTML="";return;}
   host.innerHTML=`<div class="chat-notification-banner ${notificationThemeClass(n.theme)}" data-notification-id="${esc(n.id)}" onclick="openNotificationReply('${esc(n.id)}')">
@@ -5232,17 +5294,17 @@ function triggerNotificationThemeEffect(theme){
   setTimeout(()=>layer.remove(),3900);
 }
 
-function openNotificationReply(id){
-  const banner=document.querySelector(`.chat-notification-banner[data-notification-id="${CSS.escape(String(id))}"]`); if(!banner)return;
-  const n=activeIncomingNotification && String(activeIncomingNotification.id)===String(id)?activeIncomingNotification:null;
+async function openNotificationReply(id){
+  let n=activeIncomingNotification&&String(activeIncomingNotification.id)===String(id)?activeIncomingNotification:null;
+  if(!n)n=getChatNotificationLocal(chatPartner?.id,id);
   if(!n)return;
-  replyingToNotification=n;cancelEditOnly();
-  const bar=document.getElementById("replyBar"); if(!bar)return;
-  document.getElementById("replyBarLabel").textContent="پاسخ به اعلان";
-  document.getElementById("replyBarContent").textContent=n.content;
-  document.getElementById("replyBarIcon").textContent=notificationThemeIcon(n.theme);
-  bar.classList.remove("editing");bar.classList.add("show");
-  document.getElementById("messageInput")?.focus();
+  activeIncomingNotification=n;replyingToNotification=n;cancelEditOnly();
+  const bar=document.getElementById("replyBar");if(!bar)return;
+  const label=document.getElementById("replyBarLabel"),content=document.getElementById("replyBarContent"),icon=document.getElementById("replyBarIcon");
+  if(label)label.textContent="پاسخ به اعلان";
+  if(icon)icon.textContent=notificationThemeIcon(n.theme||"none");
+  if(content){content.innerHTML=`<span class="reply-notification-kicker">پاسخ به این اعلان</span><strong>${esc(n.content||"")}</strong>`;content.classList.add("reply-notification-rich");}
+  bar.classList.remove("editing");bar.classList.add("show");document.getElementById("messageInput")?.focus();
 }
 
 function subscribeChatNotifications(){
@@ -5251,7 +5313,7 @@ function subscribeChatNotifications(){
   notificationChannel=supabaseClient.channel(`chat-notifications-${currentUser.id}-${chatPartner.id}`)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_notifications"},payload=>{
       const n=payload.new;if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=n;renderIncomingNotification(n);}
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){saveChatNotificationLocal(n);activeIncomingNotification=n;renderIncomingNotification(n);}
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"chat_notifications"},payload=>{
       const n=payload.new;if(!n)return;
@@ -5260,7 +5322,7 @@ function subscribeChatNotifications(){
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"chat_notifications"},payload=>{
       const n=payload.old;if(!n)return;
-      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){activeIncomingNotification=null;renderIncomingNotification(null);}
+      if(String(n.receiver_id)===String(currentUser.id)&&String(n.sender_id)===String(chatPartner.id)){removeChatNotificationLocal(chatPartner.id,n.id);activeIncomingNotification=null;renderIncomingNotification(null);}
       if(String(n.sender_id)===String(currentUser.id)&&String(n.receiver_id)===String(chatPartner.id)){activeChatNotification=null;}
     }).subscribe();
 }
@@ -5397,7 +5459,7 @@ async function openChat(partner){
               <path d="M10.2 11.2v5.2M13.8 11.2v5.2"/>
             </svg>
           </div>
-          <h2>پاک کردم تاریخچه</h2>
+          <h2>پاک کردن تاریخچه</h2>
           <p>تمام پیام های این گفت و گو برای شما حذف خواهد شد.</p>
           <div class="chat-history-delete-actions">
             <button type="button" class="chat-history-delete-cancel" onclick="closeChatHistoryDeletePanel()">انصراف</button>
@@ -5413,7 +5475,7 @@ async function openChat(partner){
           <button class="user-profile-more chat-heart-button" type="button" aria-label="گزینه‌های پروفایل" aria-expanded="false" onclick="toggleUserProfileHeartActions(event)">
             ${icons.heart}
             <span class="chat-heart-actions user-profile-heart-actions" aria-hidden="true">
-              <span class="chat-heart-action chat-heart-pin chat-history-delete-action" title="پاک کردم تاریخچه" onclick="openChatHistoryDeletePanel(event)">
+              <span class="chat-heart-action chat-heart-pin chat-history-delete-action" title="پاک کردن تاریخچه" onclick="openChatHistoryDeletePanel(event)">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 18.5h11.2M7.2 15.9l7.9-7.9 2.8 2.8-7.9 7.9-3.8 1z"/>
                   <path d="M14.3 6.7 16.6 4.4c.5-.5 1.3-.5 1.8 0l1.2 1.2c.5.5.5 1.3 0 1.8l-2.3 2.3"/>
@@ -5475,7 +5537,8 @@ async function loadMessages(){
   if(!box||!chatPartner)return;
 
   // Cached messages are rendered first, so reopening a chat is effectively instant.
-  let cached=await getCachedMessages(chatPartner.id);
+  let cached=getFastCachedMessages(chatPartner.id);
+  if(!cached.length) cached=await getCachedMessages(chatPartner.id);
   if(cached.length){
     hiddenMessageIds=new Set();
     messageCache=new Map();
@@ -5502,10 +5565,19 @@ async function syncChatMessages(latestCreatedAt){
   if(latestCreatedAt)query=query.gt("created_at",latestCreatedAt);
   let {data,error}=await query;
   if(error && /column .* does not exist/i.test(error.message||"")){
-    let fallback=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at,read_at,notification_reply_to_id,notification_reply_text,notification_reply_theme")
+    // Older databases may not have the notification-reply columns yet.
+    // Fall back first to the normal message schema, then to the minimal core schema.
+    let fallback=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at,read_at")
       .or(messageFilter).order("created_at",{ascending:true});
     if(latestCreatedAt)fallback=fallback.gt("created_at",latestCreatedAt);
-    const r=await fallback;data=r.data;error=r.error;
+    let r=await fallback;
+    data=r.data;error=r.error;
+    if(error && /column .* does not exist/i.test(error.message||"")){
+      const minimal=supabaseClient.from("messages").select("id,sender_id,receiver_id,content,created_at")
+        .or(messageFilter).order("created_at",{ascending:true});
+      const mr=latestCreatedAt ? await minimal.gt("created_at",latestCreatedAt) : await minimal;
+      data=mr.data;error=mr.error;
+    }
   }
   if(error)throw error;
   await cacheMessages(data||[]);
@@ -5551,8 +5623,9 @@ function messageDisplayText(m){
 }
 
 function replyPreviewHtml(m){
-  if(m?.notification_reply_text){
-    return `<div class="chat-notify-reply-preview">${notificationThemeIcon(m.notification_reply_theme||"none")} پاسخ به اعلان: ${esc(m.notification_reply_text)}</div>`;
+  if(m?.notification_reply_text || m?.notification_reply_to_id){
+    const text=m.notification_reply_text||"اعلان";
+    return `<div class="chat-notify-reply-preview"><span class="chat-notify-reply-preview-icon">${notificationThemeIcon(m.notification_reply_theme||"none")}</span><span class="chat-notify-reply-preview-copy"><b>در پاسخ به اعلان</b><span>${esc(text)}</span></span></div>`;
   }
   if(!m?.reply_to_id)return "";
   const original=messageCache.get(String(m.reply_to_id));
@@ -6564,12 +6637,19 @@ function stopVoiceRecording(send=true){
 async function sendRawMessage(content){
   if(!content||!chatPartner||!currentUser)return false;
   try{
+    const notificationReply=replyingToNotification;
     const row={sender_id:currentUser.id,receiver_id:chatPartner.id,content};
+    if(notificationReply?.id){
+      row.notification_reply_to_id=notificationReply.id;
+      row.notification_reply_text=notificationReply.content||"";
+      row.notification_reply_theme=notificationReply.theme||"none";
+    }
     const {data,error}=await supabaseClient.from("messages").insert(row).select("*").single();
     if(error)throw error;
     if(data){messageCache.set(String(data.id),data);await cacheMessages([data]);}
     const box=document.getElementById("messages");
     if(box){box.querySelector(".empty")?.remove();if(data&&!box.querySelector(`[data-msg-id="${CSS.escape(String(data.id))}"]`)){box.insertAdjacentHTML("beforeend",renderMessage(data));attachMessageGestures();bindVoicePlayers();box.scrollTop=box.scrollHeight;}}
+    if(notificationReply)replyingToNotification=null;
     return true;
   }catch(err){alert("ویس ارسال نشد: "+(err?.message||"خطای اتصال"));return false;}
 }
@@ -6612,6 +6692,12 @@ async function sendMessage(e){
     content,
     created_at:new Date().toISOString(),
     read_at:null,
+    ...(notificationReply?.id ? {
+      notification_reply_to_id:notificationReply.id,
+      notification_reply_text:notificationReply.content||"",
+      notification_reply_theme:notificationReply.theme||"none"
+    } : {}),
+    ...(replySnapshot?.id ? {reply_to_id:replySnapshot.id} : {}),
     _optimistic:true
   };
   const box=document.getElementById("messages");
@@ -6660,7 +6746,7 @@ async function sendMessage(e){
         payload.notification_reply_theme=notificationReply.theme||"none";
       }
 
-      let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
+      let result=await supabaseClient.from("messages").insert(payload).select("id,sender_id,receiver_id,content,created_at,read_at,edited_at,deleted_for_everyone,reply_to_id,notification_reply_to_id,notification_reply_text,notification_reply_theme").single();
       if(result.error && /notification_reply_text|notification_reply_to_id|notification_reply_theme|reply_to_id|column .* does not exist/i.test(result.error.message||"")){
         const basicPayload={sender_id:currentUser.id,receiver_id:receiverProfile.id,content};
         result=await supabaseClient.from("messages").insert(basicPayload).select("id,sender_id,receiver_id,content,created_at,read_at").single();
