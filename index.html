@@ -3806,8 +3806,8 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
       </section>
       <section class="password-screen" id="passwordScreenNew">
         <div class="password-hero"><div class="password-hero-icon">✦</div><h3>رمز جدید را وارد کنید</h3></div>
-        <label class="password-field"><span>رمز جدید</span><div class="password-input-wrap"><span class="password-field-icon">✧</span><input id="newPasswordInput" class="password-input" type="password" autocomplete="new-password" placeholder="رمز جدید را وارد کنید" minlength="4" minlength="4"><button class="password-eye" type="button" onclick="togglePasswordVisibility('newPasswordInput',this)" aria-label="نمایش رمز">◉</button></div></label>
-        <label class="password-field"><span>تکرار رمز جدید</span><div class="password-input-wrap"><span class="password-field-icon">✧</span><input id="repeatPasswordInput" class="password-input" type="password" autocomplete="new-password" placeholder="رمز جدید را دوباره وارد کنید" minlength="4" minlength="4"><button class="password-eye" type="button" onclick="togglePasswordVisibility('repeatPasswordInput',this)" aria-label="نمایش رمز">◉</button></div></label>
+        <label class="password-field"><span>رمز جدید</span><div class="password-input-wrap"><span class="password-field-icon">✧</span><input id="newPasswordInput" class="password-input" type="password" autocomplete="new-password" placeholder="رمز جدید را وارد کنید" minlength="4"><button class="password-eye" type="button" onclick="togglePasswordVisibility('newPasswordInput',this)" aria-label="نمایش رمز">◉</button></div></label>
+        <label class="password-field"><span>تکرار رمز جدید</span><div class="password-input-wrap"><span class="password-field-icon">✧</span><input id="repeatPasswordInput" class="password-input" type="password" autocomplete="new-password" placeholder="رمز جدید را دوباره وارد کنید" minlength="4"><button class="password-eye" type="button" onclick="togglePasswordVisibility('repeatPasswordInput',this)" aria-label="نمایش رمز">◉</button></div></label>
         <div id="newPasswordMessage" class="password-message"></div>
         <button class="password-action" type="button" onclick="preparePasswordChange()">تأیید رمز جدید</button>
         <button class="password-action secondary" type="button" onclick="backToCurrentPasswordStep()">بازگشت به مرحله قبل</button>
@@ -6261,14 +6261,14 @@ async function preparePasswordChange(){
   if(msg)msg.textContent="";
 
   try{
-    const {data,error}=await supabaseClient.rpc("khatmin_change_password",{
+    const {data,error}=await supabaseClient.rpc("change_user_password",{
       p_username:username,
       p_current_password:current,
       p_new_password:a
     });
 
     if(error)throw error;
-    if(!data?.ok)throw new Error(data?.message||"تغییر رمز انجام نشد.");
+    if(!data?.success)throw new Error(data?.message||"تغییر رمز انجام نشد.");
 
     document.getElementById("passwordScreenNew")?.classList.remove("active");
     document.getElementById("passwordSuccess")?.classList.add("show");
