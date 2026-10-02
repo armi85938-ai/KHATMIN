@@ -3435,6 +3435,45 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
   }
 }
 </style>
+
+<style id="khatmin-mobile-no-scroll-home-settings">
+/* Android: keep the conversations list and settings screen fixed in the viewport.
+   Private chat/message scrolling is intentionally untouched. */
+@media (max-width:600px){
+  html,body{
+    height:100%;
+    min-height:100%;
+    overflow:hidden !important;
+    overscroll-behavior:none !important;
+  }
+
+  #app{
+    height:100%;
+    min-height:0;
+    overflow:hidden !important;
+  }
+
+  .home-shell-mode,
+  .settings-shell-mode{
+    height:100dvh !important;
+    min-height:100dvh !important;
+    max-height:100dvh !important;
+    overflow:hidden !important;
+  }
+
+  .home-shell-mode .content,
+  .settings-shell-mode .content{
+    overflow:hidden !important;
+    overscroll-behavior:none !important;
+  }
+
+  .home-shell-mode .chat-list,
+  .settings-shell-mode .settings-page{
+    overflow:hidden !important;
+    overscroll-behavior:none !important;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -3810,7 +3849,7 @@ async function loadApp(){
 function shell(content,active="chat"){
   const settingsMode=active==="settings";
   return `
-  <div class="app ${settingsMode?"settings-shell-mode":""}">
+  <div class="app ${settingsMode?"settings-shell-mode":""} ${active==="chat"?"home-shell-mode":""}">
     <div class="top ${settingsMode?"settings-shell-top":""}">
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
