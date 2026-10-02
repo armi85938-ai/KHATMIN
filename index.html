@@ -4536,9 +4536,11 @@ function renderMessage(m){
     ? `<span class="msg-reaction-badge" title="واکنش">${esc(reaction.reaction)}</span>`
     : "";
   const isVoice=!deleted && typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__"));
+  const isImage=!deleted && typeof m.content==="string" && m.content.startsWith("__KHATMIN_IMAGE_URL__");
   const voiceSrc=isVoice
     ? (m.content.startsWith("__KHATMIN_VOICE_URL__") ? m.content.slice("__KHATMIN_VOICE_URL__".length) : m.content.slice("__KHATMIN_VOICE__".length))
     : "";
+  const imageSrc=isImage ? m.content.slice("__KHATMIN_IMAGE_URL__".length) : "";
   const voiceBars=Array.from({length:30},(_,i)=>{
     const heights=[34,52,68,44,78,58,88,48,70,38,62,82,52,72,94,58,76,46,66,86,54,72,42,64,82,50,70,40,58,76];
     return `<span class="voice-bar" style="--h:${heights[i]}%;--d:${(i%7)*70}ms"></span>`;
@@ -4553,7 +4555,9 @@ function renderMessage(m){
         <span class="voice-duration">00:00</span>
         <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
       </div>`
-    : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
+    : isImage
+      ? `${replyPreviewHtml(m)}<div class="chat-image-message"><img src="${esc(imageSrc)}" alt="عکس" loading="lazy" onclick="window.open('${esc(imageSrc)}','_blank')"></div>`
+      : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
   const body=`<span class="${cls}${deleted?" deleted":""}${isVoice?" voice-msg":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
@@ -5192,6 +5196,21 @@ function setVoiceComposerState(recording){
   }
 
   if(attach){
+    attach.onclick = recording ? function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      voiceShouldSend=false;
+      if(voiceRecorder){
+        try{ voiceRecorder.stop(); }catch(err){ console.warn("VOICE CANCEL ERROR:",err); }
+      }else{
+        voiceRecording=false;
+        stopVoiceTimer();
+        setVoiceComposerState(false);
+        updateComposerAction();
+        resizeMessageComposer();
+      }
+      return false;
+    } : null;
     attach.classList.toggle("voice-cancel",!!recording);
     if(recording){
       attach.setAttribute("aria-label","لغو ضبط ویس");
@@ -5275,6 +5294,11 @@ async function toggleVoiceRecording(){
       if(timeEl)timeEl.textContent=formatVoiceDuration(duration);
       setVoiceComposerState(false);
       updateComposerAction();
+      const inputAfterVoice=document.getElementById("messageInput");
+      if(inputAfterVoice){ inputAfterVoice.style.height="46px"; inputAfterVoice.removeAttribute("aria-hidden"); inputAfterVoice.disabled=false; }
+      const composerAfterVoice=document.getElementById("composer");
+      if(composerAfterVoice){ composerAfterVoice.classList.remove("recording","is-multiline"); composerAfterVoice.style.height="58px"; }
+      resizeMessageComposer();
       const blob=new Blob(voiceChunks,{type:rec?.mimeType||'audio/webm'});
       voiceChunks=[];
       if(!shouldSend || blob.size<700)return;
@@ -6444,3 +6468,143 @@ body[data-khat-theme] #composer.composer.recording .composer-attach.voice-cancel
   transform:translateX(-17px) scale(.97) !important;
 }
 </style>
+
+<style id="khatmin-v14-typing-final">
+/* V14: typing reads left-to-right: typing + animated dots. The word itself stays still. */
+.chat-typing{direction:ltr!important;right:0!important;left:auto!important;justify-content:flex-start!important;gap:5px!important;color:#111!important;transform:translateY(0)!important;}
+.chat-typing .typing-word{direction:ltr!important;color:#111!important;text-shadow:none!important;animation:none!important;}
+.chat-typing .typing-word i{animation:none!important;transform:none!important;opacity:1!important;}
+.chat-typing .typing-dots{direction:ltr!important;}
+.chat-typing .typing-dots i{background:#111!important;animation:typingDot 1.05s infinite ease-in-out!important;}
+body[data-khat-theme^="dark-"] .chat-typing,
+body[data-khat-theme^="dark-"] .chat-typing .typing-word{color:#fff!important;}
+body[data-khat-theme^="dark-"] .chat-typing .typing-dots i{background:#fff!important;}
+body[data-khat-theme^="light-"] .chat-typing,
+body[data-khat-theme^="light-"] .chat-typing .typing-word{color:#111!important;}
+body[data-khat-theme^="light-"] .chat-typing .typing-dots i{background:#111!important;}
+.chat-user-meta.typing-active .chat-title{transform:translateY(-3px)!important;}
+</style>
+<style id="khatmin-v14-attachment-visible">
+/* Keep the paperclip available so the gallery is always reachable. */
+#composer .composer-attach{opacity:1!important;pointer-events:auto!important;}
+#composer:focus-within .composer-attach{width:46px!important;min-width:46px!important;flex-basis:46px!important;margin-left:0!important;margin-right:0!important;transform:none!important;opacity:1!important;pointer-events:auto!important;border-width:1px!important;}
+#composer.composer.recording .composer-attach.voice-cancel{opacity:1!important;pointer-events:auto!important;}
+</style>
+<style id="khatmin-v14-image-message">
+.chat-image-message{max-width:min(280px,72vw);border-radius:18px;overflow:hidden;margin:2px 0 1px;background:var(--theme-surface,#fff);border:1px solid color-mix(in srgb,var(--theme-text,#fff) 10%,transparent);box-shadow:0 8px 24px rgba(0,0,0,.12);}
+.chat-image-message img{display:block;width:100%;height:auto;max-height:360px;object-fit:cover;cursor:pointer;}
+</style>
+<style id="khatmin-v13-ticks-and-attachment">
+/* V13: unified theme-colored ticks + polished bottom attachment sheet. */
+body[data-khat-theme] .msg-status,
+body[data-khat-theme] .msg-wrap .msg-status.sent,
+body[data-khat-theme] .msg-wrap .msg-status.delivered,
+body[data-khat-theme] .msg-wrap .msg-status.seen{
+  color:var(--theme-accent)!important;
+  text-shadow:0 0 7px var(--theme-glow)!important;
+}
+body:not([data-khat-theme]) .msg-status,
+body:not([data-khat-theme]) .msg-wrap .msg-status.sent,
+body:not([data-khat-theme]) .msg-wrap .msg-status.delivered,
+body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
+  color:#b98bce!important;
+  text-shadow:none!important;
+}
+
+.khat-attach-backdrop{position:fixed;inset:0;z-index:180;background:rgba(5,6,10,.18);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease}
+.khat-attach-backdrop.show{opacity:1;visibility:visible;pointer-events:auto}
+.khat-attach-sheet{position:fixed;left:50%;bottom:0;z-index:181;width:min(680px,100vw);height:min(58vh,560px);max-height:calc(100dvh - 70px);transform:translate(-50%,105%);border-radius:30px 30px 0 0;background:color-mix(in srgb,var(--theme-surface,#17181d) 91%,transparent);border:1px solid color-mix(in srgb,var(--theme-text,#fff) 12%,transparent);box-shadow:0 -22px 70px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14);backdrop-filter:blur(32px) saturate(170%);-webkit-backdrop-filter:blur(32px) saturate(170%);display:flex;flex-direction:column;overflow:hidden;opacity:.98;transition:transform .42s cubic-bezier(.22,1,.36,1)}
+.khat-attach-sheet.show{transform:translate(-50%,0)}
+.khat-attach-sheet.expanded{height:min(82vh,760px)}
+.khat-attach-grip{width:42px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--theme-text,#fff) 28%,transparent);margin:10px auto 7px;flex:none;cursor:grab}
+.khat-attach-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 12px;direction:rtl;flex:none}
+.khat-attach-title{font-size:14px;font-weight:700;color:var(--theme-text,#fff)}
+.khat-attach-sub{font-size:9px;color:var(--theme-muted,#999);margin-top:3px}
+.khat-attach-close{width:34px;height:34px;border-radius:50%;border:1px solid color-mix(in srgb,var(--theme-text,#fff) 11%,transparent);background:color-mix(in srgb,var(--theme-surface,#fff) 14%,transparent);color:var(--theme-text,#fff);display:grid;place-items:center;font-size:19px;cursor:pointer}
+.khat-attach-content{min-height:0;flex:1;overflow:auto;padding:0 14px 18px;overscroll-behavior:contain}
+.khat-attach-camera{position:relative;width:100%;height:220px;min-height:150px;border-radius:24px;overflow:hidden;background:#08090c;border:1px solid color-mix(in srgb,var(--theme-text,#fff) 12%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);touch-action:none}
+.khat-attach-camera video{width:100%;height:100%;display:block;object-fit:cover;background:#08090c;transform:scaleX(1)}
+.khat-attach-camera video.front{transform:scaleX(-1)}
+.khat-attach-camera-placeholder{position:absolute;inset:0;display:grid;place-items:center;color:var(--theme-muted,#aaa);font-size:12px;text-align:center;padding:25px;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(0,0,0,.18));pointer-events:none}
+.khat-attach-camera-placeholder.hide{display:none}
+.khat-attach-camera-tools{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr}
+.khat-attach-tool{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.32);color:#fff;display:grid;place-items:center;backdrop-filter:blur(14px);cursor:pointer}
+.khat-attach-tool svg{width:19px;height:19px;stroke:currentColor}
+.khat-attach-capture{width:58px;height:58px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:color-mix(in srgb,var(--theme-accent,#9b76e4) 72%,white 28%);box-shadow:0 8px 28px rgba(0,0,0,.28);cursor:pointer}
+.khat-attach-capture:active{transform:scale(.92)}
+.khat-attach-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.khat-attach-thumb{position:relative;aspect-ratio:1;border-radius:15px;overflow:hidden;background:color-mix(in srgb,var(--theme-surface,#fff) 12%,transparent);border:1px solid color-mix(in srgb,var(--theme-text,#fff) 10%,transparent);cursor:pointer}
+.khat-attach-thumb img{width:100%;height:100%;display:block;object-fit:cover}
+.khat-attach-thumb.selected{outline:2px solid var(--theme-accent,#9b76e4);outline-offset:1px}
+.khat-attach-actions{display:flex;gap:8px;direction:rtl;margin-top:12px;position:sticky;bottom:0;padding:8px 0 2px;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--theme-surface,#17181d) 94%,transparent) 32%)}
+.khat-attach-gallery,.khat-attach-use{height:44px;border-radius:16px;border:1px solid color-mix(in srgb,var(--theme-accent,#9b76e4) 28%,transparent);background:color-mix(in srgb,var(--theme-accent,#9b76e4) 11%,transparent);color:var(--theme-text,#fff);display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:650;cursor:pointer;flex:1}
+.khat-attach-gallery svg,.khat-attach-use svg{width:18px;height:18px;stroke:currentColor}
+.khat-attach-use{background:var(--theme-accent,#9b76e4);color:var(--theme-strong,#fff);border-color:transparent}
+.khat-attach-use:disabled{opacity:.4;cursor:default}
+.khat-attach-status{font-size:10px;color:var(--theme-muted,#999);text-align:center;padding:8px 4px 0;min-height:24px}
+@media(max-width:520px){
+  .khat-attach-sheet{height:min(64vh,570px);border-radius:27px 27px 0 0}
+  .khat-attach-camera{height:190px}
+  .khat-attach-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+</style>
+
+<script id="khatmin-v14-gallery-attachment">
+(function(){
+  if(window.__khatAttachmentV14)return;
+  window.__khatAttachmentV14=true;
+  let input=null;
+  function getInput(){
+    if(input)return input;
+    input=document.createElement("input");
+    input.type="file";
+    input.accept="image/*";
+    input.multiple=true;
+    input.style.display="none";
+    input.setAttribute("aria-hidden","true");
+    document.body.appendChild(input);
+    input.addEventListener("change",async()=>{
+      const files=Array.from(input.files||[]);
+      input.value="";
+      if(!files.length)return;
+      await sendGalleryImages(files);
+    });
+    return input;
+  }
+  async function sendGalleryImages(files){
+    if(!currentUser || !chatPartner || !supabaseClient){ alert("گفت‌وگو هنوز آماده نیست."); return; }
+    const images=files.filter(f=>f && f.type && f.type.startsWith("image/")).slice(0,10);
+    if(!images.length)return;
+    const attach=document.getElementById("attachButton");
+    if(attach)attach.disabled=true;
+    try{
+      for(const file of images){
+        if(file.size>12*1024*1024){ alert("یکی از عکس‌ها بیشتر از ۱۲ مگابایت است و ارسال نشد."); continue; }
+        const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+        const path=`${String(currentUser.id)}/images/${Date.now()}-${crypto.randomUUID?.()||Math.random().toString(36).slice(2)}.${ext}`;
+        const {error:uploadError}=await supabaseClient.storage.from("voice-messages").upload(path,file,{contentType:file.type,cacheControl:"3600",upsert:false});
+        if(uploadError){ console.error("IMAGE UPLOAD ERROR:",uploadError); alert("عکس ارسال نشد: "+(uploadError.message||"خطای آپلود")); continue; }
+        const {data:urlData}=supabaseClient.storage.from("voice-messages").getPublicUrl(path);
+        const url=urlData?.publicUrl||"";
+        if(!url)continue;
+        const ok=await sendRawMessage("__KHATMIN_IMAGE_URL__"+url);
+        if(!ok){ await supabaseClient.storage.from("voice-messages").remove([path]).catch(()=>{}); }
+      }
+    }finally{
+      if(attach)attach.disabled=false;
+    }
+  }
+  function wire(){
+    const attach=document.getElementById("attachButton");
+    if(!attach)return;
+    attach.addEventListener("click",function(e){
+      if(window.voiceRecording || attach.classList.contains("voice-cancel"))return;
+      e.preventDefault();
+      e.stopPropagation();
+      getInput().click();
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wire,{once:true});else wire();
+  window.openKhatAttachmentSheet=()=>getInput().click();
+})();
+</script>
