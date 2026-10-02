@@ -5968,34 +5968,34 @@ async function logout(){
 })();
 </script>
 
-<style id="khatmin-voice-direction-reversed">
-/* Reverse the voice control direction:
-   sent voices: play LEFT, waveform middle, duration RIGHT.
-   received voices: play RIGHT, waveform middle, duration LEFT. */
-.msg.mine .voice-message-player {
-  direction: ltr !important;
+<style id="khatmin-voice-direction-corrected">
+/* Voice layout: sent voices stay on the RIGHT with play button on the RIGHT;
+   received voices stay on the LEFT with play button on the LEFT. */
+.msg-wrap.mine .voice-message-player {
+  direction: rtl !important;
 }
-.msg.mine .voice-message-player .voice-play-btn {
+.msg-wrap.mine .voice-message-player .voice-play-btn {
   order: 1 !important;
   flex: 0 0 38px !important;
 }
-.msg.mine .voice-message-player .voice-wave {
+.msg-wrap.mine .voice-message-player .voice-wave {
   order: 2 !important;
 }
-.msg.mine .voice-message-player .voice-duration {
+.msg-wrap.mine .voice-message-player .voice-duration {
   order: 3 !important;
 }
 
-.msg.theirs .voice-message-player {
-  direction: rtl !important;
+.msg-wrap.theirs .voice-message-player {
+  direction: ltr !important;
 }
-.msg.theirs .voice-message-player .voice-play-btn {
+.msg-wrap.theirs .voice-message-player .voice-play-btn {
   order: 1 !important;
+  flex: 0 0 38px !important;
 }
-.msg.theirs .voice-message-player .voice-wave {
+.msg-wrap.theirs .voice-message-player .voice-wave {
   order: 2 !important;
 }
-.msg.theirs .voice-message-player .voice-duration {
+.msg-wrap.theirs .voice-message-player .voice-duration {
   order: 3 !important;
 }
 </style>
@@ -6815,4 +6815,35 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
     margin-right:-5px !important;
   }
 }
+</style>
+
+<style id="khatmin-voice-side-match-v24">
+/* Voice must follow the exact same side as the message bubble.
+   Sent = right + play button on right. Received = left + play button on left. */
+.msg-wrap.mine .msg.voice-msg{
+  align-self:flex-end !important;
+  margin-left:auto !important;
+  margin-right:0 !important;
+}
+.msg-wrap.theirs .msg.voice-msg{
+  align-self:flex-start !important;
+  margin-left:0 !important;
+  margin-right:auto !important;
+}
+
+/* Keep one predictable left-to-right flex flow, then explicitly place the play button. */
+.msg-wrap.mine .voice-message-player,
+.msg-wrap.theirs .voice-message-player{
+  direction:ltr !important;
+}
+
+/* Sent: duration -> waveform -> play, so play is on the RIGHT. */
+.msg-wrap.mine .voice-message-player .voice-duration{order:1 !important;}
+.msg-wrap.mine .voice-message-player .voice-wave{order:2 !important;}
+.msg-wrap.mine .voice-message-player .voice-play-btn{order:3 !important;}
+
+/* Received: play -> waveform -> duration, so play is on the LEFT. */
+.msg-wrap.theirs .voice-message-player .voice-play-btn{order:1 !important;}
+.msg-wrap.theirs .voice-message-player .voice-wave{order:2 !important;}
+.msg-wrap.theirs .voice-message-player .voice-duration{order:3 !important;}
 </style>
