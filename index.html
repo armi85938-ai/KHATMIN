@@ -3872,6 +3872,162 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
 @keyframes chatNotifyParticle{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0deg)}12%{opacity:var(--op,.72)}55%{opacity:var(--op,.72)}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1) rotate(var(--r))}}
 .chat-notify-reply-preview{margin-bottom:5px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.48);border-right:3px solid color-mix(in srgb,var(--theme-accent,#8b61d4) 60%,white);font-size:10px;line-height:1.65;opacity:.78}
 @media(max-width:520px){.chat-notify-panel{width:calc(100vw - 18px);border-radius:25px;padding:14px}.chat-notify-theme-row{gap:6px}.chat-notify-theme{min-height:59px}.chat-notification-banner{margin-left:8px;margin-right:8px}}
+
+/* ===== KHATMIN home notification center ===== */
+.home-notification-wrap{
+  margin:0 12px 10px;
+  display:none;
+  position:relative;
+  z-index:4;
+  animation:homeNotifySectionIn .55s cubic-bezier(.16,1,.3,1) both;
+}
+.home-notification-wrap.has-items{display:block}
+.home-notification-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:3px 4px 8px;
+}
+.home-notification-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--theme-text,#4f4352);
+  font-size:calc(13px * var(--text-scale,1));
+  font-weight:950;
+}
+.home-notification-title-orb{
+  width:29px;height:29px;border-radius:11px;
+  display:grid;place-items:center;
+  color:var(--theme-accent,#7650c7);
+  background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(239,228,255,.48));
+  border:1px solid rgba(255,255,255,.72);
+  box-shadow:0 8px 18px rgba(70,45,120,.10),inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.home-notification-title-orb svg{width:17px;height:17px}
+.home-notification-count{
+  min-width:23px;height:23px;padding:0 7px;
+  display:grid;place-items:center;
+  border-radius:999px;
+  background:rgba(255,255,255,.48);
+  border:1px solid rgba(255,255,255,.62);
+  color:var(--theme-text,#4f4352);
+  font-size:9px;font-weight:900;
+}
+.home-notification-list{display:grid;gap:8px}
+.home-notification-card{
+  --notify-accent:#7650c7;
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  min-height:76px;
+  padding:10px 11px;
+  border:1px solid rgba(255,255,255,.68);
+  border-radius:22px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.76),rgba(249,244,255,.50));
+  box-shadow:
+    0 12px 30px rgba(65,45,105,.10),
+    inset 0 1px 0 rgba(255,255,255,.92);
+  backdrop-filter:blur(24px) saturate(150%);
+  -webkit-backdrop-filter:blur(24px) saturate(150%);
+  cursor:pointer;
+  transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .25s ease,border-color .25s ease;
+  animation:homeNotifyCardIn .52s cubic-bezier(.16,1,.3,1) both;
+}
+.home-notification-card:nth-child(2){animation-delay:.04s}
+.home-notification-card:nth-child(3){animation-delay:.08s}
+.home-notification-card:nth-child(4){animation-delay:.12s}
+.home-notification-card:nth-child(5){animation-delay:.16s}
+.home-notification-card:active{transform:scale(.985)}
+.home-notification-card:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(65,45,105,.14),inset 0 1px 0 rgba(255,255,255,.96)}
+.home-notification-card:before{
+  content:"";position:absolute;inset:-55% auto auto -8%;
+  width:150px;height:130px;
+  background:radial-gradient(circle,rgba(255,255,255,.72),transparent 68%);
+  pointer-events:none;
+}
+.home-notification-card.unread{
+  border-color:color-mix(in srgb,var(--notify-accent) 22%,white);
+  box-shadow:0 14px 34px color-mix(in srgb,var(--notify-accent) 10%,transparent),inset 0 1px 0 rgba(255,255,255,.96);
+}
+.home-notification-card.theme-heart{--notify-accent:#df6f9e}
+.home-notification-card.theme-cry{--notify-accent:#4f9bd2}
+.home-notification-card.theme-laugh{--notify-accent:#d99f35}
+.home-notification-card.theme-none{--notify-accent:#7650c7}
+.home-notification-icon{
+  width:43px;height:43px;border-radius:15px;
+  display:grid;place-items:center;
+  flex:none;
+  color:var(--notify-accent);
+  background:color-mix(in srgb,var(--notify-accent) 10%,rgba(255,255,255,.78));
+  border:1px solid color-mix(in srgb,var(--notify-accent) 18%,white);
+  box-shadow:0 8px 18px color-mix(in srgb,var(--notify-accent) 10%,transparent),inset 0 1px 0 rgba(255,255,255,.9);
+  font-size:20px;font-weight:900;
+}
+.home-notification-copy{min-width:0;position:relative;z-index:1}
+.home-notification-sender{
+  display:flex;align-items:center;gap:6px;
+  min-width:0;
+  color:var(--theme-text,#4f4352);
+  font-size:10px;font-weight:950;
+}
+.home-notification-sender-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--notify-accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--notify-accent) 10%,transparent);
+}
+.home-notification-text{
+  margin-top:4px;
+  color:var(--theme-text,#4f4352);
+  font-size:calc(12px * var(--text-scale,1));
+  line-height:1.75;
+  font-weight:750;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.home-notification-time{
+  margin-top:3px;
+  color:var(--theme-text,#4f4352);
+  opacity:.48;
+  font-size:8px;font-weight:800;
+}
+.home-notification-arrow{
+  width:31px;height:31px;border-radius:50%;
+  display:grid;place-items:center;
+  color:var(--notify-accent);
+  background:rgba(255,255,255,.48);
+  border:1px solid rgba(255,255,255,.68);
+  font-size:16px;font-weight:900;
+  transform:rotate(180deg);
+  transition:transform .22s ease,background .22s ease;
+}
+.home-notification-card:hover .home-notification-arrow{
+  transform:rotate(180deg) translateX(2px);
+  background:rgba(255,255,255,.7);
+}
+.home-notification-empty{display:none}
+@keyframes homeNotifySectionIn{
+  from{opacity:0;transform:translateY(-10px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes homeNotifyCardIn{
+  from{opacity:0;transform:translateY(-9px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:520px){
+  .home-notification-wrap{margin-left:8px;margin-right:8px}
+  .home-notification-card{border-radius:20px;min-height:72px;padding:9px}
+  .home-notification-icon{width:40px;height:40px;border-radius:14px}
+  .home-notification-text{font-size:calc(11.5px * var(--text-scale,1))}
+}
+
 </style>
 <script>
 const SUPABASE_URL="https://xycgmffmbuelkznfqojd.supabase.co";
@@ -3885,6 +4041,7 @@ let typingTimer=null;
 let typingBroadcastTimer=null;
 let typingChannel=null;
 let homeInboxChannel=null;
+let homeNotifications=[];
 let homeTypingTimers=new Map();
 let remoteTypingTimer=null;
 let isLocalTyping=false;
@@ -4364,6 +4521,117 @@ function updateHomeLastMessage(m){
   if(m.sender_id!==currentUser.id)bumpHomeUnread(partnerId);
 }
 
+
+function homeNotificationProfile(senderId){
+  const id=String(senderId||"");
+  const profiles=(window.__khatminHomeProfiles||[]);
+  return profiles.find(p=>String(p.id)===id)||null;
+}
+
+function homeNotificationTime(date){
+  try{
+    const d=new Date(date);
+    if(Number.isNaN(d.getTime()))return "";
+    const j=gregorianToJalali(d.getFullYear(),d.getMonth()+1,d.getDate());
+    return `${j.jy}/${String(j.jm).padStart(2,"0")}/${String(j.jd).padStart(2,"0")} • ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  }catch(e){return "";}
+}
+
+function renderHomeNotifications(list){
+  const host=document.getElementById("homeNotificationHost");
+  if(!host)return;
+  const items=(list||[]).filter(Boolean);
+  host.classList.toggle("has-items",items.length>0);
+  if(!items.length){host.innerHTML="";return;}
+
+  const cards=items.map(n=>{
+    const p=homeNotificationProfile(n.sender_id);
+    const senderName=p?.display_name||p?.username||"کاربر";
+    const unread=!n.seen_at;
+    return `<button type="button" class="home-notification-card ${notificationThemeClass(n.theme)} ${unread?"unread":""}" data-notification-id="${esc(n.id)}" onclick="openHomeNotification('${esc(n.id)}')">
+      <span class="home-notification-icon">${notificationThemeIcon(n.theme)}</span>
+      <span class="home-notification-copy">
+        <span class="home-notification-sender"><span class="home-notification-sender-dot"></span>${esc(senderName)}</span>
+        <span class="home-notification-text">${esc(n.content)}</span>
+        <span class="home-notification-time">${homeNotificationTime(n.scheduled_at||n.created_at)}${unread?" • جدید":""}</span>
+      </span>
+      <span class="home-notification-arrow">‹</span>
+    </button>`;
+  }).join("");
+
+  host.innerHTML=`<div class="home-notification-head">
+      <div class="home-notification-title">
+        <span class="home-notification-title-orb">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 9.7c0-3.1-1.7-5.3-4.2-6V3a1.8 1.8 0 0 0-3.6 0v.7C7.7 4.4 6 6.6 6 9.7v3.2l-2 2.5h16l-2-2.5V9.7Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.4 17.2a2.8 2.8 0 0 0 5.2 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span>اعلان‌ها</span>
+      </div>
+      <span class="home-notification-count">${items.length}</span>
+    </div>
+    <div class="home-notification-list">${cards}</div>`;
+}
+
+async function loadHomeNotifications(){
+  const host=document.getElementById("homeNotificationHost");
+  if(!host||!currentUser?.id)return;
+  const now=new Date().toISOString();
+  const {data,error}=await supabaseClient.from("chat_notifications")
+    .select("*")
+    .eq("receiver_id",currentUser.id)
+    .lte("scheduled_at",now)
+    .gt("expires_at",now)
+    .order("scheduled_at",{ascending:false})
+    .limit(20);
+
+  if(error){
+    if(!/relation .*chat_notifications.*does not exist|column .* does not exist/i.test(error.message||"")){
+      console.warn("HOME NOTIFICATIONS LOAD:",error);
+    }
+    homeNotifications=[];
+    renderHomeNotifications([]);
+    return;
+  }
+
+  homeNotifications=data||[];
+
+  // Profiles are normally already cached by renderChats. Keep a small in-memory
+  // copy here so notification cards can show the sender without another query.
+  let profiles=window.__khatminHomeProfiles||[];
+  const missingIds=[...new Set(homeNotifications.map(n=>String(n.sender_id||"")).filter(Boolean))]
+    .filter(id=>!profiles.some(p=>String(p.id)===id));
+
+  if(missingIds.length){
+    try{
+      const {data:missing,error:pErr}=await supabaseClient.from("profiles")
+        .select("id,username,display_name,avatar_url,bio")
+        .in("id",missingIds);
+      if(!pErr)profiles=[...profiles,...(missing||[])];
+    }catch(e){}
+  }
+
+  window.__khatminHomeProfiles=profiles;
+  renderHomeNotifications(homeNotifications);
+}
+
+async function openHomeNotification(id){
+  const n=homeNotifications.find(x=>String(x.id)===String(id));
+  if(!n)return;
+
+  if(!n.seen_at){
+    n.seen_at=new Date().toISOString();
+    renderHomeNotifications(homeNotifications);
+    supabaseClient.from("chat_notifications")
+      .update({seen_at:n.seen_at})
+      .eq("id",n.id)
+      .eq("receiver_id",currentUser.id)
+      .is("seen_at",null)
+      .then(()=>{});
+  }
+
+  const p=homeNotificationProfile(n.sender_id);
+  if(p) await openChat(p);
+}
+
 async function subscribeHomeInbox(){
   if(!currentUser)return;
   if(homeInboxChannel){try{await supabaseClient.removeChannel(homeInboxChannel)}catch(e){}homeInboxChannel=null}
@@ -4380,13 +4648,57 @@ async function subscribeHomeInbox(){
       if(String(m.receiver_id)!==String(currentUser.id))return;
       updateHomeLastMessage(m);
     })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"chat_notifications"},payload=>{
+      const n=payload.new;
+      if(!n || String(n.receiver_id)!==String(currentUser.id))return;
+      const now=Date.now();
+      if(new Date(n.scheduled_at).getTime()>now || new Date(n.expires_at).getTime()<=now)return;
+      const existing=homeNotifications.findIndex(x=>String(x.id)===String(n.id));
+      if(existing>=0)homeNotifications.splice(existing,1);
+      homeNotifications.unshift(n);
+      homeNotifications=homeNotifications.slice(0,20);
+      const profile=homeNotificationProfile(n.sender_id);
+      if(!profile){
+        supabaseClient.from("profiles").select("id,username,display_name,avatar_url,bio").eq("id",n.sender_id).maybeSingle().then(r=>{
+          if(r.data)window.__khatminHomeProfiles=[...(window.__khatminHomeProfiles||[]),r.data];
+          renderHomeNotifications(homeNotifications);
+        });
+      }else{
+        renderHomeNotifications(homeNotifications);
+      }
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"chat_notifications"},payload=>{
+      const n=payload.new;
+      if(!n || String(n.receiver_id)!==String(currentUser.id))return;
+      const now=Date.now();
+      const idx=homeNotifications.findIndex(x=>String(x.id)===String(n.id));
+      if(new Date(n.expires_at).getTime()<=now || new Date(n.scheduled_at).getTime()>now){
+        if(idx>=0)homeNotifications.splice(idx,1);
+      }else if(idx>=0){
+        homeNotifications[idx]=n;
+      }else{
+        homeNotifications.unshift(n);
+      }
+      homeNotifications=homeNotifications.slice(0,20);
+      renderHomeNotifications(homeNotifications);
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"chat_notifications"},payload=>{
+      const n=payload.old;
+      if(!n || String(n.receiver_id)!==String(currentUser.id))return;
+      homeNotifications=homeNotifications.filter(x=>String(x.id)!==String(n.id));
+      renderHomeNotifications(homeNotifications);
+    })
     .subscribe(status=>console.log("Home inbox realtime:",status));
 }
 
 async function renderHome(){
   const app=document.getElementById("app");
-  app.innerHTML=shell(`<div id="chatList" class="chat-list"><div class="empty">در حال آماده‌سازی...</div></div>`,"chat");
+  window.__khatminHomeProfiles=[];
+  homeNotifications=[];
+  app.innerHTML=shell(`<div id="homeNotificationHost" class="home-notification-wrap"></div><div id="chatList" class="chat-list"><div class="empty">در حال آماده‌سازی...</div></div>`,"chat");
   await renderChats();
+  window.__khatminHomeProfiles=await getCachedProfiles();
+  await loadHomeNotifications();
   await subscribeHomeInbox();
 }
 
@@ -4804,7 +5116,6 @@ async function openChat(partner){
     </span>
   </button>
 </header>
-      <div id="chatNotificationHost"></div>
       <main id="messages" class="chat-body"><div class="empty">در حال دریافت پیام‌ها...</div></main>
       <div id="replyBar" class="reply-bar" aria-live="polite">
         <div id="replyBarIcon" class="reply-bar-icon">↩</div>
@@ -4950,9 +5261,7 @@ async function openChat(partner){
   clearTimeout(chatReactionTimer);
   document.getElementById("messageInput").addEventListener("keydown",e=>{ if(e.key==="Escape"){ stopTyping(); closeDeleteConfirm(); closeMessageSheet(); } });
   await loadMessages();
-  await loadIncomingChatNotification();
   subscribeMessages();
-  subscribeChatNotifications();
   subscribeTyping();
 }
 
