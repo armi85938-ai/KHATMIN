@@ -1675,6 +1675,34 @@ body{
   .voice-message-player{width:min(310px,82vw);min-width:210px;height:60px}
 }
 
+/* ===== Android: contacts + settings are fixed, non-scroll screens ===== */
+@media(max-width:600px){
+  .chat-shell-mode,
+  .settings-shell-mode{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    max-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  .chat-shell-mode .content,
+  .settings-shell-mode .content{
+    height:calc(100dvh - 105px)!important;
+    max-height:calc(100dvh - 105px)!important;
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+    touch-action:pan-x pan-y;
+  }
+  .chat-shell-mode .chat-list,
+  .settings-shell-mode .settings-page{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+  /* The settings title/logo row is intentionally removed; content starts at the top. */
+  .settings-shell-mode .settings-page{
+    padding-top:0!important;
+  }
+}
+
 </style>
 
 <style>
@@ -3778,7 +3806,7 @@ async function loadApp(){
 function shell(content,active="chat"){
   const settingsMode=active==="settings";
   return `
-  <div class="app ${settingsMode?"settings-shell-mode":""}">
+  <div class="app ${settingsMode?"settings-shell-mode":"chat-shell-mode"}">
     <div class="top ${settingsMode?"settings-shell-top":""}">
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
@@ -3814,11 +3842,6 @@ async function renderSettings(){
 
   const content=`
     <section class="settings-page" dir="rtl">
-      <div class="settings-page-head settings-page-head-clean">
-        <h1>تنظیمات</h1>
-        <div class="settings-head-orb">${icons.settings}</div>
-      </div>
-
       <section class="settings-profile-card">
         <div class="settings-profile-glow"></div>
         <label class="settings-avatar-picker" for="settingsAvatarInput" title="انتخاب عکس از گالری">
