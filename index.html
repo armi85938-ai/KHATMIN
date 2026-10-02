@@ -6608,3 +6608,34 @@ body:not([data-khat-theme]) .msg-wrap .msg-status.seen{
   window.openKhatAttachmentSheet=()=>getInput().click();
 })();
 </script>
+
+<style id="khatmin-v15-attachment-hide-while-typing">
+/* V15: when text is actually being typed, the attachment icon smoothly disappears.
+   Recording mode stays untouched. */
+#composer.composer:not(.recording).has-text .composer-attach{
+  width:0 !important;
+  min-width:0 !important;
+  flex-basis:0 !important;
+  margin-left:-5px !important;
+  margin-right:-5px !important;
+  padding:0 !important;
+  opacity:0 !important;
+  transform:scale(.45) translateX(-7px) !important;
+  pointer-events:none !important;
+  border-width:0 !important;
+  box-shadow:none !important;
+}
+#composer.composer:not(.recording).has-text .composer-attach svg{
+  opacity:0 !important;
+  transform:scale(.6) !important;
+}
+@media(max-width:600px){
+  #composer.composer:not(.recording).has-text .composer-attach{
+    width:0 !important;
+    min-width:0 !important;
+    flex-basis:0 !important;
+    margin-left:-5px !important;
+    margin-right:-5px !important;
+  }
+}
+</style>
