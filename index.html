@@ -4136,6 +4136,53 @@ body[data-khat-theme^="light-"] .game-card > h3{color:#1d1922 !important;text-sh
 .nf-dict-modal-panel .gw-count{white-space:nowrap}
 @media(max-width:700px){.nf-dict-modal-panel{width:calc(100vw - 12px);max-height:calc(100dvh - 12px);padding:8px}.nf-dict-modal-panel .nf-dict-hero{border-radius:20px;padding:14px 8px 12px}.nf-dict-modal-panel .gw-toolbar{grid-template-columns:1fr 1fr}.nf-dict-modal-panel .gw-input{grid-column:1/-1}.nf-dict-modal-panel .gw-btn.primary{min-height:46px}.nf-dict-modal-panel .gw-select{min-height:46px}.nf-dict-modal-panel .gw-head{gap:8px}.nf-dict-modal-panel .gw-title{font-size:15px}.nf-dict-modal-panel .gw-sub{font-size:10px}.nf-dict-modal-panel .gw-count{font-size:11px}.nf-dict-intro{font-size:11px}}
 </style>
+
+<style id="nf-v52-animations">
+/* V52 — cinematic Name & Family motion layer */
+.nf-panel{animation:nfPanelIn .52s cubic-bezier(.2,.9,.2,1) both;will-change:transform,opacity}
+.nf-hero,.nf-result-hero{animation:nfHeroIn .65s cubic-bezier(.16,1,.3,1) .04s both}
+.nf-mark,.nf-result-icon{animation:nfFloat 2.8s ease-in-out infinite}
+.nf-game-panel{overflow:hidden;position:relative}
+.nf-game-panel::before{content:"";position:absolute;inset:-35%;pointer-events:none;background:radial-gradient(circle at 50% 15%,rgba(150,110,255,.16),transparent 35%),radial-gradient(circle at 10% 90%,rgba(70,180,255,.10),transparent 32%);animation:nfAura 7s ease-in-out infinite alternate}
+.nf-game-panel>*{position:relative;z-index:1}
+.nf-score-card,.nf-result-card,.nf-final-paper-row{animation:nfCardIn .55s cubic-bezier(.2,.85,.25,1) both}
+.nf-score-card:nth-child(2),.nf-final-paper-row:nth-child(2){animation-delay:.09s}
+.nf-result-card{animation-delay:.16s}
+.nf-result-actions{animation:nfUp .55s .22s both}
+.nf-btn{transition:transform .2s cubic-bezier(.2,.9,.2,1),box-shadow .2s,filter .2s}
+.nf-btn:hover{transform:translateY(-2px) scale(1.015);filter:brightness(1.05)}
+.nf-btn:active{transform:scale(.96) translateY(1px)}
+.nf-letter-tile,.nf-letter-card,.nf-letter-grid button{transition:transform .22s cubic-bezier(.2,.9,.2,1),box-shadow .22s,filter .22s}
+.nf-letter-tile:hover,.nf-letter-card:hover,.nf-letter-grid button:hover{transform:translateY(-5px) scale(1.035);box-shadow:0 16px 35px rgba(100,80,180,.22)}
+.nf-letter-tile:active,.nf-letter-grid button:active{transform:scale(.92)}
+.nf-answer-field,.nf-input,.nf-select{transition:transform .2s,box-shadow .25s,border-color .25s}
+.nf-answer-field:focus-within,.nf-input:focus,.nf-select:focus{transform:translateY(-2px);box-shadow:0 0 0 4px rgba(130,100,230,.10),0 12px 28px rgba(0,0,0,.08)}
+.nf-timer{animation:nfPulse 1.8s ease-in-out infinite}
+.nf-stop-btn{animation:nfStopBreath 2.2s ease-in-out infinite}
+.nf-stop-btn:active{animation:none;transform:scale(.91)}
+.nf-transition-screen{animation:nfFadeIn .5s ease both}
+.nf-transition-screen .nf-transition-icon{animation:nfPop .7s cubic-bezier(.16,1,.3,1) both,nfFloat 2.4s 0.7s ease-in-out infinite}
+.nf-transition-screen .nf-transition-title{animation:nfUp .55s .12s both}
+.nf-transition-screen .nf-transition-subtitle{animation:nfUp .55s .2s both}
+.nf-transition-screen .nf-transition-count{animation:nfCountPop .65s .25s both}
+.nf-final-paper{animation:nfPaperIn .85s cubic-bezier(.16,1,.3,1) both;transform-origin:50% 0}
+.nf-final-paper::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 0 42%,rgba(255,255,255,.5) 50%,transparent 58%);transform:translateX(-130%);animation:nfPaperShine 1.2s .55s ease-out forwards}
+@keyframes nfPanelIn{from{opacity:0;transform:translateY(22px) scale(.985);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+@keyframes nfHeroIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes nfCardIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes nfUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes nfFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes nfPop{from{opacity:0;transform:scale(.55) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes nfCountPop{from{opacity:0;transform:scale(.6)}55%{transform:scale(1.12)}to{opacity:1;transform:scale(1)}}
+@keyframes nfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes nfPulse{0%,100%{box-shadow:0 0 0 0 rgba(120,100,230,.10)}50%{box-shadow:0 0 0 8px rgba(120,100,230,.04)}}
+@keyframes nfStopBreath{0%,100%{box-shadow:0 10px 28px rgba(180,60,80,.10)}50%{box-shadow:0 14px 34px rgba(180,60,80,.22)}}
+@keyframes nfAura{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(2%,2%,0) scale(1.05)}}
+@keyframes nfPaperIn{from{opacity:0;transform:perspective(900px) rotateX(8deg) translateY(35px) scale(.94)}to{opacity:1;transform:perspective(900px) rotateX(0) translateY(0) scale(1)}}
+@keyframes nfPaperShine{to{transform:translateX(130%)}}
+@media(prefers-reduced-motion:reduce){.nf-panel,.nf-hero,.nf-result-hero,.nf-score-card,.nf-result-card,.nf-result-actions,.nf-transition-screen,.nf-transition-screen .nf-transition-icon,.nf-transition-screen .nf-transition-title,.nf-transition-screen .nf-transition-subtitle,.nf-transition-screen .nf-transition-count,.nf-final-paper{animation:none!important}.nf-mark,.nf-result-icon,.nf-timer,.nf-stop-btn{animation:none!important}.nf-btn,.nf-letter-tile,.nf-letter-card,.nf-letter-grid button{transition:none!important}}
+@media(max-width:600px){.nf-panel{animation-duration:.38s}.nf-game-panel::before{inset:-15%;animation-duration:9s}.nf-letter-grid button:hover{transform:none}.nf-score-card,.nf-result-card{animation-duration:.42s}.nf-final-paper{animation-duration:.6s}}
+</style>
 </head>
 <body>
 
@@ -10622,29 +10669,78 @@ window.nfStopRound=async(auto=false)=>{
 };
 async function nfResultsWait(){
   const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
-  const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);
-  if((answers||[]).length<2){
-    nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-wait"><div class="nf-result-orbit"><span>✓</span></div><h2>راند تمام شد</h2><p>پاسخ حریف هم در حال ثبت شدن است…</p><div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> منتظر حریف</div></div></div>`);
-    clearInterval(NF.timer);NF.timer=setInterval(async()=>{const {data:a}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);if((a||[]).length>=2){clearInterval(NF.timer);NF.timer=null;if(round>=total)nfShowFinalPaper(a);else nfAdvanceRoundTransition();}},800);
-    return;
-  }
   clearInterval(NF.timer);NF.timer=null;
-  if(round>=total)nfShowFinalPaper(answers);else nfAdvanceRoundTransition();
+  const check=async()=>{
+    const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);
+    if((answers||[]).length<2){
+      if(NF.view!=='waiting-results'){
+        NF.view='waiting-results';
+        nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-wait"><div class="nf-result-orbit"><span>✓</span></div><h2>استپ شد</h2><p>جواب‌های هر دو بازیکن ثبت می‌شود…</p><div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> چند لحظه…</div></div></div>`);
+      }
+      return false;
+    }
+    clearInterval(NF.timer);NF.timer=null;
+    if(round>=total){await nfShowFinalPaper(answers);return true;}
+    // Only the starter advances the shared round. The other player waits for realtime/poll.
+    if(String(NF.starter)===String(currentUser.id)) await nfAdvanceRoundTransition();
+    else nfShowRoundTransition(round+1);
+    return true;
+  };
+  await check();
+  if(NF.view!=='final' && NF.view!=='transition'){
+    NF.timer=setInterval(async()=>{if(await check()){clearInterval(NF.timer);NF.timer=null;}},500);
+  }
 }
 async function nfAdvanceRoundTransition(){
-  if(NF.view==='transition'||NF.view==='final')return;
+  if(!NF.session?.id)return;
   const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
-  if(round>=total){const {data}=await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id).select('*').maybeSingle();if(data)NF.session=data;return;}
-  const {data,error}=await supabaseClient.from('game_sessions').update({status:'transition'}).eq('id',NF.session.id).eq('status','round_stopped').select('*').maybeSingle();
-  if(!error&&data)NF.session=data;
-  nfShowRoundTransition(round+1);
+  if(round>=total){await nfFinishGame();return;}
+  // Atomically claim transition so only one browser can drive the 4-second countdown.
+  const {data,error}=await supabaseClient.from('game_sessions')
+    .update({status:'transition'})
+    .eq('id',NF.session.id).eq('status','round_stopped').select('*').maybeSingle();
+  if(error){console.error('NF transition claim',error);return;}
+  if(data)NF.session=data;
+  nfShowRoundTransition(round+1, true);
 }
-function nfShowRoundTransition(nextRound){
-  if(NF.view==='transition'||NF.view==='final')return;
-  NF.view='transition';clearInterval(NF.timer);NF.timer=null;
-  nfShell(`<div class="nf-panel nf-transition-screen"><div class="nf-transition-orb">✦</div><div class="nf-transition-kicker">آماده‌ای؟</div><h2>شروع راند ${nextRound}</h2><p>راند بعدی تا چند لحظه دیگر شروع می‌شود…</p><div class="nf-transition-count" id="nfTransitionCount">4</div><div class="nf-transition-line"><span></span></div></div>`);
-  let left=4;const tick=()=>{const e=document.getElementById('nfTransitionCount');if(e)e.textContent=left;};tick();
-  NF.timer=setInterval(async()=>{left--;tick();if(left<=0){clearInterval(NF.timer);NF.timer=null;const round=Number(NF.session.current_round||1);const total=Number(NF.session.rounds||2);if(round>=total)return;const next=round+1;const {data}=await supabaseClient.from('game_sessions').update({current_round:next,status:'letter',letter:null,round_started_at:null}).eq('id',NF.session.id).eq('status','transition').select('*').maybeSingle();if(data){NF.session=data;NF.letter=null;nfLetterScreen();}else{const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();if(latest){NF.session=latest;if(latest.status==='letter')nfLetterScreen();}}}},1000);
+function nfShowRoundTransition(nextRound, coordinator=false){
+  if(NF.view==='final')return;
+  if(NF.view==='transition')return;
+  NF.view='transition';clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;
+  nfShell(`<div class="nf-panel nf-transition-screen"><div class="nf-transition-orb">✦</div><div class="nf-transition-kicker">آماده‌ای؟</div><h2>شروع راند ${nextRound}</h2><p>راند ${nextRound} تا چند لحظه دیگر شروع می‌شود…</p><div class="nf-transition-count" id="nfTransitionCount">4</div><div class="nf-transition-line"><span></span></div></div>`);
+  if(!coordinator){
+    NF.statePoll=setInterval(async()=>{
+      if(!NF.session?.id)return;
+      const {data}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+      if(!data)return;
+      NF.session=data;NF.starter=data.starter_id||NF.starter;
+      if(data.status==='letter'){clearInterval(NF.statePoll);NF.statePoll=null;NF.letter=null;nfLetterScreen();}
+      else if(data.status==='playing'){clearInterval(NF.statePoll);NF.statePoll=null;nfPlayScreen();}
+      else if(data.status==='finished'){clearInterval(NF.statePoll);NF.statePoll=null;nfFinalResultsFromServer();}
+      else if(data.status==='abandoned'){clearInterval(NF.statePoll);NF.statePoll=null;nfClose();}
+    },500);
+    return;
+  }
+  let left=4;
+  const tick=()=>{const e=document.getElementById('nfTransitionCount');if(e)e.textContent=left;};tick();
+  NF.timer=setInterval(async()=>{
+    left--;tick();
+    if(left>0)return;
+    clearInterval(NF.timer);NF.timer=null;
+    const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
+    if(round>=total)return;
+    const next=round+1;
+    const {data,error}=await supabaseClient.from('game_sessions')
+      .update({current_round:next,status:'letter',letter:null,round_started_at:null})
+      .eq('id',NF.session.id).eq('status','transition').eq('current_round',round)
+      .select('*').maybeSingle();
+    if(error){console.error('NF next round',error);return;}
+    if(data){NF.session=data;NF.letter=null;nfLetterScreen();}
+    else{
+      const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+      if(latest){NF.session=latest;NF.letter=null;if(latest.status==='letter')nfLetterScreen();else if(latest.status==='playing')nfPlayScreen();}
+    }
+  },1000);
 }
 function nfScoreRow(r){
   let score=0;
@@ -10865,5 +10961,7 @@ body[data-khat-theme^="light-"] .nf-dict-search input{background:rgba(255,255,25
 @media(max-width:650px){.nf-body{padding-bottom:calc(28px + env(safe-area-inset-bottom))}.nf-mobile-play{padding-bottom:calc(70px + env(safe-area-inset-bottom))}.nf-mobile-play .nf-play-hero{position:sticky;top:-17px;z-index:5;margin-left:-15px;margin-right:-15px;border-radius:0 0 22px 22px;background:color-mix(in srgb,var(--app-bg,#0b0912) 88%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.nf-mobile-play .nf-paper-modern{margin-top:12px;padding:16px 12px 18px}.nf-mobile-play .nf-fields-modern{gap:9px}.nf-mobile-play .nf-field-modern input{height:54px;font-size:15px}.nf-mobile-play .nf-stop-zone{padding-bottom:8px}.nf-end-game-mini{margin-bottom:4px}.nf-transition-screen{min-height:calc(100dvh - 78px)}.nf-transition-screen h2{font-size:30px}.nf-transition-count{font-size:50px}.nf-final-paper-screen{min-height:calc(100dvh - 78px);align-items:flex-start;padding-top:10px}.nf-final-paper{padding:25px 14px 20px;transform:none;border-radius:13px}.nf-final-paper h2{font-size:25px}.nf-final-total{gap:8px}.nf-final-rounds{grid-template-columns:1fr}.nf-final-paper-row{grid-template-columns:1fr auto}.nf-final-paper-row small{grid-column:1/-1}.nf-final-close-note{line-height:1.7}}
 body[data-khat-theme^="light-"] .nf-final-paper{box-shadow:0 20px 55px rgba(50,40,30,.16),inset 0 0 45px rgba(125,88,45,.06)}
 </style>
+
+
 
 </html>
