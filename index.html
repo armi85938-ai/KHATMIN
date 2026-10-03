@@ -4124,6 +4124,18 @@ body[data-khat-theme^="light-"] .game-card > h3{color:#1d1922 !important;text-sh
 .gw-card{overflow:hidden}.gw-accordion{border-radius:26px!important;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.028))!important;box-shadow:0 18px 42px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.14)!important}.gw-toggle{padding:17px 18px!important;background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.035))!important;border-radius:20px!important;font-size:13px!important;font-weight:900!important}.gw-form{padding:16px!important;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important;border-radius:22px!important}.gw-form-grid{grid-template-columns:1.2fr .85fr auto!important;align-items:stretch}.gw-input,.gw-select{min-height:48px!important;border-radius:16px!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.11)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}.gw-input:focus,.gw-select:focus{border-color:color-mix(in srgb,var(--theme-accent,#a875ff) 55%,transparent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-accent,#a875ff) 12%,transparent)!important}.gw-btn.primary{min-height:48px!important;border-radius:16px!important;font-weight:950!important;box-shadow:0 12px 26px color-mix(in srgb,var(--theme-accent,#a875ff) 20%,transparent)!important}.gw-form-help{font-size:10px!important;line-height:1.8!important;margin-top:10px!important}.gw-notice{border-radius:14px!important;padding:10px 12px!important}.gw-suggestion{background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025))!important}.gw-suggest-btn{min-height:40px!important;border-radius:13px!important}
 @media(max-width:650px){.gw-form-grid{grid-template-columns:1fr!important}.gw-btn.primary{width:100%!important}.gw-toggle{padding:16px!important}}
 </style>
+<style id="nf-dictionary-clean-v47">
+/* مدیریت لغات فقط داخل صفحه اسم و فامیل */
+.nf-dict-modal-panel{width:min(940px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;overscroll-behavior:contain;padding-bottom:18px}
+.nf-dict-modal-panel .nf-dict-hero{position:sticky;top:0;z-index:3;padding:18px 12px 14px;margin-bottom:8px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.04));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-radius:24px}
+.nf-dict-intro{font-size:12px;line-height:1.9;opacity:.7;padding:2px 4px 12px;text-align:center}
+.nf-dict-modal-panel .gw-card{margin-top:12px!important}
+.nf-dict-modal-panel .gw-list,.nf-dict-modal-panel .gw-suggestion-list{max-height:none!important;overflow:visible!important}
+.nf-dict-modal-panel .gw-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 180px auto;gap:10px;align-items:center}
+.nf-dict-modal-panel .gw-head{align-items:center}
+.nf-dict-modal-panel .gw-count{white-space:nowrap}
+@media(max-width:700px){.nf-dict-modal-panel{width:calc(100vw - 12px);max-height:calc(100dvh - 12px);padding:8px}.nf-dict-modal-panel .nf-dict-hero{border-radius:20px;padding:14px 8px 12px}.nf-dict-modal-panel .gw-toolbar{grid-template-columns:1fr 1fr}.nf-dict-modal-panel .gw-input{grid-column:1/-1}.nf-dict-modal-panel .gw-btn.primary{min-height:46px}.nf-dict-modal-panel .gw-select{min-height:46px}.nf-dict-modal-panel .gw-head{gap:8px}.nf-dict-modal-panel .gw-title{font-size:15px}.nf-dict-modal-panel .gw-sub{font-size:10px}.nf-dict-modal-panel .gw-count{font-size:11px}.nf-dict-intro{font-size:11px}}
+</style>
 </head>
 <body>
 
@@ -10212,11 +10224,9 @@ function renderGames(){
         </div>
         <div id="recentGamesList" class="recent-games-list"></div>
       </section>
-      <section id="gameWordTools" class="game-word-tools" aria-label="مدیریت و پیشنهاد لغات"></section>
     </section>`;
   document.getElementById('app').innerHTML=shell(content,'game');
   renderRecentGames();
-  renderGameWordTools();
 }
 
 function getRecentGames(){
@@ -10288,15 +10298,40 @@ function gwIsKhatereh(){return gwUsername()==='khatereh' || gwUsername()==='خا
 const GW_CATS={name:'اسم',family:'فامیل',place:'شهر یا کشور',color:'رنگ',body:'اعضای بدن',object:'اشیاء'};
 function gwEsc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function gwNotice(id,msg,type='ok'){const el=document.getElementById(id);if(!el)return;el.className='gw-notice show '+type;el.textContent=msg;clearTimeout(el._t);el._t=setTimeout(()=>{el.className='gw-notice'},3500)}
-async function gwLoadDictionary(){if(!gwIsArmin())return;const root=document.getElementById('gwDictList');const count=document.getElementById('gwDictCount');if(!root)return;root.innerHTML='<div class="gw-empty">در حال دریافت لغات…</div>';try{const {data,error}=await supabaseClient.from('game_dictionary').select('id,category,word,verified').order('category').order('word');if(error)throw error;const rows=data||[];if(count)count.textContent=`${rows.length} واژه`;root.innerHTML=rows.length?rows.map(r=>`<div class="gw-row"><div class="gw-row-main"><div class="gw-word">${gwEsc(r.word)}</div><div class="gw-cat">${gwEsc(GW_CATS[r.category]||r.category)}${r.verified?' · تأییدشده':''}</div></div><button class="gw-delete" type="button" title="حذف واژه" onclick="gwDeleteWord(${Number(r.id)})">×</button></div>`).join(''):'<div class="gw-empty">هنوز واژه‌ای ثبت نشده است.</div>'}catch(e){root.innerHTML='<div class="gw-empty">دریافت لغات انجام نشد.</div>';console.error('GW dictionary',e)}}
+async function gwLoadDictionary(){
+  if(!gwIsArmin())return;
+  const root=document.getElementById('gwDictList');
+  const count=document.getElementById('gwDictCount');
+  if(!root)return;
+  root.innerHTML='<div class="gw-empty">در حال دریافت همه لغات…</div>';
+  try{
+    const pageSize=1000;
+    let from=0,rows=[];
+    while(true){
+      const {data,error}=await supabaseClient.from('game_dictionary')
+        .select('id,category,word,verified')
+        .order('category').order('word').range(from,from+pageSize-1);
+      if(error)throw error;
+      const page=data||[];
+      rows.push(...page);
+      if(page.length<pageSize)break;
+      from+=pageSize;
+      if(from>50000)break;
+    }
+    if(count)count.textContent=`${rows.length.toLocaleString('fa-IR')} واژه`;
+    root.innerHTML=rows.length?rows.map(r=>`<div class="gw-row"><div class="gw-row-main"><div class="gw-word">${gwEsc(r.word)}</div><div class="gw-cat">${gwEsc(GW_CATS[r.category]||r.category)}${r.verified?' · تأییدشده':''}</div></div><button class="gw-delete" type="button" title="حذف واژه" onclick="gwDeleteWord(${Number(r.id)})">×</button></div>`).join(''):'<div class="gw-empty">هنوز واژه‌ای ثبت نشده است.</div>';
+  }catch(e){
+    root.innerHTML='<div class="gw-empty">دریافت لغات انجام نشد.</div>';
+    console.error('GW dictionary',e);
+  }
+}
 async function gwAddWord(){if(!gwIsArmin())return;const word=document.getElementById('gwAdminWord')?.value?.trim();const category=document.getElementById('gwAdminCategory')?.value;if(!word||!category){gwNotice('gwAdminNotice','کلمه و دسته را کامل انتخاب کن.','warn');return}try{const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();const {data:dup,error:de}=await supabaseClient.from('game_dictionary').select('id').eq('category',category).eq('normalized_word',normalized).maybeSingle();if(de)throw de;if(dup){gwNotice('gwAdminNotice','این کلمه قبلا در لغات وجود داشته است.','warn');return}const {error}=await supabaseClient.from('game_dictionary').insert({category,word,normalized_word:normalized,verified:true});if(error){if(String(error.message||'').toLowerCase().includes('duplicate')){gwNotice('gwAdminNotice','این کلمه تکراری میباشد.','warn');return}throw error}document.getElementById('gwAdminWord').value='';gwNotice('gwAdminNotice','کلمه با موفقیت به لغات اضافه شد.','ok');gwLoadDictionary()}catch(e){gwNotice('gwAdminNotice','افزودن کلمه انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 async function gwDeleteWord(id){if(!gwIsArmin())return;if(!confirm('این کلمه از لغات حذف شود؟'))return;try{const {error}=await supabaseClient.from('game_dictionary').delete().eq('id',id);if(error)throw error;gwLoadDictionary()}catch(e){gwNotice('gwAdminNotice','حذف کلمه انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 async function gwSubmitSuggestion(){if(!gwIsKhatereh())return;const word=document.getElementById('gwSuggestWord')?.value?.trim();const category=document.getElementById('gwSuggestCategory')?.value;if(!word||!category){gwNotice('gwSuggestNotice','کلمه و دسته را کامل انتخاب کن.','warn');return}try{const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();const {data:dup,error:de}=await supabaseClient.from('game_dictionary').select('id').eq('category',category).eq('normalized_word',normalized).maybeSingle();if(de)throw de;if(dup){gwNotice('gwSuggestNotice','این کلمه قبلا در لغات وجود داشته است.','warn');return}const {data:pending,error:pe}=await supabaseClient.from('game_word_suggestions').select('id').eq('user_id',currentUser.id).eq('category',category).eq('normalized_word',normalized).eq('status','pending').maybeSingle();if(pe)throw pe;if(pending){gwNotice('gwSuggestNotice','این پیشنهاد قبلاً ارسال شده است.','warn');return}const {error}=await supabaseClient.from('game_word_suggestions').insert({user_id:currentUser.id,word,normalized_word:normalized,category,status:'pending'});if(error)throw error;document.getElementById('gwSuggestWord').value='';gwNotice('gwSuggestNotice','پیشنهاد شما ارسال شد.','ok');if(gwIsArmin())gwLoadSuggestions()}catch(e){gwNotice('gwSuggestNotice','ارسال پیشنهاد انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 async function gwLoadSuggestions(){if(!gwIsArmin())return;const root=document.getElementById('gwSuggestionList');if(!root)return;root.innerHTML='<div class="gw-empty">در حال دریافت پیشنهادها…</div>';try{const {data,error}=await supabaseClient.from('game_word_suggestions').select('id,user_id,word,category,status,created_at').eq('status','pending').order('created_at',{ascending:false});if(error)throw error;const rows=data||[];let profileMap=new Map();const ids=[...new Set(rows.map(r=>String(r.user_id)).filter(Boolean))];if(ids.length){try{const pr=await supabaseClient.from('profiles').select('id,username,display_name').in('id',ids);if(!pr.error)(pr.data||[]).forEach(p=>profileMap.set(String(p.id),p));}catch(_){}}root.innerHTML=rows.length?rows.map(r=>{const p=profileMap.get(String(r.user_id));const who=p?.display_name||p?.username||'کاربر';return `<article class="gw-suggestion"><div class="gw-suggestion-top"><span class="gw-suggestion-word">${gwEsc(r.word)}</span><span class="gw-badge">${gwEsc(GW_CATS[r.category]||r.category)}</span></div><div class="gw-suggestion-meta">پیشنهاد از ${gwEsc(who)} · ${new Date(r.created_at).toLocaleString('fa-IR')}</div><div class="gw-suggestion-actions"><button class="gw-suggest-btn accept" onclick="gwReviewSuggestion(${Number(r.id)},'accepted')">قبول</button><button class="gw-suggest-btn reject" onclick="gwReviewSuggestion(${Number(r.id)},'rejected')">رد</button></div></article>`}).join(''):'<div class="gw-empty">پیشنهاد جدیدی وجود ندارد.</div>'}catch(e){root.innerHTML='<div class="gw-empty">دریافت پیشنهادها انجام نشد.</div>';console.error('GW suggestions',e)}}
 async function gwReviewSuggestion(id,status){if(!gwIsArmin())return;try{const {data:sug,error:se}=await supabaseClient.from('game_word_suggestions').select('*').eq('id',id).single();if(se)throw se;if(status==='accepted'){const {data:dup,error:de}=await supabaseClient.from('game_dictionary').select('id').eq('category',sug.category).eq('normalized_word',sug.normalized_word).maybeSingle();if(de)throw de;if(dup){await supabaseClient.from('game_word_suggestions').update({status:'accepted',reviewed_at:new Date().toISOString(),reviewed_by:currentUser.id}).eq('id',id);gwNotice('gwAdminNotice','این کلمه قبلا در لغات وجود داشته است.','warn');gwLoadSuggestions();gwLoadDictionary();return}const {error:ie}=await supabaseClient.from('game_dictionary').insert({category:sug.category,word:sug.word,normalized_word:sug.normalized_word,verified:true});if(ie)throw ie}const {error}=await supabaseClient.from('game_word_suggestions').update({status,reviewed_at:new Date().toISOString(),reviewed_by:currentUser.id}).eq('id',id);if(error)throw error;gwLoadSuggestions();gwLoadDictionary()}catch(e){gwNotice('gwAdminNotice','بررسی پیشنهاد انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 function gwToggle(id){document.getElementById(id)?.classList.toggle('open')}
-function renderGameWordTools(){const root=document.getElementById('gameWordTools');if(!root)return;const admin=gwIsArmin(),suggestor=gwIsKhatereh();if(!admin&&!suggestor){root.classList.remove('show');root.innerHTML='';return}root.classList.add('show');let html='';if(admin){html+=`<section class="gw-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">📚</div><div><h2 class="gw-title">مدیریت لغات اسم و فامیل</h2><p class="gw-sub">فهرست کامل لغات ذخیره‌شده در دیتابیس</p></div></div><span id="gwDictCount" class="gw-count">— واژه</span></div><div id="gwAdminNotice" class="gw-notice"></div><div class="gw-toolbar"><input id="gwAdminWord" class="gw-input" placeholder="کلمه جدید…" autocomplete="off"><select id="gwAdminCategory" class="gw-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select><button class="gw-btn primary" onclick="gwAddWord()">＋ افزودن</button></div><div id="gwDictList" class="gw-list"></div></section><section class="gw-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">✉️</div><div><h2 class="gw-title">پیشنهادهای کاربران</h2><p class="gw-sub">کلمات پیشنهادی خاطره را بررسی کن</p></div></div></div><div id="gwSuggestionList" class="gw-suggestion-list"></div></section>`}root.innerHTML=html;if(admin){gwLoadDictionary();gwLoadSuggestions()}}
-
+function renderGameWordTools(){ return; }
 function gameCardTap(type){
   const card=document.querySelector(`.game-card[data-game="${type}"]`);
   if(!card)return;
@@ -10366,7 +10401,23 @@ function nfClose(){if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}ca
 function nfShell(inner,title='اسم و فامیل'){let o=document.getElementById('nfOverlay');if(!o){o=document.createElement('div');o.id='nfOverlay';o.className='nf-overlay';document.body.appendChild(o)}o.innerHTML=`<div class="nf-shell"><div class="nf-top"><div class="nf-title">${title}</div><button class="nf-close" onclick="nfClose()" aria-label="بستن">×</button></div><div class="nf-body">${inner}</div></div>`;nfOpen();return o}
 async function nfProfiles(){try{const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).order('display_name');if(error)throw error;return data||[]}catch(e){console.error('NF profiles',e);return []}}
 function nfKhaterehWordSuggest(){if(!gwIsKhatereh())return '';return `<section class="nf-word-suggest" id="nfWordSuggest"><button class="nf-ws-toggle" type="button" onclick="document.getElementById('nfWordSuggest')?.classList.toggle('open')"><span>＋ افزودن کلمه</span><span>⌄</span></button><div class="nf-ws-form"><div class="nf-ws-inner"><div id="gwSuggestNotice" class="gw-notice nf-ws-notice"></div><div class="nf-ws-fields"><input id="gwSuggestWord" class="nf-ws-input" placeholder="کلمه پیشنهادی…" autocomplete="off"><select id="gwSuggestCategory" class="nf-ws-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select></div><button class="nf-ws-submit" type="button" onclick="gwSubmitSuggestion()">ثبت پیشنهاد</button><p class="nf-ws-help">کلمه و دسته را انتخاب کن و پیشنهادت را ثبت کن.</p></div></div></section>`}
-async function nfStart(){if(!currentUser?.id){alert('ابتدا وارد حساب کاربری شوید.');return}const profiles=await nfProfiles();if(!profiles.length){alert('کاربر دیگری برای شروع بازی پیدا نشد.');return}const users=profiles.map(p=>`<button class="nf-user" onclick='nfSelectOpponent(${JSON.stringify(p).replace(/'/g,"&#39;")},this)'><div class="nf-avatar">${p.avatar_url?`<img src="${nfEsc(p.avatar_url)}" alt="">`:nfEsc((p.display_name||p.username||'?').slice(0,1))}</div><div><strong>${nfEsc(p.display_name||p.username)}</strong><span>@${nfEsc(p.username||'')}</span></div></button>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">📝</div><h2>شروع بازی</h2><p>حریف و نوع راند را انتخاب کن</p></div><div class="nf-users">${users}</div><div style="text-align:center;margin-top:20px"><div style="font-size:12px;opacity:.62">تعداد راند</div><div class="nf-rounds"><button class="nf-round selected" id="nfR2" onclick="nfChooseRounds(2,this)">۲ راند</button><button class="nf-round" id="nfR4" onclick="nfChooseRounds(4,this)">۴ راند</button></div><button class="nf-btn primary" id="nfSendBtn" disabled onclick="nfSendRequest()">ارسال درخواست بازی</button></div>${nfKhaterehWordSuggest()}</div>`)}
+function nfOpenDictionaryManager(){
+  if(!gwIsArmin())return;
+  nfShell(`<div class="nf-panel nf-dict-modal-panel">
+    <div class="nf-hero nf-dict-hero"><div class="nf-mark">📚</div><h2>مدیریت لغات</h2><p>فهرست کامل لغات بازی را مدیریت کن.</p></div>
+    <section class="gw-card nf-dict-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">✦</div><div><h2 class="gw-title">لغات ذخیره‌شده</h2><p class="gw-sub">افزودن، مشاهده و حذف کلمات</p></div></div><span id="gwDictCount" class="gw-count">— واژه</span></div>
+      <div id="gwAdminNotice" class="gw-notice"></div>
+      <div class="nf-dict-intro">لغات بازی را از همین‌جا اضافه، جست‌وجو و مدیریت کن. این بخش فقط داخل صفحه اسم و فامیل در دسترس است.</div><div class="gw-toolbar"><input id="gwAdminWord" class="gw-input" placeholder="کلمه جدید…" autocomplete="off"><select id="gwAdminCategory" class="gw-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select><button class="gw-btn primary" onclick="gwAddWord()">＋ افزودن کلمه</button></div>
+      <div id="gwDictList" class="gw-list"></div>
+    </section>
+    <section class="gw-card nf-dict-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">✉️</div><div><h2 class="gw-title">پیشنهادهای کاربران</h2><p class="gw-sub">پیشنهادهای جدید را بررسی کن.</p></div></div></div><div id="gwSuggestionList" class="gw-suggestion-list"></div></section>
+  </div>`,'مدیریت لغات');
+  gwLoadDictionary();gwLoadSuggestions();
+}
+window.nfOpenDictionaryManager=nfOpenDictionaryManager;
+window.nfClose=nfClose;
+
+async function nfStart(){if(!currentUser?.id){alert('ابتدا وارد حساب کاربری شوید.');return}const profiles=await nfProfiles();if(!profiles.length){alert('کاربر دیگری برای شروع بازی پیدا نشد.');return}const users=profiles.map(p=>`<button class="nf-user" onclick='nfSelectOpponent(${JSON.stringify(p).replace(/'/g,"&#39;")},this)'><div class="nf-avatar">${p.avatar_url?`<img src="${nfEsc(p.avatar_url)}" alt="">`:nfEsc((p.display_name||p.username||'?').slice(0,1))}</div><div><strong>${nfEsc(p.display_name||p.username)}</strong><span>@${nfEsc(p.username||'')}</span></div></button>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">📝</div><h2>شروع بازی</h2><p>حریف و نوع راند را انتخاب کن</p></div><div class="nf-users">${users}</div><div style="text-align:center;margin-top:20px"><div style="font-size:12px;opacity:.62">تعداد راند</div><div class="nf-rounds"><button class="nf-round selected" id="nfR2" onclick="nfChooseRounds(2,this)">۲ راند</button><button class="nf-round" id="nfR4" onclick="nfChooseRounds(4,this)">۴ راند</button></div><button class="nf-btn primary" id="nfSendBtn" disabled onclick="nfSendRequest()">ارسال درخواست بازی</button></div>${gwIsArmin()?`<button class="nf-manage-words-btn" type="button" onclick="nfOpenDictionaryManager()">📚 مدیریت لغات بازی</button>`:''}${nfKhaterehWordSuggest()}</div>`)}
 window.nfSelectOpponent=(p,el)=>{NF.selectedOpponent=p;document.querySelectorAll('.nf-user').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.getElementById('nfSendBtn').disabled=false};
 window.nfChooseRounds=(n,el)=>{NF.selectedRounds=n;document.querySelectorAll('.nf-round').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')};
 window.nfSendRequest=async()=>{if(!NF.selectedOpponent)return;const btn=document.getElementById('nfSendBtn');btn.disabled=true;btn.textContent='در حال ارسال...';let createdSessionId=null;try{if(!currentUser?.id)throw new Error('کاربر وارد نشده است');if(!NF.selectedOpponent?.id)throw new Error('شناسه حریف پیدا نشد');const sessionPayload={game_type:'name_family',status:'pending',rounds:Number(NF.selectedRounds)||2,creator_id:currentUser.id,expires_at:new Date(Date.now()+300000).toISOString()};const {data,error}=await supabaseClient.from('game_sessions').insert(sessionPayload).select('*').single();if(error)throw error;if(!data?.id)throw new Error('شناسه بازی از دیتابیس دریافت نشد');createdSessionId=data.id;NF.session=data;const players=[{session_id:data.id,user_id:currentUser.id,role:'creator',status:'accepted'},{session_id:data.id,user_id:NF.selectedOpponent.id,role:'opponent',status:'pending'}];const {error:e2}=await supabaseClient.from('game_players').insert(players);if(e2){try{await supabaseClient.from('game_sessions').delete().eq('id',data.id)}catch(_){};throw e2}nfSubscribe(data.id);nfWaiting('درخواست بازی ارسال شد',NF.selectedOpponent);nfStartRequestTimer(300)}catch(e){console.error('Name&Family send request error:',e);btn.disabled=false;btn.textContent='ارسال درخواست بازی';const msg=String(e?.message||e?.details||e?.hint||e||'خطای نامشخص');alert('ارسال درخواست انجام نشد.\n\nخطای دیتابیس:\n'+msg+'\n\nاگر خطای RLS می‌بینی، SQL رفع دسترسی بازی را در Supabase → SQL Editor اجرا کن.')}};
@@ -10378,8 +10429,39 @@ function nfExpired(){if(NF.session)try{supabaseClient.from('game_sessions').upda
 function nfSubscribe(id){if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}catch(e){};NF.channel=supabaseClient.channel('nf-'+id).on('postgres_changes',{event:'*',schema:'public',table:'game_sessions',filter:'id=eq.'+id},p=>nfSessionChanged(p.new)).on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'session_id=eq.'+id},p=>nfPlayerChanged(p.new)).subscribe()}
 function nfPlayerChanged(row){if(!row)return;if(String(row.user_id)===String(currentUser.id))return;if(row.status==='accepted'){nfMaybeBegin()}}
 function nfSessionChanged(row){if(!row)return;NF.session=row;if(row.status==='accepted' || row.status==='active')nfMaybeBegin()}
-async function nfMaybeBegin(){if(!NF.session)return;const {data:players,error}=await supabaseClient.from('game_players').select('*').eq('session_id',NF.session.id);if(error||!players||players.length<2)return;const me=players.find(p=>String(p.user_id)===String(currentUser.id));if(me?.status==='rejected'){nfClose();return}if(players.every(p=>p.status==='accepted')){if(!NF.session.starter_id){const starter=players[Math.floor(Math.random()*players.length)];await supabaseClient.from('game_sessions').update({status:'letter',starter_id:starter.user_id,current_round:1}).eq('id',NF.session.id);return}NF.starter=NF.session.starter_id;nfLetterScreen()}}
-window.nfAcceptRequest=async(id)=>{try{const {data:session,error}=await supabaseClient.from('game_sessions').select('*').eq('id',id).single();if(error)throw error;const {error:pe}=await supabaseClient.from('game_players').update({status:'accepted'}).eq('session_id',id).eq('user_id',currentUser.id);if(pe)throw pe;NF.session=session;NF.selectedOpponent=null;nfSubscribe(id);nfRenderIncomingRequests([]);await nfMaybeBegin()}catch(e){console.error('NF accept:',e);alert('پذیرش درخواست انجام نشد.\n\n'+(e.message||'خطای نامشخص'))}};
+async function nfMaybeBegin(){
+  if(!NF.session?.id)return;
+  const {data:players,error}=await supabaseClient.from('game_players').select('*').eq('session_id',NF.session.id);
+  if(error||!players||players.length<2)return;
+  const me=players.find(p=>String(p.user_id)===String(currentUser.id));
+  if(me?.status==='rejected'){nfClose();return}
+  if(!players.every(p=>p.status==='accepted'))return;
+  let session=NF.session;
+  if(!session.starter_id){
+    const starter=players[Math.floor(Math.random()*players.length)];
+    const {data:updated,error:ue}=await supabaseClient.from('game_sessions')
+      .update({status:'letter',starter_id:starter.user_id,current_round:1})
+      .eq('id',session.id).is('starter_id',null).select('*').maybeSingle();
+    if(!ue&&updated)session=updated;
+    if(!session.starter_id){
+      const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',session.id).single();
+      if(latest)session=latest;
+    }
+  }
+  NF.session=session;
+  NF.starter=session.starter_id;
+  if(session.status==='letter'||session.status==='playing')nfLetterScreen();
+}
+window.nfAcceptRequest=async(id)=>{
+  try{
+    const {data:session,error}=await supabaseClient.from('game_sessions').select('*').eq('id',id).single();
+    if(error)throw error;
+    const {error:pe}=await supabaseClient.from('game_players').update({status:'accepted'}).eq('session_id',id).eq('user_id',currentUser.id);
+    if(pe)throw pe;
+    NF.session=session;NF.selectedOpponent=null;nfSubscribe(id);nfRenderIncomingRequests([]);
+    await nfMaybeBegin();
+  }catch(e){console.error('NF accept:',e);alert('پذیرش درخواست انجام نشد.\n\n'+(e.message||'خطای نامشخص'))}
+};
 window.nfRejectRequest=async(id)=>{try{const {error}=await supabaseClient.from('game_players').update({status:'rejected'}).eq('session_id',id).eq('user_id',currentUser.id);if(error)throw error;}catch(e){console.warn('NF reject:',e)}finally{nfRenderIncomingRequests((nfIncomingCache||[]).filter(x=>String(x.id)!==String(id)));if(document.getElementById('nfOverlay'))nfClose()}};
 function nfLetterScreen(){const mine=String(NF.starter)===String(currentUser.id);nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">✒️</div><h2>${mine?'تو شروع‌کننده‌ای!':'منتظر انتخاب حرف حریف باش'}</h2><p>${mine?'یک حرف انتخاب کن تا راند شروع شود.':'حریف در حال انتخاب حرف است.'}</p></div><div class="nf-letters">${NF_LETTERS.map(l=>`<button class="nf-letter" ${mine?'':'disabled'} onclick="nfPickLetter('${l}')">${l}</button>`).join('')}</div></div>`)}
 window.nfPickLetter=async(l)=>{if(String(NF.starter)!==String(currentUser.id))return;NF.letter=l;await supabaseClient.from('game_sessions').update({letter:l,status:'playing',round_started_at:new Date().toISOString()}).eq('id',NF.session.id);nfPlayScreen()};
@@ -10462,5 +10544,55 @@ nfStartIncomingPolling();
 setInterval(()=>{document.querySelectorAll('.nf-incoming-count').forEach(el=>{const left=Math.max(0,Math.floor((new Date(el.dataset.expire)-Date.now())/1000));el.textContent=nfFmt(left);});},1000);
 })();
 </script>
+
+<style id="khatmin-v46-games-mobile-polish">
+/* V46: the Games tab owns its vertical scroll on phones; the horizontal card rail remains touch-scrollable. */
+@media (max-width: 700px){
+  .app.games-shell-mode .content{
+    height:100dvh !important;
+    max-height:100dvh !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-y:contain !important;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom)) !important;
+  }
+  .games-page{
+    min-height:100dvh !important;
+    height:auto !important;
+    overflow:visible !important;
+    padding-bottom:150px !important;
+  }
+  .games-grid{
+    touch-action:pan-x !important;
+  }
+  .game-word-tools{
+    width:calc(100% - 18px) !important;
+    margin:18px auto 34px !important;
+  }
+  .gw-card{
+    padding:14px !important;
+    border-radius:22px !important;
+  }
+  .gw-head{align-items:flex-start !important}
+  .gw-title{font-size:15px !important}
+  .gw-sub{font-size:9px !important}
+  .gw-icon{width:40px !important;height:40px !important;border-radius:14px !important;font-size:19px !important}
+  .gw-toolbar{display:grid !important;grid-template-columns:1fr 1fr !important;gap:8px !important}
+  .gw-input{grid-column:1 / -1 !important;min-width:0 !important;width:100% !important}
+  .gw-select,.gw-btn{width:100% !important;min-width:0 !important}
+  .gw-list{max-height:52dvh !important;grid-template-columns:1fr !important;gap:7px !important;padding:1px !important}
+  .gw-row{min-height:52px !important;border-radius:15px !important;padding:8px 9px !important}
+  .gw-word{font-size:13px !important}
+  .gw-cat{font-size:9px !important}
+  .gw-delete{width:32px !important;height:32px !important}
+  .gw-suggestion-list{max-height:46dvh !important}
+}
+@media (min-width:701px){
+  .app.games-shell-mode .content{overflow-y:auto !important;overflow-x:hidden !important;}
+  .games-page{overflow:visible !important;}
+}
+</style>
+
 </body>
 </html>
