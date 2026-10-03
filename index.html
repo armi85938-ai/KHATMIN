@@ -10449,7 +10449,7 @@ body[data-khat-theme^="light-"] .nf-paper{background:linear-gradient(180deg,#fff
 
 <script id="name-family-v1-js">
 (function(){
-const NF={session:null,channel:null,timer:null,requestTimer:null,statePoll:null,selectedRounds:2,selectedOpponent:null,round:1,letter:null,starter:null,answers:{},startAt:null,turnDeadline:null,view:''};
+const NF={session:null,channel:null,timer:null,requestTimer:null,statePoll:null,selectedRounds:2,selectedOpponent:null,round:1,letter:null,starter:null,answers:{},startAt:null,turnDeadline:null,view:'',finalSaved:false,answerWaitTimer:null,transitionStartedAt:null};
 const NF_LETTERS=['ا','ب','پ','ت','ث','ج','چ','ح','خ','د','ذ','ر','ز','ژ','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ک','گ','ل','م','ن','و','ه','ی'];
 const NF_CATS=[['name','اسم'],['family','فامیل'],['place','شهر یا کشور'],['color','رنگ'],['body','عضو بدن'],['object','اشیاء']];
 const NF_LABELS={name:'اسم و فامیل',spy:'نفوذی',word:'حدس کلمه'};
@@ -10478,18 +10478,38 @@ window.nfClose=nfClose;
 async function nfStart(){if(!currentUser?.id){alert('ابتدا وارد حساب کاربری شوید.');return}const profiles=await nfProfiles();if(!profiles.length){alert('کاربر دیگری برای شروع بازی پیدا نشد.');return}const users=profiles.map(p=>`<button class="nf-user" onclick='nfSelectOpponent(${JSON.stringify(p).replace(/'/g,"&#39;")},this)'><div class="nf-avatar">${p.avatar_url?`<img src="${nfEsc(p.avatar_url)}" alt="">`:nfEsc((p.display_name||p.username||'?').slice(0,1))}</div><div><strong>${nfEsc(p.display_name||p.username)}</strong><span>@${nfEsc(p.username||'')}</span></div></button>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">📝</div><h2>شروع بازی</h2><p>حریف و نوع راند را انتخاب کن</p></div><div class="nf-users">${users}</div><div style="text-align:center;margin-top:20px"><div style="font-size:12px;opacity:.62">تعداد راند</div><div class="nf-rounds"><button class="nf-round selected" id="nfR2" onclick="nfChooseRounds(2,this)">۲ راند</button><button class="nf-round" id="nfR4" onclick="nfChooseRounds(4,this)">۴ راند</button></div><button class="nf-btn primary" id="nfSendBtn" disabled onclick="nfSendRequest()">ارسال درخواست بازی</button></div>${gwIsArmin()?`<button class="nf-manage-words-btn" type="button" onclick="nfOpenDictionaryManager()"><span class="nf-manage-icon">✦</span><span><b>مدیریت لغات</b><small>جست‌وجو و بررسی پیشنهادها</small></span><span class="nf-manage-arrow">‹</span></button>`:''}${nfKhaterehWordSuggest()}</div>`)}
 window.nfSelectOpponent=(p,el)=>{NF.selectedOpponent=p;document.querySelectorAll('.nf-user').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.getElementById('nfSendBtn').disabled=false};
 window.nfChooseRounds=(n,el)=>{NF.selectedRounds=n;document.querySelectorAll('.nf-round').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')};
-window.nfSendRequest=async()=>{if(!NF.selectedOpponent)return;const btn=document.getElementById('nfSendBtn');btn.disabled=true;btn.textContent='در حال ارسال...';let createdSessionId=null;try{if(!currentUser?.id)throw new Error('کاربر وارد نشده است');if(!NF.selectedOpponent?.id)throw new Error('شناسه حریف پیدا نشد');const sessionPayload={game_type:'name_family',status:'pending',rounds:Number(NF.selectedRounds)||2,creator_id:currentUser.id,expires_at:new Date(Date.now()+300000).toISOString()};const {data,error}=await supabaseClient.from('game_sessions').insert(sessionPayload).select('*').single();if(error)throw error;if(!data?.id)throw new Error('شناسه بازی از دیتابیس دریافت نشد');createdSessionId=data.id;NF.session=data;const players=[{session_id:data.id,user_id:currentUser.id,role:'creator',status:'accepted'},{session_id:data.id,user_id:NF.selectedOpponent.id,role:'opponent',status:'pending'}];const {error:e2}=await supabaseClient.from('game_players').insert(players);if(e2){try{await supabaseClient.from('game_sessions').delete().eq('id',data.id)}catch(_){};throw e2}nfSubscribe(data.id);nfWaiting('درخواست بازی ارسال شد',NF.selectedOpponent);nfStartRequestTimer(300)}catch(e){console.error('Name&Family send request error:',e);btn.disabled=false;btn.textContent='ارسال درخواست بازی';const msg=String(e?.message||e?.details||e?.hint||e||'خطای نامشخص');alert('ارسال درخواست انجام نشد.\n\nخطای دیتابیس:\n'+msg+'\n\nاگر خطای RLS می‌بینی، SQL رفع دسترسی بازی را در Supabase → SQL Editor اجرا کن.')}};
+window.nfSendRequest=async()=>{NF.finalSaved=false;if(!NF.selectedOpponent)return;const btn=document.getElementById('nfSendBtn');btn.disabled=true;btn.textContent='در حال ارسال...';let createdSessionId=null;try{if(!currentUser?.id)throw new Error('کاربر وارد نشده است');if(!NF.selectedOpponent?.id)throw new Error('شناسه حریف پیدا نشد');const sessionPayload={game_type:'name_family',status:'pending',rounds:Number(NF.selectedRounds)||2,creator_id:currentUser.id,expires_at:new Date(Date.now()+300000).toISOString()};const {data,error}=await supabaseClient.from('game_sessions').insert(sessionPayload).select('*').single();if(error)throw error;if(!data?.id)throw new Error('شناسه بازی از دیتابیس دریافت نشد');createdSessionId=data.id;NF.session=data;const players=[{session_id:data.id,user_id:currentUser.id,role:'creator',status:'accepted'},{session_id:data.id,user_id:NF.selectedOpponent.id,role:'opponent',status:'pending'}];const {error:e2}=await supabaseClient.from('game_players').insert(players);if(e2){try{await supabaseClient.from('game_sessions').delete().eq('id',data.id)}catch(_){};throw e2}nfSubscribe(data.id);nfWaiting('درخواست بازی ارسال شد',NF.selectedOpponent);nfStartRequestTimer(300)}catch(e){console.error('Name&Family send request error:',e);btn.disabled=false;btn.textContent='ارسال درخواست بازی';const msg=String(e?.message||e?.details||e?.hint||e||'خطای نامشخص');alert('ارسال درخواست انجام نشد.\n\nخطای دیتابیس:\n'+msg+'\n\nاگر خطای RLS می‌بینی، SQL رفع دسترسی بازی را در Supabase → SQL Editor اجرا کن.')}};
 function nfStartRequestTimer(seconds){clearInterval(NF.requestTimer);let left=seconds;const el=document.getElementById('nfRequestCount');if(!el)return;el.textContent=nfFmt(left);NF.requestTimer=setInterval(()=>{left--;if(left<=0){clearInterval(NF.requestTimer);nfExpired();return}el.textContent=nfFmt(left)},1000)}
 function nfFmt(sec){const m=Math.floor(sec/60),s=sec%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
 function nfWaiting(title,p){nfShell(`<div class="nf-panel"><div class="nf-request-card"><div class="nf-mark">✉️</div><h2>${nfEsc(title)}</h2><p>در انتظار پاسخ ${nfEsc(p.display_name||p.username||'حریف')}...</p><div class="nf-count" id="nfRequestCount">05:00</div><div style="font-size:11px;opacity:.55">این درخواست تا ۵ دقیقه معتبر است</div><div class="nf-request-actions"><button class="nf-btn" onclick="nfCancelRequest()">لغو درخواست</button></div></div></div>`)}
 window.nfCancelRequest=async()=>{if(NF.session)try{await supabaseClient.from('game_sessions').update({status:'cancelled'}).eq('id',NF.session.id)}catch(e){}nfClose()};
 function nfExpired(){if(NF.session)try{supabaseClient.from('game_sessions').update({status:'expired'}).eq('id',NF.session.id)}catch(e){};nfShell(`<div class="nf-panel"><div class="nf-request-card"><div class="nf-mark">⌛</div><h2>زمان درخواست تمام شد</h2><p>می‌تونی دوباره برای یک نفر دیگه درخواست بفرستی.</p><button class="nf-btn primary" onclick="nfStart()">ارسال درخواست جدید</button></div></div>`)}
-function nfSubscribe(id){if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}catch(e){};NF.channel=supabaseClient.channel('nf-'+id).on('postgres_changes',{event:'*',schema:'public',table:'game_sessions',filter:'id=eq.'+id},p=>nfSessionChanged(p.new)).on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'session_id=eq.'+id},p=>nfPlayerChanged(p.new)).subscribe()}
-function nfPlayerChanged(row){if(!row)return;if(String(row.user_id)===String(currentUser.id))return;if(row.status==='accepted'){nfMaybeBegin()}}
+function nfSubscribe(id){
+  if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}catch(e){}
+  NF.channel=supabaseClient.channel('nf-'+id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_sessions',filter:'id=eq.'+id},p=>nfSessionChanged(p.new))
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'session_id=eq.'+id},p=>nfPlayerChanged(p.new))
+    .on('postgres_changes',{event:'*',schema:'public',table:'game_answers',filter:'session_id=eq.'+id},p=>nfAnswerChanged(p.new))
+    .subscribe();
+}
+function nfPlayerChanged(row){
+  if(!row)return;
+  if(String(row.user_id)===String(currentUser.id))return;
+  if(row.status==='accepted')nfMaybeBegin();
+}
+function nfAnswerChanged(row){
+  if(!row || !NF.session?.id)return;
+  if(String(row.session_id)!==String(NF.session.id))return;
+  const round=Number(NF.session.current_round||1);
+  if(Number(row.round_no||0)!==round)return;
+  if(NF.session.status==='round_stopped')nfResultsWait(true);
+}
 function nfSessionChanged(row){
   if(!row)return;
   NF.session=row;
-  if(row.status==='accepted' || row.status==='active' || row.status==='letter') nfMaybeBegin();
+  NF.starter=row.starter_id||NF.starter;
+  if(row.status==='accepted' || row.status==='active') nfMaybeBegin();
+  else if(row.status==='letter') nfLetterScreen();
   else if(row.status==='playing') nfPlayScreen();
   else if(row.status==='round_stopped') nfHandleRoundStopped();
   else if(row.status==='transition') nfShowRoundTransition(Number(row.current_round||1)+1);
@@ -10526,39 +10546,63 @@ window.nfAcceptRequest=async(id)=>{
     if(error)throw error;
     const {error:pe}=await supabaseClient.from('game_players').update({status:'accepted'}).eq('session_id',id).eq('user_id',currentUser.id);
     if(pe)throw pe;
-    NF.session=session;NF.selectedOpponent=null;nfSubscribe(id);nfRenderIncomingRequests([]);
+    NF.session=session;NF.finalSaved=false;NF.selectedOpponent=null;nfSubscribe(id);nfRenderIncomingRequests([]);
     await nfMaybeBegin();
   }catch(e){console.error('NF accept:',e);alert('پذیرش درخواست انجام نشد.\n\n'+(e.message||'خطای نامشخص'))}
 };
 window.nfRejectRequest=async(id)=>{try{const {error}=await supabaseClient.from('game_players').update({status:'rejected'}).eq('session_id',id).eq('user_id',currentUser.id);if(error)throw error;}catch(e){console.warn('NF reject:',e)}finally{nfRenderIncomingRequests((nfIncomingCache||[]).filter(x=>String(x.id)!==String(id)));if(document.getElementById('nfOverlay'))nfClose()}};
 function nfLetterScreen(){
-  if(NF.view==='letter' && document.getElementById('nfLetterScreen'))return;
+  if(!NF.session?.id)return;
+  clearInterval(NF.timer);NF.timer=null;
+  clearInterval(NF.statePoll);NF.statePoll=null;
+  if(NF.session.status!=='letter')return;
   NF.view='letter';
-  clearInterval(NF.timer);clearInterval(NF.statePoll);
   const mine=String(NF.starter)===String(currentUser.id);
-  nfShell(`<div class="nf-panel nf-game-panel" id="nfLetterScreen">
-    <div class="nf-game-topline"><span class="nf-live-pill"><i></i> آماده‌اید؟</span><span class="nf-round-pill">راند ${Number(NF.session?.current_round||1)} از ${Number(NF.session?.rounds||2)}</span></div>
-    <div class="nf-hero nf-letter-hero"><div class="nf-mark nf-mark-glow">✦</div><h2>${mine?'حرفت رو انتخاب کن':'حریف در حال انتخاب حرفه'}</h2><p>${mine?'۱۵ ثانیه فرصت داری یک حرف انتخاب کنی؛ اگر انتخاب نکنی، سیستم خودش انتخاب می‌کند.':'همین که حریف حرف را انتخاب کند، هر دو وارد برگه بازی می‌شوید.'}</p></div>
-    <div class="nf-letter-timer-wrap"><div class="nf-letter-timer" id="nfLetterTimer">15</div><span>ثانیه</span></div>
-    <div class="nf-letters nf-beautiful-letters">${NF_LETTERS.map((l,i)=>`<button class="nf-letter nf-letter-tile" ${mine?'':'disabled'} style="--d:${Math.min(i,12)*18}ms" onclick="nfPickLetter('${l}')"><span>${l}</span><small>${String(i+1).padStart(2,'0')}</small></button>`).join('')}</div>
-    ${mine?'':'<div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> منتظر انتخاب حرف حریف…</div>'}
+  const round=Number(NF.session.current_round||1);
+  const total=Number(NF.session.rounds||2);
+  const letters=NF_LETTERS.map((l,i)=>`
+    <button class="nf-letter-tile" ${mine?'':'disabled'} style="--d:${Math.min(i,31)*22}ms" onclick="nfPickLetter('${l}',false,this)">
+      <span>${l}</span><small>${String(i+1).padStart(2,'0')}</small>
+    </button>`).join('');
+  nfShell(`<div class="nf-panel nf-letter-page" id="nfLetterScreen">
+    <div class="nf-game-topline"><span class="nf-live-pill active"><i></i> مرحله انتخاب حرف</span><span class="nf-round-pill">راند ${round} از ${total}</span></div>
+    <div class="nf-letter-paper">
+      <div class="nf-paper-corner nf-c1"></div><div class="nf-paper-corner nf-c2"></div>
+      <div class="nf-letter-paper-head">
+        <div class="nf-paper-eyebrow">اسم و فامیل • برگه بازی</div>
+        <div class="nf-paper-title-row"><div><h2>${mine?'حرف این راند را انتخاب کن':'منتظر انتخاب حرف حریف'}</h2><p>${mine?'یک حرف انتخاب کن؛ انتخابت بلافاصله برای هر دو بازیکن اعمال می‌شود.':'حریف در حال انتخاب حرف است؛ به محض انتخاب، هر دو وارد برگه می‌شوید.'}</p></div><div class="nf-round-seal">${round}</div></div>
+      </div>
+      <div class="nf-letter-focus">
+        <div class="nf-letter-focus-label">${mine?'انتخاب تو':'حرف انتخاب‌شده'}</div>
+        <div class="nf-letter-focus-char" id="nfLetterPreview">${NF.session.letter||'؟'}</div>
+        <div class="nf-letter-focus-sub">${mine?'یک حرف را لمس کن':'منتظر بمان…'}</div>
+      </div>
+      <div class="nf-letter-clock"><span id="nfLetterTimer">15</span><small>ثانیه</small><div class="nf-clock-track"><i id="nfLetterClockBar"></i></div></div>
+      <div class="nf-alphabet-head"><div><strong>الفبای بازی</strong><span>یک حرف را انتخاب کن</span></div><span>${NF_LETTERS.length} حرف</span></div>
+      <div class="nf-alphabet-board">${letters}</div>
+      ${mine?'':'<div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> انتخاب حریف در حال انجام است…</div>'}
+    </div>
   </div>`);
   if(mine){
     let left=15;
-    const tick=()=>{const e=document.getElementById('nfLetterTimer');if(e)e.textContent=left;};
+    const tick=()=>{
+      const e=document.getElementById('nfLetterTimer');if(e)e.textContent=Math.max(0,left);
+      const bar=document.getElementById('nfLetterClockBar');if(bar)bar.style.transform=`scaleX(${Math.max(0,left/15)})`;
+    };
     tick();
     NF.timer=setInterval(()=>{left--;tick();if(left<=0){clearInterval(NF.timer);NF.timer=null;nfPickRandomLetter();}},1000);
   }else{
-    NF.statePoll=setInterval(nfRefreshSessionState,900);
+    // Realtime is primary; this is only a safety fallback.
+    NF.statePoll=setInterval(nfRefreshSessionState,1500);
   }
 }
 async function nfRefreshSessionState(){
   if(!NF.session?.id)return;
   const {data,error}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
   if(error||!data)return;
-  NF.session=data;
-  NF.starter=data.starter_id||NF.starter;
-  if(data.status==='playing')nfPlayScreen();
+  NF.session=data;NF.starter=data.starter_id||NF.starter;
+  if(data.status==='letter')nfLetterScreen();
+  else if(data.status==='playing')nfPlayScreen();
   else if(data.status==='round_stopped')nfHandleRoundStopped();
   else if(data.status==='transition')nfShowRoundTransition(Number(data.current_round||1)+1);
   else if(data.status==='finished')nfFinalResultsFromServer();
@@ -10567,17 +10611,32 @@ async function nfRefreshSessionState(){
 async function nfPickRandomLetter(){
   if(String(NF.starter)!==String(currentUser.id))return;
   const l=NF_LETTERS[Math.floor(Math.random()*NF_LETTERS.length)];
-  await nfPickLetter(l,true);
+  await nfPickLetter(l,true,null);
 }
-window.nfPickLetter=async(l,auto=false)=>{
+window.nfPickLetter=async(l,auto=false,button=null)=>{
   if(String(NF.starter)!==String(currentUser.id))return;
-  if(NF.session?.status==='playing')return;
+  if(NF.session?.status!=='letter')return;
   clearInterval(NF.timer);NF.timer=null;
+  const preview=document.getElementById('nfLetterPreview');
+  if(preview){preview.textContent=l;preview.classList.remove('nf-letter-preview-pop');void preview.offsetWidth;preview.classList.add('nf-letter-preview-pop');}
+  document.querySelectorAll('.nf-letter-tile').forEach(b=>b.disabled=true);
+  if(button)button.classList.add('chosen');
   NF.letter=l;
-  const {data,error}=await supabaseClient.from('game_sessions').update({letter:l,status:'playing',round_started_at:new Date().toISOString()}).eq('id',NF.session.id).select('*').maybeSingle();
-  if(error){console.error('NF pick letter',error);nfLetterScreen();return;}
+  const {data,error}=await supabaseClient.from('game_sessions')
+    .update({letter:l,status:'playing',round_started_at:new Date().toISOString()})
+    .eq('id',NF.session.id).eq('status','letter').select('*').maybeSingle();
+  if(error){
+    console.error('NF pick letter',error);
+    NF.session.status='letter';
+    nfLetterScreen();
+    return;
+  }
   if(data)NF.session=data;
-  nfPlayScreen();
+  else{
+    const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+    if(latest)NF.session=latest;
+  }
+  nfPlayScreen(true);
 };
 function nfRoundElapsed(){
   const started=Date.parse(NF.session?.round_started_at||'');
@@ -10600,27 +10659,61 @@ function nfBindMobileGameInputs(){
     window.visualViewport.addEventListener('resize',NF._vvHandler,{passive:true});
   }
 }
-function nfPlayScreen(){
-  if(!NF.session?.id)return;
+function nfPlayScreen(fromLetter=false){
+  if(!NF.session?.id || NF.session.status!=='playing')return;
   if(NF.view==='playing' && document.getElementById('nfStopButton'))return;
-  NF.view='playing';clearInterval(NF.statePoll);NF.statePoll=null;
+  NF.view='playing';
+  clearInterval(NF.statePoll);NF.statePoll=null;
   const started=Date.parse(NF.session.round_started_at||'')||Date.now();
-  NF.startAt=started;NF.answers={};
+  NF.startAt=started;
   const letter=NF.session.letter||NF.letter||'—';
   const elapsed=Math.max(0,Math.floor((Date.now()-started)/1000));
   const remaining=Math.max(0,300-elapsed);
-  nfShell(`<div class="nf-panel nf-game-panel nf-mobile-play" id="nfGamePlay">
-    <div class="nf-game-topline"><span class="nf-live-pill active"><i></i> در حال بازی</span><span class="nf-round-pill">راند ${Number(NF.session.current_round||1)} از ${Number(NF.session.rounds||2)}</span></div>
-    <div class="nf-play-hero"><div><div class="nf-mini-label">حرف این راند</div><div class="nf-big-letter">${nfEsc(letter)}</div></div><div class="nf-time-box"><span>زمان باقی‌مانده</span><strong id="nfGameTimer">${nfFmt(remaining)}</strong><small>۵ دقیقه</small></div></div>
-    <div class="nf-paper nf-paper-modern"><div class="nf-paper-shine"></div><div class="nf-paper-head"><div><h3>برگه پاسخ</h3><p>همه جواب‌ها باید با «${nfEsc(letter)}» شروع شوند.</p></div><div class="nf-letter-chip">${nfEsc(letter)}</div></div>
-      <div class="nf-fields nf-fields-modern">${NF_CATS.map((c,i)=>`<div class="nf-field nf-field-modern"><label><span>${String(i+1).padStart(2,'0')}</span>${c[1]}</label><div class="nf-input-wrap"><input id="nf-${c[0]}" autocomplete="off" inputmode="text" enterkeyhint="next" placeholder="پاسخ تو…" ${remaining<=0?'disabled':''}><span class="nf-input-glow"></span></div></div>`).join('')}</div>
-      <div class="nf-stop-zone"><button class="nf-stop nf-stop-spring" id="nfStopButton" onclick="nfStopRound()"><span>استپ!</span></button><p id="nfStopHint">از ثانیه ۱۰ می‌تونی استپ بزنی.</p><button type="button" class="nf-end-game-mini" onclick="nfEndGame()">پایان بازی</button></div>
+  const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
+  nfShell(`<div class="nf-panel nf-game-panel nf-mobile-play nf-paper-game-page" id="nfGamePlay">
+    <div class="nf-game-bar">
+      <div class="nf-game-brand"><span class="nf-live-pill active"><i></i> زنده</span><span class="nf-round-pill">راند ${round} / ${total}</span></div>
+      <button type="button" class="nf-end-game-mini" onclick="nfEndGame()">پایان بازی</button>
+    </div>
+    <div class="nf-answer-paper">
+      <div class="nf-paper-tape"></div>
+      <div class="nf-paper-header">
+        <div class="nf-paper-header-copy">
+          <div class="nf-paper-eyebrow">اسم و فامیل</div>
+          <h2>برگه‌ی راند ${round}</h2>
+          <p>همه جواب‌ها باید با حرف زیر شروع شوند.</p>
+        </div>
+        <div class="nf-letter-hero-badge"><span>حرف</span><strong>${nfEsc(letter)}</strong></div>
+      </div>
+      <div class="nf-game-meta">
+        <div class="nf-timer-paper"><span>زمان باقی‌مانده</span><strong id="nfGameTimer">${nfFmt(remaining)}</strong><i></i></div>
+        <div class="nf-rule-note">هر جواب درست و یکتا <b>۱۰ امتیاز</b></div>
+      </div>
+      <div class="nf-fields nf-fields-modern">${NF_CATS.map((c,i)=>`
+        <div class="nf-field nf-field-modern">
+          <label><span>${String(i+1).padStart(2,'0')}</span>${c[1]}</label>
+          <div class="nf-input-wrap"><input id="nf-${c[0]}" autocomplete="off" inputmode="text" enterkeyhint="next" placeholder="جواب ${c[1]}…" ${remaining<=0?'disabled':''}><span class="nf-input-glow"></span></div>
+        </div>`).join('')}</div>
+      <div class="nf-paper-footer">
+        <div class="nf-stop-zone">
+          <button class="nf-stop nf-stop-spring" id="nfStopButton" onclick="nfStopRound()"><span class="nf-stop-icon">✦</span><span>استپ!</span></button>
+          <p id="nfStopHint">بعد از ۱۰ ثانیه می‌توانی استپ بزنی.</p>
+        </div>
+        <div class="nf-paper-sign">کاغذ بازی • راند ${round}</div>
+      </div>
     </div>
   </div>`);
   nfBindMobileGameInputs();
-  let left=remaining;clearInterval(NF.timer);
+  let left=remaining;
+  clearInterval(NF.timer);
   if(left<=0){nfAutoStop();return;}
-  const paint=()=>{const e=document.getElementById('nfGameTimer');if(e)e.textContent=nfFmt(left);const h=document.getElementById('nfStopHint');if(h)h.textContent=left>290?`هنوز ${Math.max(0,10-(300-left))} ثانیه ابتدایی بازی است؛ استپ بعد از ۱۰ ثانیه فعال می‌شود.`:'استپ فعاله — هر وقت آماده‌ای بزن!';};
+  const paint=()=>{
+    const e=document.getElementById('nfGameTimer');if(e)e.textContent=nfFmt(left);
+    const h=document.getElementById('nfStopHint');
+    if(h)h.textContent=left>290?`استپ بعد از ${Math.max(0,10-(300-left))} ثانیه فعال می‌شود.`:'استپ فعاله — هر وقت آماده‌ای بزن!';
+    const box=document.querySelector('.nf-timer-paper');
+    if(box)box.classList.toggle('urgent',left<=30);
+  };
   paint();
   NF.timer=setInterval(()=>{left--;paint();if(left<=0){clearInterval(NF.timer);NF.timer=null;nfAutoStop()}},1000);
 }
@@ -10646,9 +10739,11 @@ async function nfCollectAndSaveAnswers(){
   }catch(e){console.error('NF save answers',e);return false;}
 }
 async function nfHandleRoundStopped(){
-  if(NF.view==='waiting-results'||NF.view==='transition'||NF.view==='final')return;
+  if(!NF.session?.id)return;
+  if(NF.view==='final'||NF.view==='transition')return;
   clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;
   NF.view='waiting-results';
+  // Save locally, but do not show a result/score screen.
   await nfCollectAndSaveAnswers();
   nfResultsWait();
 }
@@ -10656,91 +10751,127 @@ window.nfStopRound=async(auto=false)=>{
   if(NF.view!=='playing')return;
   const elapsed=nfRoundElapsed();
   if(!auto && elapsed<10){
-    const h=document.getElementById('nfStopHint');if(h){h.textContent='⏳ هنوز ۱۰ ثانیه کامل نشده؛ استپ فعلاً قفل است.';h.classList.add('nf-stop-denied');}
-    const b=document.getElementById('nfStopButton');if(b){b.classList.remove('nf-stop-shake');void b.offsetWidth;b.classList.add('nf-stop-shake');}
+    const h=document.getElementById('nfStopHint');
+    if(h){h.textContent='⏳ هنوز ۱۰ ثانیه کامل نشده؛ استپ قفل است.';h.classList.add('nf-stop-denied');}
+    const b=document.getElementById('nfStopButton');
+    if(b){b.classList.remove('nf-stop-shake');void b.offsetWidth;b.classList.add('nf-stop-shake');}
     return;
   }
   clearInterval(NF.timer);NF.timer=null;
   const round=Number(NF.session.current_round||1);
-  const {data,error}=await supabaseClient.from('game_sessions').update({status:'round_stopped'}).eq('id',NF.session.id).eq('status','playing').select('*').maybeSingle();
-  if(error){console.error('NF stop round',error);await nfHandleRoundStopped();return;}
+  const {data,error}=await supabaseClient.from('game_sessions')
+    .update({status:'round_stopped'})
+    .eq('id',NF.session.id).eq('status','playing').eq('current_round',round)
+    .select('*').maybeSingle();
+  if(error){
+    console.error('NF stop round',error);
+    alert('توقف راند انجام نشد. دوباره امتحان کن.');
+    return;
+  }
+  // If the other player already stopped, fetch the shared state and enter it too.
   if(data)NF.session=data;
-  await nfHandleRoundStopped();
+  else{
+    const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+    if(latest)NF.session=latest;
+  }
+  if(NF.session?.status==='round_stopped')await nfHandleRoundStopped();
 };
-async function nfResultsWait(){
+async function nfResultsWait(fromRealtime=false){
+  if(!NF.session?.id || NF.session.status!=='round_stopped')return;
   const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
-  clearInterval(NF.timer);NF.timer=null;
+  clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
   const check=async()=>{
-    const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);
+    const {data:answers}=await supabaseClient.from('game_answers').select('*')
+      .eq('session_id',NF.session.id).eq('round_no',round);
     if((answers||[]).length<2){
-      if(NF.view!=='waiting-results'){
-        NF.view='waiting-results';
-        nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-wait"><div class="nf-result-orbit"><span>✓</span></div><h2>استپ شد</h2><p>جواب‌های هر دو بازیکن ثبت می‌شود…</p><div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> چند لحظه…</div></div></div>`);
-      }
+      // Keep this invisible/very short; there is intentionally no score/result screen between rounds.
       return false;
     }
-    clearInterval(NF.timer);NF.timer=null;
-    if(round>=total){await nfShowFinalPaper(answers);return true;}
-    // Only the starter advances the shared round. The other player waits for realtime/poll.
-    if(String(NF.starter)===String(currentUser.id)) await nfAdvanceRoundTransition();
-    else nfShowRoundTransition(round+1);
+    if(round>=total){
+      clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
+      await nfFinishGame();
+      return true;
+    }
+    // Any client may atomically claim the transition. The server timestamp makes both screens share one countdown.
+    const transitionAt=new Date().toISOString();
+    const {data,error}=await supabaseClient.from('game_sessions')
+      .update({status:'transition',round_started_at:transitionAt})
+      .eq('id',NF.session.id).eq('status','round_stopped').eq('current_round',round)
+      .select('*').maybeSingle();
+    if(error){console.error('NF transition claim',error);return false;}
+    if(data)NF.session=data;
+    else{
+      const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+      if(latest)NF.session=latest;
+    }
+    if(NF.session?.status==='transition')nfShowRoundTransition(round+1);
     return true;
   };
   await check();
-  if(NF.view!=='final' && NF.view!=='transition'){
-    NF.timer=setInterval(async()=>{if(await check()){clearInterval(NF.timer);NF.timer=null;}},500);
+  if(NF.session?.status==='round_stopped'){
+    NF.answerWaitTimer=setInterval(async()=>{
+      if(await check()){clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;}
+    },280);
   }
 }
 async function nfAdvanceRoundTransition(){
   if(!NF.session?.id)return;
   const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
   if(round>=total){await nfFinishGame();return;}
-  // Atomically claim transition so only one browser can drive the 4-second countdown.
+  const transitionAt=new Date().toISOString();
   const {data,error}=await supabaseClient.from('game_sessions')
-    .update({status:'transition'})
-    .eq('id',NF.session.id).eq('status','round_stopped').select('*').maybeSingle();
+    .update({status:'transition',round_started_at:transitionAt})
+    .eq('id',NF.session.id).eq('status','round_stopped').eq('current_round',round)
+    .select('*').maybeSingle();
   if(error){console.error('NF transition claim',error);return;}
   if(data)NF.session=data;
-  nfShowRoundTransition(round+1, true);
+  nfShowRoundTransition(round+1);
 }
-function nfShowRoundTransition(nextRound, coordinator=false){
+function nfShowRoundTransition(nextRound){
   if(NF.view==='final')return;
-  if(NF.view==='transition')return;
-  NF.view='transition';clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;
-  nfShell(`<div class="nf-panel nf-transition-screen"><div class="nf-transition-orb">✦</div><div class="nf-transition-kicker">آماده‌ای؟</div><h2>شروع راند ${nextRound}</h2><p>راند ${nextRound} تا چند لحظه دیگر شروع می‌شود…</p><div class="nf-transition-count" id="nfTransitionCount">4</div><div class="nf-transition-line"><span></span></div></div>`);
-  if(!coordinator){
-    NF.statePoll=setInterval(async()=>{
-      if(!NF.session?.id)return;
-      const {data}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
-      if(!data)return;
-      NF.session=data;NF.starter=data.starter_id||NF.starter;
-      if(data.status==='letter'){clearInterval(NF.statePoll);NF.statePoll=null;NF.letter=null;nfLetterScreen();}
-      else if(data.status==='playing'){clearInterval(NF.statePoll);NF.statePoll=null;nfPlayScreen();}
-      else if(data.status==='finished'){clearInterval(NF.statePoll);NF.statePoll=null;nfFinalResultsFromServer();}
-      else if(data.status==='abandoned'){clearInterval(NF.statePoll);NF.statePoll=null;nfClose();}
-    },500);
-    return;
-  }
-  let left=4;
-  const tick=()=>{const e=document.getElementById('nfTransitionCount');if(e)e.textContent=left;};tick();
-  NF.timer=setInterval(async()=>{
-    left--;tick();
+  if(NF.view==='transition' && document.getElementById('nfTransitionCount'))return;
+  NF.view='transition';
+  clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
+  const started=Date.parse(NF.session?.round_started_at||'')||Date.now();
+  const duration=4000;
+  nfShell(`<div class="nf-round-transition-page" id="nfTransitionPage">
+    <div class="nf-transition-paper">
+      <div class="nf-transition-paper-top"><span>اسم و فامیل</span><span>راند ${nextRound}</span></div>
+      <div class="nf-transition-scribble">✦</div>
+      <div class="nf-transition-kicker">برگه بعدی آماده است</div>
+      <h2>شروع راند ${nextRound}</h2>
+      <p>خودکار شروع می‌شود</p>
+      <div class="nf-transition-count" id="nfTransitionCount">4</div>
+      <div class="nf-transition-line"><span id="nfTransitionLine"></span></div>
+      <div class="nf-transition-note">حرف جدید بعد از شمارش انتخاب می‌شود.</div>
+    </div>
+  </div>`);
+  const tick=async()=>{
+    const elapsed=Math.max(0,Date.now()-started);
+    const left=Math.max(0,duration-elapsed);
+    const sec=Math.max(1,Math.ceil(left/1000));
+    const count=document.getElementById('nfTransitionCount');if(count)count.textContent=left<=0?'0':sec;
+    const line=document.getElementById('nfTransitionLine');if(line)line.style.transform=`scaleX(${Math.max(0,left/duration)})`;
     if(left>0)return;
     clearInterval(NF.timer);NF.timer=null;
-    const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
-    if(round>=total)return;
-    const next=round+1;
+    const round=Number(NF.session?.current_round||1);
     const {data,error}=await supabaseClient.from('game_sessions')
-      .update({current_round:next,status:'letter',letter:null,round_started_at:null})
+      .update({current_round:round+1,status:'letter',letter:null,round_started_at:null})
       .eq('id',NF.session.id).eq('status','transition').eq('current_round',round)
       .select('*').maybeSingle();
     if(error){console.error('NF next round',error);return;}
     if(data){NF.session=data;NF.letter=null;nfLetterScreen();}
     else{
       const {data:latest}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
-      if(latest){NF.session=latest;NF.letter=null;if(latest.status==='letter')nfLetterScreen();else if(latest.status==='playing')nfPlayScreen();}
+      if(latest){NF.session=latest;NF.letter=latest.letter||null;
+        if(latest.status==='letter')nfLetterScreen();
+        else if(latest.status==='playing')nfPlayScreen();
+        else if(latest.status==='finished')nfFinalResultsFromServer();
+      }
     }
-  },1000);
+  };
+  tick();
+  NF.timer=setInterval(tick,180);
 }
 function nfScoreRow(r){
   let score=0;
@@ -10759,15 +10890,17 @@ async function nfNextRound(){
 }
 async function nfFinishGame(){
   if(!NF.session?.id)return;
-  await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id);
-  NF.session.status='finished';
+  clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
+  const {data,error}=await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id).eq('status','round_stopped').select('*').maybeSingle();
+  if(error)console.warn('NF finish game',error);
+  if(data)NF.session=data;
   await nfFinalResultsFromServer();
 }
 async function nfEndGame(){
   if(!NF.session?.id)return;
   const ok=confirm('با پایان دادن بازی، هیچ نتیجه‌ای ثبت نمی‌شود و بازی برای هر دو بازیکن بسته خواهد شد. ادامه می‌دهی؟');
   if(!ok)return;
-  clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;
+  clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
   try{await supabaseClient.from('game_answer_reviews').delete().eq('session_id',NF.session.id);await supabaseClient.from('game_answers').delete().eq('session_id',NF.session.id);}catch(e){console.warn('NF abandoned cleanup',e)}
   const {data,error}=await supabaseClient.from('game_sessions').update({status:'abandoned'}).eq('id',NF.session.id).in('status',['playing','letter','transition','round_stopped']).select('*').maybeSingle();
   if(!error&&data)NF.session=data;
@@ -10777,23 +10910,36 @@ window.nfEndGame=nfEndGame;
 async function nfFinalResultsFromServer(){
   if(!NF.session?.id)return;
   const {data:rows}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id);
-  nfShowFinalPaper(rows||[]);
+  await nfShowFinalPaper(rows||[]);
 }
 async function nfShowFinalPaper(rows){
   if(NF.view==='final')return;
-  NF.view='final';clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;
+  NF.view='final';clearInterval(NF.timer);NF.timer=null;clearInterval(NF.statePoll);NF.statePoll=null;clearInterval(NF.answerWaitTimer);NF.answerWaitTimer=null;
   const allRows=rows||[];
-  nfSaveFinalResult(allRows);
   const by={};allRows.forEach(r=>{const k=String(r.user_id);by[k]=(by[k]||0)+nfScoreRow(r)});
   const mine=by[String(currentUser.id)]||0;
   const other=(Object.entries(by).find(([k])=>k!==String(currentUser.id))||['',0])[1];
   const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
-  const title=status==='برنده'?'تو برنده شدی!':status==='بازنده'?'این بار حریف برنده شد':'بازی مساوی شد';
-  const icon=status==='برنده'?'🏆':status==='بازنده'?'💫':'🤝';
-  const cards=allRows.map(r=>`<article class="nf-final-paper-row"><span>${String(r.user_id)===String(currentUser.id)?'تو':'حریف'}</span><strong>${nfScoreRow(r)}</strong><small>امتیاز راند ${Number(r.round_no||1)}</small></article>`).join('');
-  nfShell(`<div class="nf-panel nf-game-panel nf-final-paper-screen"><div class="nf-final-paper"><div class="nf-paper-stamp">${icon}</div><div class="nf-final-kicker">پایان بازی</div><h2>${title}</h2><p>نتیجه نهایی بازی</p><div class="nf-final-total"><div><span>تو</span><strong>${mine}</strong></div><b>VS</b><div><span>حریف</span><strong>${other}</strong></div></div><div class="nf-final-rounds">${cards}</div><div class="nf-final-close-note">این نتیجه تا <strong id="nfFinalCloseCount">20</strong> ثانیه دیگر ذخیره می‌شود و بازی بسته خواهد شد.</div></div></div>`);
+  const title=status==='برنده'?'این برگه مال توست!':status==='بازنده'?'این راندها را ثبت کردیم':'بازی مساوی شد';
+  const icon=status==='برنده'?'🏆':status==='بازنده'?'✦':'🤝';
+  if(!NF.finalSaved){NF.finalSaved=true;nfSaveFinalResult(allRows);}
+  const roundMap={};
+  allRows.forEach(r=>{const k=Number(r.round_no||1);if(!roundMap[k])roundMap[k]=[null,null];const idx=String(r.user_id)===String(currentUser.id)?0:1;roundMap[k][idx]=nfScoreRow(r);});
+  const cards=Object.keys(roundMap).sort((a,b)=>Number(a)-Number(b)).map(r=>`<article class="nf-final-paper-row"><span>راند ${r}</span><strong>${roundMap[r][0]??0} <b>—</b> ${roundMap[r][1]??0}</strong><small>امتیاز تو — حریف</small></article>`).join('');
+  nfShell(`<div class="nf-final-results-page">
+    <div class="nf-final-paper">
+      <div class="nf-paper-tape"></div>
+      <div class="nf-final-stamp">${icon}</div>
+      <div class="nf-final-kicker">اسم و فامیل • نتیجه نهایی</div>
+      <h2>${title}</h2><p>تمام راندها در این برگه ثبت شدند.</p>
+      <div class="nf-final-total"><div><span>تو</span><strong>${mine}</strong></div><b>VS</b><div><span>حریف</span><strong>${other}</strong></div></div>
+      <div class="nf-final-rounds">${cards}</div>
+      <div class="nf-final-close-note">بازی تا <strong id="nfFinalCloseCount">20</strong> ثانیه دیگر بسته می‌شود.</div>
+    </div>
+  </div>`);
   try{await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id)}catch(e){}
-  let left=20;NF.timer=setInterval(()=>{left--;const e=document.getElementById('nfFinalCloseCount');if(e)e.textContent=left;if(left<=0){clearInterval(NF.timer);NF.timer=null;nfClose();try{renderRecentGames()}catch(e){}}},1000);
+  let left=20;
+  NF.timer=setInterval(()=>{left--;const e=document.getElementById('nfFinalCloseCount');if(e)e.textContent=left;if(left<=0){clearInterval(NF.timer);NF.timer=null;nfClose();try{renderRecentGames()}catch(e){}}},1000);
 }
 function nfFinalResults(rows){nfShowFinalPaper(rows||[])}
 function nfSaveFinalResult(rows){
@@ -10802,19 +10948,7 @@ function nfSaveFinalResult(rows){
   const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
   saveRecentGameResult('name',status+' · '+mine+' امتیاز', {resultStatus:status,score:mine,opponentScore:other,gameSessionId:NF.session.id});
 }
-async function nfFinalResultsFromServer(){
-  if(!NF.session?.id)return;
-  const {data:rows}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id);
-  nfFinalResults(rows||[]);
-}
-
-function nfFinalResults(rows){
-  const by={};(rows||[]).forEach(r=>{const k=String(r.user_id);by[k]=(by[k]||0)+nfScoreRow(r)});
-  const mine=by[String(currentUser.id)]||0;const other=(Object.entries(by).find(([k])=>k!==String(currentUser.id))||['',0])[1];
-  const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
-  nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-hero final ${status==='برنده'?'winner':status==='بازنده'?'loser':'draw'}"><div class="nf-result-icon">${status==='برنده'?'🏆':status==='بازنده'?'💫':'🤝'}</div><div class="nf-result-kicker">پایان بازی</div><h2>${status==='برنده'?'تو برنده شدی!':status==='بازنده'?'این بار حریف برنده شد':'بازی مساوی شد'}</h2><div class="nf-final-score"><div><span>امتیاز تو</span><strong>${mine}</strong></div><div class="vs">VS</div><div><span>امتیاز حریف</span><strong>${other}</strong></div></div></div><div class="nf-result-actions"><button class="nf-btn primary nf-result-main-btn" onclick="nfFinishAndClose()">بازگشت به Games</button></div></div>`);
-}
-window.nfFinishAndClose=()=>{nfClose();try{renderRecentGames()}catch(e){}};
+window.nfFinishAndClose()=>{nfClose();try{renderRecentGames()}catch(e){}};
 window.gameCardTap=(type)=>{if(type==='name'){nfStart();return}const card=document.querySelector(`.game-card[data-game="${type}"]`);if(card)card.animate([{transform:'translateY(-5px) scale(1.012)'},{transform:'translateY(-2px) scale(.975)'},{transform:'translateY(-5px) scale(1.012)'}],{duration:300,easing:'cubic-bezier(.2,.85,.2,1)'})};
 window.nfClose=nfClose;window.nfStart=nfStart;
 // Incoming pending requests for name & family: lightweight polling so it works even if Realtime publication isn't enabled.
@@ -10963,5 +11097,215 @@ body[data-khat-theme^="light-"] .nf-final-paper{box-shadow:0 20px 55px rgba(50,4
 </style>
 
 
+
+
+<style id="name-family-v53-professional-paper">
+/* ===== V53 — Professional paper game system ===== */
+.nf-overlay{
+  background:
+    radial-gradient(circle at 15% 8%,rgba(219,170,93,.10),transparent 28%),
+    radial-gradient(circle at 85% 85%,rgba(103,139,198,.10),transparent 30%),
+    #16130f!important;
+}
+.nf-shell{
+  background:
+    linear-gradient(rgba(255,250,238,.025),rgba(255,250,238,.025)),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 5px),
+    #17130f!important;
+}
+.nf-shell:before{background:
+  radial-gradient(circle at 20% 15%,rgba(236,191,112,.09),transparent 25%),
+  radial-gradient(circle at 80% 70%,rgba(102,143,198,.08),transparent 28%)!important;
+}
+.nf-top{background:rgba(31,25,20,.82)!important;border-bottom-color:rgba(255,239,201,.10)!important}
+.nf-title{font-family:"Segoe Print","Bradley Hand",cursive!important;letter-spacing:.5px!important;color:#f6e9cf!important}
+.nf-letter-page,.nf-paper-game-page,.nf-final-results-page{width:min(1040px,100%);margin:0 auto}
+.nf-letter-paper,.nf-answer-paper,.nf-final-paper{
+  position:relative;overflow:hidden;color:#30271f;
+  background:
+    radial-gradient(circle at 8% 15%,rgba(132,91,39,.08),transparent 18%),
+    radial-gradient(circle at 90% 80%,rgba(132,91,39,.07),transparent 20%),
+    repeating-linear-gradient(0deg,transparent 0 31px,rgba(96,129,157,.075) 32px,transparent 33px),
+    linear-gradient(180deg,#fffdf7,#f5ecd9)!important;
+  border:1px solid rgba(91,68,40,.16)!important;
+  box-shadow:0 35px 90px rgba(0,0,0,.34),0 3px 0 rgba(98,67,33,.10),inset 0 0 55px rgba(126,88,42,.06)!important;
+}
+.nf-letter-paper{padding:clamp(20px,4vw,38px);border-radius:8px 12px 10px 13px;transform:rotate(-.18deg)}
+.nf-answer-paper{padding:clamp(20px,4vw,38px);border-radius:9px 13px 11px 8px;transform:rotate(.12deg)}
+.nf-final-paper{width:min(760px,100%);padding:34px 30px 26px;border-radius:9px 13px 10px 12px;transform:rotate(-.28deg)}
+.nf-letter-paper:before,.nf-answer-paper:before,.nf-final-paper:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 0 42%,rgba(255,255,255,.55) 50%,transparent 58%);
+  transform:translateX(-130%);animation:nfPaperSweep 1.1s .15s ease-out forwards;
+}
+.nf-paper-corner{position:absolute;width:42px;height:42px;border-color:rgba(105,76,42,.17);pointer-events:none}
+.nf-c1{top:13px;right:13px;border-top:2px solid;border-right:2px solid}
+.nf-c2{bottom:13px;left:13px;border-bottom:2px solid;border-left:2px solid}
+.nf-letter-paper-head{position:relative}
+.nf-paper-eyebrow,.nf-letter-paper .nf-paper-eyebrow,.nf-final-kicker{font:900 10px/1 "Segoe Print","Bradley Hand",cursive;letter-spacing:1.8px;color:#866a4b;text-align:right}
+.nf-paper-title-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:10px}
+.nf-letter-paper h2,.nf-answer-paper h2,.nf-final-paper h2{font-family:"Segoe Print","Bradley Hand",cursive!important;color:#33291f!important}
+.nf-letter-paper h2{font-size:clamp(24px,4vw,34px);margin:0}
+.nf-letter-paper p,.nf-answer-paper p,.nf-final-paper>p{color:#796b5c!important}
+.nf-round-seal{
+  flex:0 0 58px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;
+  border:2px dashed rgba(126,88,42,.28);color:#8a6943;font:900 22px "Segoe Print","Bradley Hand",cursive;
+  transform:rotate(8deg);background:rgba(143,107,65,.045)
+}
+.nf-letter-focus{
+  position:relative;width:min(210px,52vw);aspect-ratio:1;margin:22px auto 12px;display:grid;place-items:center;
+  border-radius:50%;border:2px solid rgba(119,84,42,.19);
+  background:radial-gradient(circle,#fffdf8 0 42%,#f3e6cf 43% 100%);
+  box-shadow:inset 0 0 0 8px rgba(125,91,49,.035),0 18px 35px rgba(96,67,34,.12);
+}
+.nf-letter-focus:after{content:"";position:absolute;inset:9px;border:1px dashed rgba(119,84,42,.18);border-radius:50%}
+.nf-letter-focus-label{position:absolute;top:28px;font:900 9px "Segoe Print","Bradley Hand",cursive;color:#907555}
+.nf-letter-focus-char{font:900 clamp(68px,13vw,112px)/1 "Segoe Print","Bradley Hand",cursive;color:#47382a;text-shadow:2px 3px 0 rgba(112,78,37,.07)}
+.nf-letter-focus-sub{position:absolute;bottom:26px;font-size:8px;color:#9b8b77}
+.nf-letter-preview-pop{animation:nfLetterReveal .55s cubic-bezier(.16,1,.3,1)}
+.nf-letter-clock{width:min(280px,82%);margin:0 auto 20px;text-align:center;color:#8b775e}
+.nf-letter-clock>span{font:900 30px "Segoe Print","Bradley Hand",cursive;color:#5c4936}
+.nf-letter-clock small{font-size:9px;margin-right:5px}
+.nf-clock-track{height:5px;margin-top:8px;border-radius:99px;background:rgba(104,77,46,.11);overflow:hidden}
+.nf-clock-track i{display:block;width:100%;height:100%;transform-origin:right;background:linear-gradient(90deg,#bd765e,#8e5f43);transition:transform .25s linear}
+.nf-alphabet-head{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:18px 0 9px;padding-bottom:9px;border-bottom:1px solid rgba(98,73,44,.12);color:#574737}
+.nf-alphabet-head strong{display:block;font:900 17px "Segoe Print","Bradley Hand",cursive}
+.nf-alphabet-head span{display:block;font-size:8px;color:#9a8974;margin-top:3px}
+.nf-alphabet-head>span{font-size:9px}
+.nf-alphabet-board{
+  position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;
+  direction:rtl
+}
+.nf-alphabet-board .nf-letter-tile{
+  position:relative;aspect-ratio:1.05;border:1px solid rgba(103,76,43,.15)!important;border-radius:12px;
+  background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(241,226,202,.68))!important;
+  color:#4a3928!important;box-shadow:0 5px 12px rgba(91,66,37,.07),inset 0 1px 0 rgba(255,255,255,.9);
+  animation:nfLetterInPaper .42s both;animation-delay:var(--d);cursor:pointer;
+}
+.nf-alphabet-board .nf-letter-tile span{font:900 23px "Segoe Print","Bradley Hand",cursive}
+.nf-alphabet-board .nf-letter-tile small{color:#9b8871;opacity:.7}
+.nf-alphabet-board .nf-letter-tile:hover:not(:disabled){transform:translateY(-4px) rotate(-1.5deg);background:#fffdf8!important;border-color:rgba(137,91,46,.35)!important;box-shadow:0 12px 22px rgba(91,66,37,.14),inset 0 1px 0 #fff}
+.nf-alphabet-board .nf-letter-tile:active:not(:disabled){transform:translateY(2px) scale(.96)}
+.nf-alphabet-board .nf-letter-tile.chosen{background:linear-gradient(145deg,#ead5ad,#fff7e7)!important;border-color:#a97843!important;box-shadow:0 0 0 4px rgba(169,120,67,.11),0 14px 25px rgba(107,74,39,.16)}
+.nf-game-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.nf-game-brand{display:flex;gap:7px;align-items:center}
+.nf-paper-game-page .nf-live-pill,.nf-paper-game-page .nf-round-pill{
+  background:#f7eddc!important;border-color:rgba(103,76,43,.16)!important;color:#705d48!important
+}
+.nf-answer-paper .nf-paper-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nf-paper-header-copy h2{font-size:clamp(25px,4vw,35px);margin:3px 0}
+.nf-paper-header-copy p{margin:0;font-size:10px}
+.nf-letter-hero-badge{
+  flex:0 0 102px;width:102px;height:102px;border-radius:8px 16px 9px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#fffaf0;border:2px solid rgba(120,83,41,.18);box-shadow:4px 6px 0 rgba(105,73,38,.08);transform:rotate(2.5deg)
+}
+.nf-letter-hero-badge span{font:900 9px "Segoe Print","Bradley Hand",cursive;color:#9a8062}
+.nf-letter-hero-badge strong{font:900 61px/1 "Segoe Print","Bradley Hand",cursive;color:#4a3827;margin-top:3px}
+.nf-game-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 18px;padding:10px 12px;border-top:1px dashed rgba(105,76,43,.18);border-bottom:1px dashed rgba(105,76,43,.18)}
+.nf-timer-paper{display:flex;align-items:baseline;gap:7px;color:#775f47}
+.nf-timer-paper span{font-size:9px}
+.nf-timer-paper strong{font:900 28px "Segoe Print","Bradley Hand",cursive;color:#4b3827}
+.nf-timer-paper i{width:7px;height:7px;border-radius:50%;background:#6caa78;box-shadow:0 0 0 5px rgba(108,170,120,.10);animation:nfTimerDot 1.5s infinite}
+.nf-timer-paper.urgent strong{color:#b65e4d}.nf-timer-paper.urgent i{background:#b65e4d;animation:nfTimerUrgent .55s infinite}
+.nf-rule-note{font-size:9px;color:#8b765f}.nf-rule-note b{color:#6d4f2d}
+.nf-fields-modern{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}
+.nf-field-modern{gap:7px}
+.nf-field-modern label{font:900 11px "Segoe Print","Bradley Hand",cursive!important;color:#554434!important}
+.nf-field-modern label span{background:#ead9bb!important;color:#816748!important;border:1px solid rgba(111,80,43,.12)}
+.nf-input-wrap{position:relative}
+.nf-field-modern input{
+  height:52px!important;border:0!important;border-bottom:2px solid rgba(82,62,41,.23)!important;border-radius:6px 6px 2px 2px!important;
+  background:rgba(255,255,255,.30)!important;color:#382d22!important;font-family:"Segoe Print","Bradley Hand",cursive!important;
+  box-shadow:none!important;transition:transform .2s,background .2s,border-color .2s!important
+}
+.nf-field-modern input:focus{transform:translateY(-2px);background:rgba(255,255,255,.68)!important;border-bottom-color:#9d6b42!important;box-shadow:0 5px 0 rgba(157,107,66,.08)!important}
+.nf-field-modern input::placeholder{color:#8c7b68!important;opacity:.55}
+.nf-paper-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px dashed rgba(105,76,43,.18)}
+.nf-stop-zone{margin:0;text-align:center}
+.nf-stop-spring{min-width:205px;height:58px;border-radius:12px!important;background:linear-gradient(180deg,#d7795e,#b45443)!important;box-shadow:0 5px 0 #8d4034,0 14px 25px rgba(130,62,48,.18),inset 0 1px 0 rgba(255,255,255,.45)!important}
+.nf-stop-icon{font-size:12px;margin-left:6px}
+.nf-stop-hint,.nf-stop-zone p{color:#8b7560!important;margin-top:10px!important}
+.nf-paper-sign{font:900 9px "Segoe Print","Bradley Hand",cursive;color:#a08d74;transform:rotate(-2deg)}
+.nf-end-game-mini{color:#b8a38a!important;opacity:.65!important;background:rgba(255,250,238,.055)!important;border:1px solid rgba(255,239,201,.10)!important}
+.nf-round-transition-page{
+  min-height:calc(100dvh - 64px);display:grid;place-items:center;padding:20px;
+  background:radial-gradient(circle at 50% 40%,rgba(206,158,86,.10),transparent 30%)
+}
+.nf-transition-paper{
+  position:relative;width:min(620px,100%);padding:44px 30px 34px;text-align:center;color:#33281e;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 31px,rgba(95,126,152,.07) 32px,transparent 33px),
+    linear-gradient(#fffdf7,#f4e9d4);
+  border:1px solid rgba(99,70,35,.16);border-radius:8px 13px 10px 12px;
+  box-shadow:0 35px 80px rgba(0,0,0,.35),inset 0 0 50px rgba(126,88,42,.06);
+  transform:rotate(-.3deg);animation:nfPaperInPro .7s cubic-bezier(.16,1,.3,1) both
+}
+.nf-transition-paper-top{display:flex;justify-content:space-between;color:#94785b;font:900 9px "Segoe Print","Bradley Hand",cursive}
+.nf-transition-scribble{font:42px "Segoe Print","Bradley Hand",cursive;color:#a97546;margin:15px auto 4px;animation:nfScribble 1.4s infinite}
+.nf-transition-kicker{font:900 10px "Segoe Print","Bradley Hand",cursive;letter-spacing:1.5px;color:#9a8061}
+.nf-transition-paper h2{font:900 clamp(34px,7vw,58px) "Segoe Print","Bradley Hand",cursive!important;color:#3e2e20!important;margin:6px 0}
+.nf-transition-paper p{font-size:10px;color:#927e68;margin:0}
+.nf-transition-paper .nf-transition-count{font:900 62px "Segoe Print","Bradley Hand",cursive;color:#a66f45;margin:18px 0 7px}
+.nf-transition-line{width:min(300px,70%);height:5px;border-radius:99px;background:rgba(112,81,45,.10);overflow:hidden;margin:auto}
+.nf-transition-line span{display:block;width:100%;height:100%;background:linear-gradient(90deg,#b77a4d,#7d9a8d);transform-origin:right}
+.nf-transition-note{margin-top:14px;font-size:8px;color:#a38e76}
+.nf-final-results-page{min-height:calc(100dvh - 64px);display:grid;place-items:center;padding:16px}
+.nf-final-stamp{width:74px;height:74px;margin:0 auto 8px;display:grid;place-items:center;border-radius:50%;border:2px dashed rgba(116,80,40,.30);font-size:32px;transform:rotate(5deg);background:rgba(139,101,59,.035)}
+.nf-final-paper .nf-final-kicker{text-align:center}
+.nf-final-paper h2{text-align:center;font-size:31px;margin:7px 0 2px}
+.nf-final-paper>p{text-align:center;font-size:10px;margin:0}
+.nf-final-total{display:flex;align-items:center;justify-content:center;gap:15px;margin:22px auto;width:min(450px,100%)}
+.nf-final-total>div{flex:1;text-align:center;padding:13px 10px;border:1px solid rgba(93,68,39,.14);background:rgba(255,255,255,.38);border-radius:8px}
+.nf-final-total span{display:block;font:900 9px "Segoe Print","Bradley Hand",cursive;color:#8c765c}
+.nf-final-total strong{display:block;font:900 39px "Segoe Print","Bradley Hand",cursive;color:#3e2f22}
+.nf-final-total>b{font-size:10px;color:#a28d72}
+.nf-final-rounds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.nf-final-paper-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:10px 12px;border:1px solid rgba(108,77,42,.11);border-radius:7px;background:rgba(116,84,47,.045)!important}
+.nf-final-paper-row span{font:900 11px "Segoe Print","Bradley Hand",cursive;color:#624b34}
+.nf-final-paper-row strong{font:900 19px "Segoe Print","Bradley Hand",cursive;color:#493625}
+.nf-final-paper-row strong b{font-size:10px;color:#a18b72;margin:0 4px}
+.nf-final-paper-row small{font-size:8px;color:#9a866f}
+.nf-final-close-note{text-align:center;margin-top:16px;font-size:9px;color:#907b63}
+.nf-final-close-note strong{font-size:14px;color:#62482f}
+@keyframes nfPaperSweep{to{transform:translateX(130%)}}
+@keyframes nfPaperInPro{from{opacity:0;transform:translateY(22px) rotate(-2deg) scale(.97)}to{opacity:1;transform:rotate(-.3deg) scale(1)}}
+@keyframes nfLetterReveal{0%{opacity:.3;transform:scale(.65) rotate(-12deg)}65%{transform:scale(1.13) rotate(4deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes nfLetterInPaper{from{opacity:0;transform:translateY(12px) rotate(1deg) scale(.96)}to{opacity:1;transform:none}}
+@keyframes nfTimerDot{50%{transform:scale(1.35);box-shadow:0 0 0 7px rgba(108,170,120,.06)}}
+@keyframes nfTimerUrgent{50%{transform:scale(1.5);box-shadow:0 0 0 7px rgba(182,94,77,.08)}}
+@keyframes nfScribble{50%{transform:translateY(-4px) rotate(4deg)}}
+@media(max-width:760px){
+  .nf-alphabet-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}
+  .nf-alphabet-board .nf-letter-tile span{font-size:20px}
+  .nf-fields-modern{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .nf-answer-paper{padding:20px 14px}
+  .nf-paper-footer{align-items:center}
+}
+@media(max-width:520px){
+  .nf-letter-paper{padding:18px 12px}
+  .nf-paper-title-row{align-items:flex-start}
+  .nf-round-seal{width:48px;height:48px;flex-basis:48px;font-size:18px}
+  .nf-letter-focus{width:165px}
+  .nf-alphabet-board{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .nf-alphabet-board .nf-letter-tile{border-radius:10px}
+  .nf-alphabet-board .nf-letter-tile span{font-size:19px}
+  .nf-fields-modern{grid-template-columns:1fr!important}
+  .nf-answer-paper .nf-paper-header{align-items:flex-start}
+  .nf-letter-hero-badge{width:78px;height:78px;flex-basis:78px}
+  .nf-letter-hero-badge strong{font-size:48px}
+  .nf-game-meta{align-items:flex-start;flex-direction:column}
+  .nf-paper-footer{flex-direction:column}
+  .nf-stop-zone{width:100%}
+  .nf-stop-spring{width:100%}
+  .nf-paper-sign{align-self:flex-end}
+  .nf-transition-paper{padding:34px 18px 28px}
+  .nf-final-paper{padding:28px 14px 20px;transform:none}
+  .nf-final-rounds{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .nf-letter-paper:before,.nf-answer-paper:before,.nf-final-paper:before,.nf-transition-paper,
+  .nf-alphabet-board .nf-letter-tile,.nf-letter-preview-pop,.nf-transition-scribble,.nf-timer-paper i{animation:none!important}
+}
+</style>
 
 </html>
