@@ -3595,6 +3595,281 @@ body[data-khat-theme^="dark-"] .chat-header > .chat-center-panel .typing-dots i{
 .chat-notify-reply-preview-copy span{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92;}
 .msg.theirs .chat-notify-reply-preview,.msg.mine .chat-notify-reply-preview{margin-bottom:8px;}
 </style>
+
+<!-- KHATMIN V24 — text-message reaction sits cleanly on the bubble surface only -->
+<style id="khatmin-v24-text-reaction-surface">
+/* Do NOT touch image/voice reaction layout. These rules intentionally target text bubbles only. */
+.msg-wrap .msg > .msg-reaction-dock{
+  bottom:5px;
+  min-height:24px;
+  gap:3px;
+  z-index:32;
+}
+.msg-wrap.mine .msg > .msg-reaction-dock{
+  left:8px;
+  right:auto;
+}
+.msg-wrap.theirs .msg > .msg-reaction-dock{
+  right:8px;
+  left:auto;
+}
+.msg-wrap .msg > .msg-reaction-dock::before{
+  width:calc(100% + 8px);
+  height:16px;
+  filter:blur(7px);
+  opacity:.34;
+}
+.msg-wrap .msg > .msg-reaction-dock .msg-reaction-circle{
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+}
+.msg-wrap .msg > .msg-reaction-dock .msg-reaction-emoji{
+  font-size:13px;
+}
+.msg-wrap .msg > .msg-reaction-dock .msg-reaction-count{
+  right:-4px;
+  top:-4px;
+  min-width:12px;
+  height:12px;
+  font-size:6.5px;
+  padding:0 2.5px;
+}
+/* Keep the footer/content clear while leaving the badge visually on the bubble surface. */
+.msg-wrap .msg:has(> .msg-reaction-dock){
+  padding-bottom:31px;
+}
+@media(max-width:520px){
+  .msg-wrap .msg > .msg-reaction-dock{
+    bottom:5px;
+    gap:2px;
+  }
+  .msg-wrap.mine .msg > .msg-reaction-dock{left:7px}
+  .msg-wrap.theirs .msg > .msg-reaction-dock{right:7px}
+  .msg-wrap .msg > .msg-reaction-dock .msg-reaction-circle{
+    width:23px;
+    height:23px;
+    flex-basis:23px;
+  }
+  .msg-wrap .msg > .msg-reaction-dock .msg-reaction-emoji{font-size:12.5px}
+  .msg-wrap .msg:has(> .msg-reaction-dock){padding-bottom:30px}
+}
+</style>
+
+
+<style id="khatmin-v25-text-reaction-protruding">
+/* V25: text messages only. The reaction straddles the lower edge of the bubble:
+   half visually on the bubble surface, half outside it. Image/voice layouts are untouched. */
+.msg-wrap .msg > .msg-reaction-dock{
+  bottom:-11px !important;
+  z-index:100 !important;
+  min-height:24px !important;
+  pointer-events:auto;
+}
+.msg-wrap.mine .msg > .msg-reaction-dock{
+  left:7px !important;
+  right:auto !important;
+}
+.msg-wrap.theirs .msg > .msg-reaction-dock{
+  right:7px !important;
+  left:auto !important;
+}
+.msg-wrap .msg > .msg-reaction-dock .msg-reaction-circle{
+  width:24px !important;
+  height:24px !important;
+  flex:0 0 24px !important;
+  transform:translateZ(0);
+  box-shadow:0 4px 12px rgba(48,34,78,.22),0 0 0 1px rgba(255,255,255,.32),inset 0 1px 0 rgba(255,255,255,.98);
+}
+.msg-wrap .msg > .msg-reaction-dock .msg-reaction-circle:hover{
+  transform:translateY(-2px) scale(1.06);
+}
+/* Don't create a large empty strip inside the text bubble; the badge is meant to sit on its real edge. */
+.msg-wrap .msg:has(> .msg-reaction-dock){
+  padding-bottom:10px !important;
+}
+@media(max-width:520px){
+  .msg-wrap .msg > .msg-reaction-dock{
+    bottom:-10px !important;
+  }
+  .msg-wrap.mine .msg > .msg-reaction-dock{left:6px !important}
+  .msg-wrap.theirs .msg > .msg-reaction-dock{right:6px !important}
+  .msg-wrap .msg > .msg-reaction-dock .msg-reaction-circle{
+    width:23px !important;
+    height:23px !important;
+    flex-basis:23px !important;
+  }
+  .msg-wrap .msg:has(> .msg-reaction-dock){padding-bottom:9px !important}
+}
+</style>
+
+
+<style id="khatmin-v26-premium-text-bubbles">
+/* V26: premium text-message skin + a reaction badge that sits on the LOWER SURFACE of the text bubble.
+   Image and voice reaction layouts are intentionally untouched. */
+.msg-wrap .msg:not(.voice-msg){
+  position:relative !important;
+  isolation:isolate !important;
+  overflow:visible !important;
+  width:max-content !important;
+  max-width:min(78%,340px) !important;
+  min-width:42px !important;
+  padding:11px 13px 7px !important;
+  border-radius:20px !important;
+  border:1px solid color-mix(in srgb,var(--theme-accent,#9a6ee8) 14%,white) !important;
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,245,252,.96)) !important;
+  color:var(--theme-text,#4f4352) !important;
+  box-shadow:0 9px 24px rgba(61,42,78,.09),inset 0 1px 0 rgba(255,255,255,.95) !important;
+  line-height:1.68 !important;
+  white-space:pre-wrap !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease !important;
+}
+.msg-wrap .msg:not(.voice-msg)::before{
+  content:"" !important;
+  position:absolute !important;
+  inset:1px !important;
+  border-radius:19px !important;
+  background:linear-gradient(125deg,rgba(255,255,255,.48),transparent 36%,transparent 74%,rgba(255,255,255,.16)) !important;
+  pointer-events:none !important;
+  z-index:-1 !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg){
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--theme-accent,#9a6ee8) 18%,white),
+    color-mix(in srgb,var(--theme-accent2,#7650c7) 10%,white)) !important;
+  border-color:color-mix(in srgb,var(--theme-accent,#9a6ee8) 22%,white) !important;
+  border-bottom-right-radius:8px !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg){
+  background:linear-gradient(145deg,#ffffff,#faf8fc) !important;
+  border-color:color-mix(in srgb,var(--theme-accent,#9a6ee8) 11%,white) !important;
+  border-bottom-left-radius:8px !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg)::after,
+.msg-wrap.theirs .msg:not(.voice-msg)::after{
+  content:"" !important;
+  position:absolute !important;
+  bottom:-1px !important;
+  width:13px !important;
+  height:13px !important;
+  border:0 !important;
+  box-shadow:none !important;
+  z-index:-1 !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg)::after{
+  right:-6px !important;
+  background:color-mix(in srgb,var(--theme-accent,#9a6ee8) 18%,white) !important;
+  clip-path:polygon(0 0,100% 100%,0 100%) !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg)::after{
+  left:-6px !important;
+  background:#faf8fc !important;
+  clip-path:polygon(100% 0,100% 100%,0 100%) !important;
+}
+.msg-wrap .msg:not(.voice-msg):hover{
+  transform:translateY(-1px) !important;
+  box-shadow:0 12px 28px rgba(61,42,78,.11),inset 0 1px 0 rgba(255,255,255,.98) !important;
+}
+.msg-wrap .msg:not(.voice-msg) .msg-footer{
+  position:relative !important;
+  z-index:2 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:4px !important;
+  min-height:10px !important;
+  margin:2px 0 0 !important;
+  padding:0 !important;
+}
+
+/* The text reaction is a small floating glass coin anchored to the actual bubble edge.
+   Its center sits exactly on the lower border, so it is visible above the surface and
+   deliberately protrudes instead of falling underneath the bubble. */
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock{
+  position:absolute !important;
+  bottom:-6px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:3px !important;
+  min-height:24px !important;
+  height:24px !important;
+  padding:0 !important;
+  margin:0 !important;
+  z-index:80 !important;
+  pointer-events:auto !important;
+  direction:ltr !important;
+  white-space:nowrap !important;
+  transform:none !important;
+}
+.msg-wrap.mine .msg:not(.voice-msg) > .msg-reaction-dock{
+  left:7px !important;
+  right:auto !important;
+}
+.msg-wrap.theirs .msg:not(.voice-msg) > .msg-reaction-dock{
+  right:7px !important;
+  left:auto !important;
+}
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock::before{
+  content:"" !important;
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:calc(100% + 8px) !important;
+  height:18px !important;
+  transform:translate(-50%,-50%) !important;
+  border-radius:999px !important;
+  background:color-mix(in srgb,var(--theme-accent,#9a6ee8) 16%,transparent) !important;
+  filter:blur(7px) !important;
+  opacity:.42 !important;
+  pointer-events:none !important;
+  z-index:-1 !important;
+}
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock .msg-reaction-circle{
+  position:relative !important;
+  width:25px !important;
+  height:25px !important;
+  flex:0 0 25px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  border:1px solid rgba(255,255,255,.92) !important;
+  display:grid !important;
+  place-items:center !important;
+  background:linear-gradient(145deg,rgba(255,255,255,.99),rgba(239,235,248,.97)) !important;
+  box-shadow:0 5px 14px rgba(48,34,78,.2),0 0 0 1px color-mix(in srgb,var(--theme-accent,#9a6ee8) 10%,transparent),inset 0 1px 0 rgba(255,255,255,1) !important;
+  backdrop-filter:blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter:blur(12px) saturate(150%) !important;
+  overflow:visible !important;
+  z-index:2 !important;
+}
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock .msg-reaction-circle:hover{
+  transform:translateY(-2px) scale(1.06) !important;
+}
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock .msg-reaction-emoji{
+  font-size:14px !important;
+  line-height:1 !important;
+}
+.msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock .msg-reaction-count{
+  right:-4px !important;
+  top:-4px !important;
+  min-width:12px !important;
+  height:12px !important;
+  padding:0 2px !important;
+  font-size:6.5px !important;
+  border-width:1.2px !important;
+}
+.msg-wrap .msg:not(.voice-msg):has(> .msg-reaction-dock){
+  margin-bottom:10px !important;
+}
+@media(max-width:520px){
+  .msg-wrap .msg:not(.voice-msg){max-width:min(84%,340px) !important;padding:10px 12px 7px !important;border-radius:19px !important}
+  .msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock{bottom:-6px !important}
+  .msg-wrap.mine .msg:not(.voice-msg) > .msg-reaction-dock{left:6px !important}
+  .msg-wrap.theirs .msg:not(.voice-msg) > .msg-reaction-dock{right:6px !important}
+  .msg-wrap .msg:not(.voice-msg) > .msg-reaction-dock .msg-reaction-circle{width:24px !important;height:24px !important;flex-basis:24px !important}
+}
+</style>
 </head>
 <body>
 
@@ -5548,7 +5823,9 @@ async function loadMessages(){
     box.scrollTop=box.scrollHeight;
   }
 
+  // Hydrate reactions from the browser first so cached chats show reactions immediately.
   messageReactionCache.clear();
+  hydrateReactionCacheForMessages(cached.map(m=>m.id));
   // Sync only messages newer than the newest locally stored message.
   syncChatMessages(cached.length?cached[cached.length-1].created_at:null).catch(e=>console.warn("CHAT BACKGROUND SYNC:",e));
 
@@ -5611,7 +5888,17 @@ async function syncChatExtras(messages){
     const {data:reactions}=await supabaseClient.from("message_reactions")
       .select("message_id,user_id,reaction,created_at").in("message_id",ids).order("created_at",{ascending:false});
     messageReactionCache.clear();
-    (reactions||[]).forEach(r=>{if(!messageReactionCache.has(String(r.message_id)))messageReactionCache.set(String(r.message_id),r)});
+    const grouped=new Map();
+    (reactions||[]).forEach(r=>{
+      const id=String(r.message_id);
+      if(!grouped.has(id))grouped.set(id,[]);
+      grouped.get(id).push(r);
+    });
+    (messages||[]).forEach(m=>{
+      const rows=grouped.get(String(m.id))||[];
+      messageReactionCache.set(String(m.id),rows);
+    });
+    persistReactionCache();
     (messages||[]).forEach(m=>{if(!hiddenMessageIds.has(String(m.id)))refreshMessageElement(m,true)});
   }catch(e){}
 }
@@ -5649,9 +5936,9 @@ function renderMessage(m){
   const footer=deleted
     ? ""
     : `<div class="msg-footer">${messageStatusHtml(m)}<span class="msg-time">${faTime(m.created_at)}</span>${m.edited_at?`<span class="msg-edited">ویرایش شد</span>`:""}</div>`;
-  const reaction=messageReactionCache.get(String(m.id));
-  const reactionBadge=(!deleted && reaction?.reaction)
-    ? `<span class="msg-reaction-badge" title="واکنش">${esc(reaction.reaction)}</span>`
+  const reactionRows=messageReactionCache.get(String(m.id))||[];
+  const reactionDock=(!deleted && reactionRows.length)
+    ? `<span class="msg-reaction-dock" aria-label="واکنش‌های پیام">${buildReactionDockHtml(m.id,reactionRows)}</span>`
     : "";
   const isVoice=!deleted && typeof m.content==="string" && (m.content.startsWith("__KHATMIN_VOICE_URL__") || m.content.startsWith("__KHATMIN_VOICE__"));
   const isImage=!deleted && typeof m.content==="string" && m.content.startsWith("__KHATMIN_IMAGE_URL__");
@@ -5678,11 +5965,12 @@ function renderMessage(m){
         <div class="voice-wave" onclick="seekVoiceMessage('${esc(voiceId)}',event)" aria-hidden="true">${voiceBars}</div>
         <span class="voice-duration" data-stored-duration="${Number.isFinite(voiceStoredDuration)&&voiceStoredDuration>0?voiceStoredDuration:0}">${voiceStoredDuration>0?formatVoiceDuration(voiceStoredDuration):"00:00"}</span>
         <audio id="${esc(voiceId)}" preload="metadata" src="${esc(voiceSrc)}" controlsList="nodownload noplaybackrate" disablePictureInPicture></audio>
+        ${reactionDock}
       </div>`
     : isImage
-      ? `${replyPreviewHtml(m)}<div class="chat-image-message"><img src="${esc(imageSrc)}" alt="عکس" loading="lazy" onclick="window.open('${esc(imageSrc)}','_blank')">${imageCaption?`<div class="chat-image-caption">${esc(imageCaption)}</div>`:""}</div>`
-      : `${replyPreviewHtml(m)}${esc(m.content||"")}`;
-  const body=`<span class="${cls}${deleted?" deleted":""}${isVoice?" voice-msg":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${reactionBadge}${footer}</span>`;
+      ? `${replyPreviewHtml(m)}<div class="chat-image-message"><img src="${esc(imageSrc)}" alt="عکس" loading="lazy" onclick="openKhatminImageViewer(this)">${imageCaption?`<div class="chat-image-caption">${esc(imageCaption)}</div>`:""}${reactionDock}</div>`
+      : `${replyPreviewHtml(m)}${esc(m.content||"")}${reactionDock}`;
+  const body=`<span class="${cls}${deleted?" deleted":""}${isVoice?" voice-msg":""}">${deleted?esc(messageDisplayText(m)):contentHtml}${footer}</span>`;
   return `<div class="msg-wrap ${mine?"mine":"theirs"}" data-msg-id="${esc(m.id)}">${body}</div>`;
 }
 
@@ -6022,21 +6310,7 @@ function openMessageActions(id){
 }
 
 async function reactToMessage(id,emoji){
-  const m=messageCache.get(String(id));
-  if(!m || m.deleted_for_everyone)return;
-  const {data,error}=await supabaseClient.from("message_reactions").upsert({
-    message_id:m.id,
-    user_id:currentUser.id,
-    reaction:emoji,
-    created_at:new Date().toISOString()
-  },{onConflict:"message_id,user_id"}).select("message_id,user_id,reaction,created_at").single();
-  if(error){
-    alert("واکنش ارسال نشد: "+error.message);
-    return;
-  }
-  messageReactionCache.set(String(m.id),data);
-  refreshMessageElement(m,true);
-  closeMessageSheet();
+  return window.khatminToggleReaction ? window.khatminToggleReaction(id,emoji) : undefined;
 }
 
 function openDeleteConfirm(id){
@@ -6203,7 +6477,7 @@ function subscribeMessages(){
       const id=String(r.message_id);
       const m=messageCache.get(id);
       if(!m)return;
-      messageReactionCache.set(id,r);
+      upsertReactionInLocalCache(r);
       refreshMessageElement(m,true);
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"message_reactions"},payload=>{
@@ -6211,14 +6485,14 @@ function subscribeMessages(){
       const id=String(r.message_id);
       const m=messageCache.get(id);
       if(!m)return;
-      messageReactionCache.set(id,r);
+      upsertReactionInLocalCache(r);
       refreshMessageElement(m,true);
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"message_reactions"},payload=>{
       const r=payload.old;
       const id=String(r.message_id);
       const m=messageCache.get(id);
-      messageReactionCache.delete(id);
+      removeReactionFromLocalCache(id,r.user_id);
       if(m)refreshMessageElement(m);
     })
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_user_deletions"},payload=>{
@@ -7879,8 +8153,224 @@ body:not([data-khat-theme]) .msg-status.seen{color:#c58ee8!important}
   transform:translateX(8px) scale(.97) !important;
 }
 </style>
-</body>
-</html>
+
+
+<!-- KHATMIN V20 — Android-style composer caret + flying reaction animation -->
+<style id="khatmin-v20-android-reactions">
+/* The emoji controls use the Android/Noto emoji family when it exists on the device,
+   instead of inheriting the page's text font. This keeps the reaction glyphs colorful
+   and visually closer to Android. */
+.message-reaction,
+.msg-reaction-badge,
+.khatmin-reaction-flyer{
+  font-family:"Noto Color Emoji","Noto Emoji","Segoe UI Emoji",sans-serif !important;
+  font-variant-emoji:emoji;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision;
+}
+
+/* Real blinking insertion caret is visible even when the field is empty. */
+.composer #messageInput{
+  caret-color:var(--theme-accent,#8f69df) !important;
+}
+body[data-khat-theme^="dark-"] .composer #messageInput{
+  caret-color:var(--theme-accent,#b99cff) !important;
+}
+body[data-khat-theme^="light-"] .composer #messageInput{
+  caret-color:var(--theme-accent,#7654c8) !important;
+}
+.composer:not(.has-text) #messageInput,
+.composer.has-text #messageInput{
+  caret-color:var(--theme-accent,#8f69df) !important;
+}
+body[data-khat-theme^="dark-"] .composer:not(.has-text) #messageInput,
+body[data-khat-theme^="dark-"] .composer.has-text #messageInput{
+  caret-color:var(--theme-accent,#b99cff) !important;
+}
+body[data-khat-theme^="light-"] .composer:not(.has-text) #messageInput,
+body[data-khat-theme^="light-"] .composer.has-text #messageInput{
+  caret-color:var(--theme-accent,#7654c8) !important;
+}
+
+/* A tiny physical lift before the emoji leaves the reaction tray. */
+.message-reaction.khatmin-reaction-picked{
+  animation:khatminReactionDetach .24s cubic-bezier(.2,.85,.25,1) forwards !important;
+  pointer-events:none !important;
+}
+@keyframes khatminReactionDetach{
+  0%{opacity:1;transform:scale(1) translateY(0)}
+  45%{opacity:1;transform:scale(1.22) translateY(-5px)}
+  100%{opacity:0;transform:scale(.52) translateY(-13px)}
+}
+
+/* The flying copy starts as a real emoji-sized object and then lands with a soft tap. */
+.khatmin-reaction-flyer{
+  position:fixed !important;
+  z-index:99999 !important;
+  left:0 !important;
+  top:0 !important;
+  width:42px !important;
+  height:42px !important;
+  display:grid !important;
+  place-items:center !important;
+  pointer-events:none !important;
+  user-select:none !important;
+  font-size:28px !important;
+  line-height:1 !important;
+  transform-origin:center !important;
+  filter:drop-shadow(0 9px 14px rgba(0,0,0,.24));
+  will-change:transform,opacity,filter;
+}
+.khatmin-reaction-flyer::after{
+  content:"";
+  position:absolute;
+  inset:7px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.38),rgba(255,255,255,0) 68%);
+  opacity:0;
+  transform:scale(.55);
+}
+.khatmin-reaction-impact{
+  animation:khatminReactionImpact .46s cubic-bezier(.16,1,.3,1) both !important;
+}
+@keyframes khatminReactionImpact{
+  0%{transform:translateY(7px) scale(.56);opacity:.15;filter:blur(1px)}
+  38%{transform:translateY(-3px) scale(1.18);opacity:1;filter:blur(0)}
+  62%{transform:translateY(1px) scale(.92);opacity:1}
+  82%{transform:translateY(-1px) scale(1.05);opacity:1}
+  100%{transform:translateY(0) scale(1);opacity:1}
+}
+.khatmin-reaction-impact::after{
+  animation:khatminReactionHalo .46s ease-out both;
+}
+@keyframes khatminReactionHalo{
+  0%{opacity:.85;transform:scale(.55)}
+  65%{opacity:.18;transform:scale(1.75)}
+  100%{opacity:0;transform:scale(2.15)}
+}
+@media(prefers-reduced-motion:reduce){
+  .message-reaction.khatmin-reaction-picked{animation:none !important;opacity:.35 !important}
+  .khatmin-reaction-flyer{transition:none !important}
+  .khatmin-reaction-impact{animation:none !important}
+}
+</style>
+
+<script id="khatmin-v20-reaction-motion">
+(function(){
+  function reactionEmojiFamily(el){
+    if(!el)return;
+    el.style.fontFamily='"Noto Color Emoji","Noto Emoji","Segoe UI Emoji",sans-serif';
+  }
+
+  function getReactionTarget(id){
+    const wrap=document.querySelector(`[data-msg-id="${CSS.escape(String(id))}"]`);
+    const msg=wrap?.querySelector('.msg');
+    if(!msg)return null;
+    const badge=msg.querySelector('.msg-reaction-badge');
+    const r=(badge||msg).getBoundingClientRect();
+    const x=badge ? r.left+r.width/2 : r.right-8;
+    const y=badge ? r.top+r.height/2 : r.bottom-7;
+    return {x,y,wrap,msg,badge};
+  }
+
+  function flyReactionToMessage(id,emoji,source){
+    const target=getReactionTarget(id);
+    if(!source || !target)return Promise.resolve();
+
+    const sr=source.getBoundingClientRect();
+    const sx=sr.left+sr.width/2;
+    const sy=sr.top+sr.height/2;
+    const ex=target.x;
+    const ey=target.y;
+
+    const flyer=document.createElement('span');
+    flyer.className='khatmin-reaction-flyer';
+    flyer.textContent=emoji;
+    reactionEmojiFamily(flyer);
+    flyer.setAttribute('aria-hidden','true');
+    flyer.style.transform=`translate3d(${sx-21}px,${sy-21}px,0) scale(.72)`;
+    document.body.appendChild(flyer);
+
+    const dx=ex-sx, dy=ey-sy;
+    const bend=Math.max(-105,Math.min(105,dx*.16));
+    const midX=sx+dx*.48+bend;
+    const midY=sy+dy*.48-Math.min(78,Math.abs(dy)*.12+20);
+
+    const duration=560;
+    let animation;
+    if(flyer.animate){
+      animation=flyer.animate([
+        {transform:`translate3d(${sx-21}px,${sy-21}px,0) scale(.72) rotate(-8deg)`,opacity:0.98,filter:'drop-shadow(0 9px 14px rgba(0,0,0,.24))'},
+        {transform:`translate3d(${midX-21}px,${midY-21}px,0) scale(1.08) rotate(5deg)`,opacity:1,offset:.48,filter:'drop-shadow(0 12px 18px rgba(0,0,0,.28))'},
+        {transform:`translate3d(${ex-21}px,${ey-21}px,0) scale(.94) rotate(-2deg)`,opacity:1,offset:.84,filter:'drop-shadow(0 7px 12px rgba(0,0,0,.22))'},
+        {transform:`translate3d(${ex-21}px,${ey-21}px,0) scale(1) rotate(0deg)`,opacity:0.98,offset:1,filter:'drop-shadow(0 5px 9px rgba(0,0,0,.18))'}
+      ],{duration,easing:'cubic-bezier(.16,.82,.22,1)',fill:'forwards'});
+    }
+
+    return new Promise(resolve=>{
+      setTimeout(()=>{
+        flyer.remove();
+        resolve();
+      },duration+35);
+    });
+  }
+
+  window.khatminAnimateReaction=function(id,emoji,source){
+    try{return flyReactionToMessage(id,emoji,source)}catch(e){return Promise.resolve()}
+  };
+
+  /* Keep the existing Supabase operation exactly intact, adding only the visual layer. */
+  window.reactToMessage=async function(id,emoji){
+    const m=messageCache.get(String(id));
+    if(!m || m.deleted_for_everyone)return;
+
+    const source=document.querySelector('.message-reaction:focus-visible') || document.activeElement;
+    const validSource=source?.classList?.contains('message-reaction') ? source : null;
+    if(validSource){
+      validSource.classList.add('khatmin-reaction-picked');
+      reactionEmojiFamily(validSource);
+    }
+
+    const animationPromise=window.khatminAnimateReaction(id,emoji,validSource);
+    closeMessageSheet();
+
+    const {data,error}=await supabaseClient.from("message_reactions").upsert({
+      message_id:m.id,
+      user_id:currentUser.id,
+      reaction:emoji,
+      created_at:new Date().toISOString()
+    },{onConflict:"message_id,user_id"}).select("message_id,user_id,reaction,created_at").single();
+
+    if(error){
+      if(validSource)validSource.classList.remove('khatmin-reaction-picked');
+      alert("واکنش ارسال نشد: "+error.message);
+      return;
+    }
+
+    messageReactionCache.set(String(m.id),data);
+    await animationPromise;
+    refreshMessageElement(m,true);
+
+    const badge=document.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"] .msg-reaction-badge`);
+    if(badge){
+      reactionEmojiFamily(badge);
+      badge.classList.remove('khatmin-reaction-impact');
+      void badge.offsetWidth;
+      badge.classList.add('khatmin-reaction-impact');
+      setTimeout(()=>badge.classList.remove('khatmin-reaction-impact'),520);
+    }
+  };
+
+  /* Existing picker buttons are generated dynamically, so delegation keeps this compatible
+     with the current message sheet implementation without changing its HTML. */
+  document.addEventListener('pointerdown',e=>{
+    const b=e.target.closest?.('.message-reaction');
+    if(b)reactionEmojiFamily(b);
+  },true);
+})();
+</script>
+
+
 <style id="continuous-message-bubbles">
 /* ===== Continuous message bubbles: no detached triangle ===== */
 .msg-wrap .msg:not(.voice-msg)::after,
@@ -8613,3 +9103,555 @@ document.addEventListener("keydown",e=>{
 }
 
 </style>
+
+<!-- KHATMIN V23 — reactions are anchored to the actual message corner -->
+<style id="khatmin-v23-reaction-corner">
+/* Every message type owns its reaction dock. The dock is attached to the bubble/player/image itself,
+   not to the conversation row, so it can never float halfway between messages. */
+.msg-wrap{position:relative;overflow:visible!important}
+.msg-wrap:has(.msg-reaction-dock){margin-bottom:22px!important}
+.msg-reaction-dock{
+  position:absolute;
+  bottom:-9px;
+  z-index:30;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  min-height:27px;
+  padding:0;
+  direction:ltr;
+  pointer-events:auto;
+  white-space:nowrap;
+}
+/* Put the reactions on the same lower corner as the bubble tail. */
+.msg-wrap.mine .msg > .msg-reaction-dock,
+.msg-wrap.mine .chat-image-message > .msg-reaction-dock,
+.msg-wrap.mine .voice-message-player > .msg-reaction-dock{
+  left:-7px;
+  right:auto;
+}
+.msg-wrap.theirs .msg > .msg-reaction-dock,
+.msg-wrap.theirs .chat-image-message > .msg-reaction-dock,
+.msg-wrap.theirs .voice-message-player > .msg-reaction-dock{
+  right:-7px;
+  left:auto;
+}
+.msg-reaction-dock::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:calc(100% + 10px);
+  height:18px;
+  transform:translate(-50%,-50%);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--theme-accent,#8d68d7) 13%,transparent);
+  filter:blur(8px);
+  opacity:.45;
+  pointer-events:none;
+  z-index:-1;
+}
+.msg-reaction-circle{
+  position:relative;
+  width:27px;
+  height:27px;
+  flex:0 0 27px;
+  padding:0;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.78);
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(240,237,248,.92));
+  box-shadow:0 4px 11px rgba(48,34,78,.18),inset 0 1px 0 rgba(255,255,255,.98);
+  backdrop-filter:blur(12px) saturate(145%);
+  -webkit-backdrop-filter:blur(12px) saturate(145%);
+  cursor:pointer;
+  transition:transform .18s cubic-bezier(.2,.9,.2,1),box-shadow .18s ease,filter .18s ease;
+  transform-origin:center center;
+  overflow:visible;
+}
+.msg-reaction-circle:hover{
+  transform:translateY(-2px) scale(1.07);
+  box-shadow:0 7px 15px rgba(48,34,78,.22),inset 0 1px 0 rgba(255,255,255,.98);
+}
+.msg-reaction-circle:active{transform:scale(.86)}
+.msg-reaction-circle.mine-reaction{
+  box-shadow:0 5px 14px rgba(118,84,187,.22),0 0 0 1.5px rgba(151,112,221,.24),inset 0 1px 0 rgba(255,255,255,.98);
+}
+.msg-reaction-emoji{
+  font-family:"Noto Color Emoji","Noto Emoji","Segoe UI Emoji","Apple Color Emoji",sans-serif!important;
+  font-variant-emoji:emoji;
+  font-size:15px;
+  line-height:1;
+  transform:translateY(-.3px);
+  pointer-events:none;
+}
+.msg-reaction-count{
+  position:absolute;
+  right:-5px;
+  top:-5px;
+  min-width:13px;
+  height:13px;
+  padding:0 3px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(135deg,var(--theme-accent,#8d68d7),var(--theme-accent2,#6847b7));
+  color:#fff;
+  border:1.5px solid rgba(255,255,255,.98);
+  box-shadow:0 3px 8px rgba(80,54,135,.25);
+  font:800 7px/1 system-ui,sans-serif;
+  pointer-events:none;
+}
+.msg-reaction-circle.khatmin-reaction-remove{
+  animation:khatminReactionCornerRemove .42s cubic-bezier(.2,.85,.25,1) forwards!important;
+  pointer-events:none;
+}
+@keyframes khatminReactionCornerRemove{
+  0%{opacity:1;transform:scale(1) rotate(0)}
+  20%{opacity:1;transform:scale(1.14) rotate(-8deg) translateY(-2px)}
+  100%{opacity:0;transform:scale(.15) rotate(20deg) translateY(12px)}
+}
+.khatmin-reaction-ripple{
+  position:fixed;
+  width:10px;height:10px;
+  border-radius:50%;
+  border:2px solid color-mix(in srgb,var(--theme-accent,#9670dc) 48%,transparent);
+  pointer-events:none;
+  z-index:100000;
+  animation:khatminReactionRipple .46s ease-out forwards;
+}
+@keyframes khatminReactionRipple{
+  0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(2.7)}
+}
+.msg-reaction-dock.khatmin-dock-pop .msg-reaction-circle{
+  animation:khatminReactionCornerIn .46s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes khatminReactionCornerIn{
+  0%{opacity:0;transform:scale(.35) translateY(7px)}
+  55%{opacity:1;transform:scale(1.10) translateY(-2px)}
+  78%{transform:scale(.95) translateY(1px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+/* Images need visible overflow so the corner reaction can sit on the image edge. */
+.chat-image-message{position:relative!important;overflow:visible!important}
+.chat-image-message img{border-radius:17px!important}
+@media(max-width:520px){
+  .msg-wrap:has(.msg-reaction-dock){margin-bottom:20px!important}
+  .msg-reaction-dock{bottom:-8px;gap:3px}
+  .msg-wrap.mine .msg > .msg-reaction-dock,
+  .msg-wrap.mine .chat-image-message > .msg-reaction-dock,
+  .msg-wrap.mine .voice-message-player > .msg-reaction-dock{left:-6px}
+  .msg-wrap.theirs .msg > .msg-reaction-dock,
+  .msg-wrap.theirs .chat-image-message > .msg-reaction-dock,
+  .msg-wrap.theirs .voice-message-player > .msg-reaction-dock{right:-6px}
+  .msg-reaction-circle{width:25px;height:25px;flex-basis:25px}
+  .msg-reaction-emoji{font-size:14px}
+  .msg-reaction-count{right:-5px;top:-5px;min-width:12px;height:12px;font-size:6.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .msg-reaction-circle,.msg-reaction-dock.khatmin-dock-pop .msg-reaction-circle{animation:none!important;transition:none!important}
+  .khatmin-reaction-ripple{display:none!important}
+}
+</style>
+<script id="khatmin-v21-reactions-script">
+(function(){
+  const STORAGE_PREFIX="khatmin-reactions-v21-";
+  const MAX_STORED_MESSAGES=1800;
+
+  function storageKey(){
+    return STORAGE_PREFIX+String(currentUser?.id||"guest");
+  }
+
+  function readReactionStorage(){
+    try{
+      const raw=localStorage.getItem(storageKey());
+      const parsed=raw?JSON.parse(raw):{};
+      return parsed && typeof parsed==="object" ? parsed : {};
+    }catch(e){return {}}
+  }
+
+  window.persistReactionCache=function(){
+    if(!currentUser)return;
+    try{
+      const all={};
+      const entries=[...messageReactionCache.entries()];
+      entries.slice(-MAX_STORED_MESSAGES).forEach(([id,rows])=>{
+        if(Array.isArray(rows)&&rows.length)all[String(id)]=rows;
+      });
+      localStorage.setItem(storageKey(),JSON.stringify(all));
+    }catch(e){console.warn("REACTION LOCAL CACHE:",e)}
+  };
+
+  window.hydrateReactionCacheForMessages=function(ids){
+    if(!currentUser)return;
+    const all=readReactionStorage();
+    (ids||[]).forEach(id=>{
+      const rows=all[String(id)];
+      if(Array.isArray(rows))messageReactionCache.set(String(id),rows);
+      else messageReactionCache.set(String(id),[]);
+    });
+  };
+
+  function reactionRows(id){
+    const rows=messageReactionCache.get(String(id));
+    return Array.isArray(rows)?rows:[];
+  }
+
+  function groupedReactionRows(rows){
+    const groups=new Map();
+    (rows||[]).forEach(r=>{
+      if(!r?.reaction)return;
+      const key=String(r.reaction);
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(r);
+    });
+    return [...groups.entries()].map(([emoji,items])=>({emoji,items,count:items.length, mine:items.some(r=>String(r.user_id)===String(currentUser?.id))}));
+  }
+
+  window.buildReactionDockHtml=function(messageId,rows){
+    const groups=groupedReactionRows(rows);
+    if(!groups.length)return "";
+    return groups.map((g,i)=>{
+      const mine=g.mine?" mine-reaction":"";
+      const count=g.count>1?`<span class="msg-reaction-count">${g.count}</span>`:"";
+      return `<button type="button" class="msg-reaction-circle${mine}" data-reaction-emoji="${esc(g.emoji)}" onclick="khatminToggleReaction('${esc(messageId)}','${esc(g.emoji)}',this)" aria-label="واکنش ${esc(g.emoji)}، ${g.count} نفر">`+
+        `<span class="msg-reaction-emoji">${esc(g.emoji)}</span>${count}</button>`;
+    }).join("");
+  };
+
+  window.upsertReactionInLocalCache=function(row){
+    if(!row?.message_id)return;
+    const id=String(row.message_id);
+    const rows=reactionRows(id).filter(x=>String(x.user_id)!==String(row.user_id));
+    rows.push(row);
+    rows.sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));
+    messageReactionCache.set(id,rows);
+    persistReactionCache();
+  };
+
+  window.removeReactionFromLocalCache=function(id,userId){
+    const key=String(id);
+    const rows=reactionRows(key).filter(x=>String(x.user_id)!==String(userId));
+    messageReactionCache.set(key,rows);
+    persistReactionCache();
+  };
+
+  function setReactionRows(id,rows){
+    messageReactionCache.set(String(id),Array.isArray(rows)?rows:[]);
+    persistReactionCache();
+  }
+
+  function findMyReaction(id,emoji){
+    return reactionRows(id).find(r=>String(r.user_id)===String(currentUser?.id)&&r.reaction===emoji)||null;
+  }
+
+  function addRipple(rect){
+    const ripple=document.createElement("span");
+    ripple.className="khatmin-reaction-ripple";
+    ripple.style.left=(rect.left+rect.width/2)+"px";
+    ripple.style.top=(rect.top+rect.height/2)+"px";
+    document.body.appendChild(ripple);
+    setTimeout(()=>ripple.remove(),500);
+  }
+
+  function animateReactionRemoval(button){
+    if(!button)return Promise.resolve();
+    const rect=button.getBoundingClientRect();
+    addRipple(rect);
+    button.classList.add("khatmin-reaction-remove");
+    return new Promise(resolve=>setTimeout(resolve,410));
+  }
+
+  function animateReactionArrival(id,emoji){
+    const wrap=document.querySelector(`[data-msg-id="${CSS.escape(String(id))}"]`);
+    const dock=wrap?.querySelector(".msg-reaction-dock");
+    const button=dock?[...dock.querySelectorAll(".msg-reaction-circle")].find(b=>b.dataset.reactionEmoji===emoji):null;
+    if(!button)return;
+    dock.classList.remove("khatmin-dock-pop");
+    void dock.offsetWidth;
+    dock.classList.add("khatmin-dock-pop");
+    setTimeout(()=>dock.classList.remove("khatmin-dock-pop"),520);
+  }
+
+  async function flyFromPicker(id,emoji,source){
+    if(window.khatminAnimateReaction){
+      try{await window.khatminAnimateReaction(id,emoji,source);return;}catch(e){}
+    }
+  }
+
+  async function upsertReaction(id,emoji){
+    const m=messageCache.get(String(id));
+    if(!m||!currentUser)return {ok:false};
+    const now=new Date().toISOString();
+    const {data,error}=await supabaseClient.from("message_reactions").upsert({
+      message_id:m.id,user_id:currentUser.id,reaction:emoji,created_at:now
+    },{onConflict:"message_id,user_id"}).select("message_id,user_id,reaction,created_at").single();
+    if(error)return {ok:false,error};
+    upsertReactionInLocalCache(data);
+    refreshMessageElement(m,true);
+    animateReactionArrival(id,emoji);
+    return {ok:true,data};
+  }
+
+
+  window.khatminToggleReaction=async function(id,emoji,button){
+    const m=messageCache.get(String(id));
+    if(!m||m.deleted_for_everyone||!currentUser)return;
+    const mine=findMyReaction(id,emoji);
+    if(mine){
+      const btn=button||document.querySelector(`[data-msg-id="${CSS.escape(String(id))}"] .msg-reaction-circle[data-reaction-emoji="${CSS.escape(emoji)}"]`);
+      if(btn)await animateReactionRemoval(btn);
+      const {error}=await supabaseClient.from("message_reactions").delete().eq("message_id",m.id).eq("user_id",currentUser.id);
+      if(error){
+        if(btn)btn.classList.remove("khatmin-reaction-remove");
+        alert("حذف واکنش انجام نشد: "+error.message);
+        return;
+      }
+      removeReactionFromLocalCache(id,currentUser.id);
+      refreshMessageElement(m);
+      return;
+    }
+
+    const source=button||document.querySelector('.message-reaction:focus-visible')||document.activeElement;
+    const validSource=source?.classList?.contains("message-reaction")?source:null;
+    if(validSource)validSource.classList.add("khatmin-reaction-picked");
+    const animation=flyFromPicker(id,emoji,validSource);
+    closeMessageSheet();
+    const result=await upsertReaction(id,emoji);
+    if(!result.ok){
+      if(validSource)validSource.classList.remove("khatmin-reaction-picked");
+      alert("واکنش ارسال نشد: "+(result.error?.message||"خطای نامشخص"));
+      return;
+    }
+    await animation;
+    animateReactionArrival(id,emoji);
+  };
+
+  // The old V20 motion layer used the single-badge class. Keep its picker animation,
+  // but make the new circles the persistent UI and let realtime/cache updates drive counts.
+  window.reactToMessage=function(id,emoji){return window.khatminToggleReaction(id,emoji);};
+})();
+</script>
+
+
+<style id="khatmin-v27-image-floating-viewer">
+/* V27 — Image messages: floating artwork + in-app immersive viewer. */
+.chat-image-message{
+  position:relative!important;
+  width:fit-content!important;
+  max-width:min(330px,76vw)!important;
+  margin:4px 0 2px!important;
+  padding:0!important;
+  overflow:visible!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.chat-image-message img{
+  display:block!important;
+  width:auto!important;
+  max-width:min(330px,76vw)!important;
+  height:auto!important;
+  max-height:420px!important;
+  object-fit:contain!important;
+  border-radius:20px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.18),0 1px 0 rgba(255,255,255,.14) inset!important;
+  cursor:zoom-in!important;
+  -webkit-user-drag:none!important;
+  transition:transform .24s cubic-bezier(.2,.85,.2,1),filter .24s ease,box-shadow .24s ease!important;
+}
+.chat-image-message img:hover{
+  transform:translateY(-2px) scale(1.012)!important;
+  filter:saturate(1.03) brightness(1.015)!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.22),0 1px 0 rgba(255,255,255,.18) inset!important;
+}
+.chat-image-message img.khatmin-image-opening{cursor:default!important;transition:none!important;}
+.chat-image-caption{
+  max-width:min(330px,76vw)!important;
+  margin-top:7px!important;
+  padding:8px 11px!important;
+  border-radius:14px!important;
+  background:color-mix(in srgb,var(--theme-surface,#fff) 78%,transparent)!important;
+  border:1px solid color-mix(in srgb,var(--theme-text,#fff) 9%,transparent)!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.08)!important;
+  backdrop-filter:blur(14px)!important;
+  -webkit-backdrop-filter:blur(14px)!important;
+}
+
+.khatmin-image-viewer{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(18px,4vw,48px);
+  background:rgba(8,8,13,.70);
+  backdrop-filter:blur(20px) saturate(125%);
+  -webkit-backdrop-filter:blur(20px) saturate(125%);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .26s ease,visibility .26s ease;
+  overscroll-behavior:contain;
+}
+.khatmin-image-viewer.show{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.khatmin-image-viewer-backdrop{
+  position:absolute;
+  inset:0;
+}
+.khatmin-image-viewer-stage{
+  position:relative;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+}
+.khatmin-image-viewer-image{
+  position:relative;
+  z-index:2;
+  display:block;
+  max-width:min(92vw,1100px);
+  max-height:88vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:18px;
+  box-shadow:0 28px 90px rgba(0,0,0,.52),0 2px 0 rgba(255,255,255,.12) inset;
+  user-select:none;
+  -webkit-user-drag:none;
+  pointer-events:auto;
+  will-change:transform,opacity;
+  transform-origin:center center;
+  opacity:0;
+  transform:scale(.92);
+}
+.khatmin-image-viewer.show .khatmin-image-viewer-image{
+  opacity:1;
+  transform:scale(1);
+  transition:transform .38s cubic-bezier(.16,1,.3,1),opacity .22s ease;
+}
+.khatmin-image-viewer.closing .khatmin-image-viewer-image{
+  opacity:0;
+  transform:scale(.94);
+  transition:transform .24s cubic-bezier(.4,0,.8,.2),opacity .18s ease;
+}
+.khatmin-image-viewer-close{
+  position:absolute;
+  z-index:5;
+  top:max(14px,env(safe-area-inset-top));
+  right:max(14px,env(safe-area-inset-right));
+  width:44px;
+  height:44px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  background:rgba(255,255,255,.13);
+  box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.2);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  cursor:pointer;
+  pointer-events:auto;
+  transition:transform .2s ease,background .2s ease,border-color .2s ease;
+}
+.khatmin-image-viewer-close:hover{transform:scale(1.06);background:rgba(255,255,255,.19);border-color:rgba(255,255,255,.32)}
+.khatmin-image-viewer-close:active{transform:scale(.91)}
+.khatmin-image-viewer-close svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+body.khatmin-image-viewer-open{overflow:hidden!important;touch-action:none!important}
+@media(max-width:600px){
+  .chat-image-message{max-width:min(88vw,360px)!important}
+  .chat-image-message img{max-width:min(88vw,360px)!important;max-height:430px!important;border-radius:18px!important}
+  .chat-image-caption{max-width:min(88vw,360px)!important}
+  .khatmin-image-viewer{padding:14px}
+  .khatmin-image-viewer-image{max-width:94vw;max-height:84vh;border-radius:15px}
+  .khatmin-image-viewer-close{width:42px;height:42px}
+}
+@media(prefers-reduced-motion:reduce){
+  .chat-image-message img,.khatmin-image-viewer,.khatmin-image-viewer-image,.khatmin-image-viewer-close{transition:none!important}
+}
+</style>
+
+<script id="khatmin-v27-image-viewer-script">
+(function(){
+  let viewer=null;
+  let viewerImage=null;
+  let sourceImage=null;
+  let closing=false;
+
+  function ensureViewer(){
+    if(viewer)return viewer;
+    viewer=document.createElement('div');
+    viewer.className='khatmin-image-viewer';
+    viewer.setAttribute('aria-hidden','true');
+    viewer.innerHTML=`
+      <div class="khatmin-image-viewer-backdrop"></div>
+      <div class="khatmin-image-viewer-stage" role="dialog" aria-modal="true" aria-label="نمایش عکس">
+        <img class="khatmin-image-viewer-image" alt="عکس بزرگ‌شده" draggable="false">
+      </div>
+      <button class="khatmin-image-viewer-close" type="button" aria-label="بستن عکس">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>`;
+    document.body.appendChild(viewer);
+    viewerImage=viewer.querySelector('.khatmin-image-viewer-image');
+    viewer.querySelector('.khatmin-image-viewer-close').addEventListener('click',function(e){e.stopPropagation();closeViewer();});
+    viewer.querySelector('.khatmin-image-viewer-backdrop').addEventListener('click',closeViewer);
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape' && viewer && viewer.classList.contains('show'))closeViewer();
+    });
+    return viewer;
+  }
+
+  function openViewer(img){
+    if(!img || !img.src)return;
+    const v=ensureViewer();
+    sourceImage=img;
+    closing=false;
+    img.classList.add('khatmin-image-opening');
+    viewerImage.src=img.currentSrc||img.src;
+    viewerImage.alt=img.alt||'عکس';
+    v.classList.remove('closing');
+    v.classList.add('show');
+    v.setAttribute('aria-hidden','false');
+    document.body.classList.add('khatmin-image-viewer-open');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(viewerImage) viewerImage.style.transform='scale(1)';
+    }));
+  }
+
+  function closeViewer(){
+    if(!viewer || !viewer.classList.contains('show') || closing)return;
+    closing=true;
+    viewer.classList.add('closing');
+    viewer.classList.remove('show');
+    viewer.setAttribute('aria-hidden','true');
+    document.body.classList.remove('khatmin-image-viewer-open');
+    const cleanup=()=>{
+      if(viewerImage)viewerImage.style.transform='';
+      if(sourceImage)sourceImage.classList.remove('khatmin-image-opening');
+      if(viewerImage)viewerImage.src='';
+      viewer.classList.remove('closing');
+      closing=false;
+    };
+    setTimeout(cleanup,250);
+  }
+
+  window.openKhatminImageViewer=openViewer;
+  window.closeKhatminImageViewer=closeViewer;
+})();
+</script>
+
+</body>
+</html>
