@@ -4709,7 +4709,7 @@ async function loadApp(){
 function shell(content,active="chat"){
   const settingsMode=active==="settings";
   return `
-  <div class="app ${settingsMode?"settings-shell-mode":""} ${active==="chat"?"home-shell-mode":""}">
+  <div class="app ${settingsMode?"settings-shell-mode":""} ${active==="chat"?"home-shell-mode":""} ${active==="game"?"games-shell-mode":""}">
     <div class="top ${settingsMode?"settings-shell-top":""}">
       <div>
         <div class="brand-title" id="brandTitle" onclick="toggleBrandTitle()" title="تغییر نمایش">KHATMIN</div>
@@ -7123,7 +7123,8 @@ function navPulse(btn,action){
   }else{
     window.setTimeout(()=>{
       if(action==='chat')renderHome();
-      else if(action==='game'||action==='book')soon();
+      else if(action==='game')renderGames();
+      else if(action==='book')soon();
     },90);
   }
 }
@@ -9653,5 +9654,265 @@ body.khatmin-image-viewer-open{overflow:hidden!important;touch-action:none!impor
 })();
 </script>
 
+
+
+<!-- ===== KHATMIN V30 — Console-inspired Games header polish ===== -->
+<style>
+/* Games page intentionally owns its own header: no KHATMIN brand bar on this tab. */
+.app.games-shell-mode > .top,
+.app.games-shell-mode > .top-divider{
+  display:none !important;
+}
+.app.games-shell-mode .content{
+  padding-top:0 !important;
+}
+.games-page .games-hero{
+  position:relative;
+  min-height:94px;
+  isolation:isolate;
+}
+.games-title-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:76px;
+}
+.games-title{
+  color:var(--theme-accent,#9b76e4);
+  -webkit-text-stroke:1px color-mix(in srgb,var(--theme-accent,#9b76e4) 42%,white);
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--theme-accent,#9b76e4) 58%,white) 0%,
+    var(--theme-accent,#9b76e4) 52%,
+    var(--theme-accent2,#7652b9) 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  text-shadow:0 10px 28px color-mix(in srgb,var(--theme-accent,#9b76e4) 28%,transparent),
+              0 2px 0 rgba(255,255,255,.20);
+}
+/* Floating controller glyphs around GAMES. They inherit the active theme. */
+.games-title-wrap::before,
+.games-title-wrap::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  color:var(--theme-accent,#9b76e4);
+  opacity:.82;
+}
+.games-title-wrap::before{
+  content:"✦   +   ▫   ✧";
+  right:calc(50% + 112px);
+  top:6px;
+  font-family:Arial,sans-serif;
+  font-size:12px;
+  letter-spacing:8px;
+  transform:rotate(-8deg);
+  text-shadow:0 0 14px color-mix(in srgb,var(--theme-accent,#9b76e4) 60%,transparent);
+}
+.games-title-wrap::after{
+  content:"✧   ×   □   ·";
+  left:calc(50% + 112px);
+  bottom:4px;
+  font-family:Arial,sans-serif;
+  font-size:11px;
+  letter-spacing:8px;
+  transform:rotate(8deg);
+  text-shadow:0 0 14px color-mix(in srgb,var(--theme-accent,#9b76e4) 60%,transparent);
+}
+.games-title::before{
+  content:"◒";
+  width:auto;height:auto;border:0;border-radius:0;
+  box-shadow:none;
+  position:absolute;
+  left:-54px;top:50%;
+  transform:translateY(-54%) rotate(-18deg);
+  font-family:Arial,sans-serif;
+  font-size:22px;
+  line-height:1;
+  color:var(--theme-accent,#9b76e4);
+  opacity:.86;
+}
+.games-title::after{
+  content:"✚";
+  position:absolute;
+  right:-55px;top:50%;
+  transform:translateY(-55%) rotate(8deg);
+  margin:0;
+  font-family:Arial,sans-serif;
+  font-size:19px;
+  color:var(--theme-accent,#9b76e4);
+  opacity:.86;
+}
+/* Make the word-game emblem unmistakably different from the name-game paper. */
+.game-card[data-game="word"] .game-card-icon{
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--game-accent) 26%,white),
+    rgba(255,255,255,.055));
+}
+.game-card[data-game="word"] .game-card-icon svg{
+  width:40px;height:40px;
+}
+@media(max-width:520px){
+  .games-title-wrap::before{right:calc(50% + 82px);font-size:9px;letter-spacing:5px}
+  .games-title-wrap::after{left:calc(50% + 82px);font-size:9px;letter-spacing:5px}
+  .games-title::before{left:-39px;font-size:17px}
+  .games-title::after{right:-40px;font-size:16px}
+}
+</style>
+<!-- ===== KHATMIN Games Tab — Liquid Glass / iOS ===== -->
+<style>
+.games-page{
+  position:relative;
+  min-height:calc(100vh - 150px);
+  padding:22px 14px 120px;
+  overflow:hidden;
+  direction:rtl;
+}
+.games-page::before,
+.games-page::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+  filter:blur(2px);
+}
+.games-page::before{width:260px;height:260px;right:-120px;top:35px;background:radial-gradient(circle,rgba(180,117,255,.18),transparent 68%)}
+.games-page::after{width:240px;height:240px;left:-125px;bottom:40px;background:radial-gradient(circle,rgba(91,189,255,.12),transparent 70%)}
+.games-hero{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin:0 auto 24px;max-width:920px;justify-content:center;
+}
+.games-title-wrap{min-width:0;position:relative;padding-inline:3px}
+.games-kicker{display:none}
+.games-title{
+  position:relative;margin:0;display:inline-flex;align-items:center;gap:11px;
+  font-family:Impact,"Arial Black","Trebuchet MS",sans-serif;
+  font-size:clamp(34px,7vw,48px);line-height:.92;font-weight:900;
+  letter-spacing:3px;color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,.72);
+  background:linear-gradient(180deg,#fff 0%,#dcd5ff 42%,#9b83ee 100%);
+  -webkit-background-clip:text;background-clip:text;
+  text-shadow:0 9px 28px rgba(112,72,220,.28),0 2px 0 rgba(255,255,255,.18);
+  filter:drop-shadow(0 5px 12px rgba(0,0,0,.14));
+}
+.games-title::before{
+  content:"";display:block;width:23px;height:13px;border:1.8px solid rgba(255,255,255,.75);
+  border-radius:9px 9px 7px 7px;transform:rotate(-9deg);opacity:.72;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.28),0 4px 9px rgba(0,0,0,.13);
+}
+.games-title::after{
+  content:"✦";font-family:Arial,sans-serif;font-size:9px;letter-spacing:0;
+  color:rgba(255,255,255,.88);margin-inline-start:-7px;transform:translateY(-10px);
+}
+.games-subtitle{display:none}
+.games-logo{
+  flex:0 0 72px;width:72px;height:72px;border-radius:25px;display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.30),rgba(255,255,255,.075));
+  border:1px solid rgba(255,255,255,.34);box-shadow:0 18px 45px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.48);
+  backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);
+  position:relative;overflow:hidden;
+}
+.games-logo::before{content:"";position:absolute;inset:-45%;background:linear-gradient(125deg,transparent 37%,rgba(255,255,255,.34) 48%,transparent 59%);transform:translateX(-25%) rotate(8deg);animation:gamesLogoShine 5.5s ease-in-out infinite}
+.games-logo svg{width:43px;height:43px;position:relative;z-index:1;filter:drop-shadow(0 7px 10px rgba(0,0,0,.22))}
+.games-title-wrap::after{content:"";position:absolute;left:50%;bottom:-12px;width:74px;height:2px;transform:translateX(-50%);border-radius:999px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.58),transparent);filter:blur(.2px);}
+@keyframes gamesLogoShine{0%,58%,100%{transform:translateX(-55%) rotate(8deg);opacity:0}68%{transform:translateX(45%) rotate(8deg);opacity:1}80%{transform:translateX(100%) rotate(8deg);opacity:0}}
+.games-grid{
+  position:relative;z-index:1;max-width:920px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;
+}
+.game-card{
+  position:relative;min-height:238px;border:1px solid rgba(255,255,255,.24);border-radius:30px;
+  padding:15px;overflow:hidden;cursor:pointer;text-align:right;color:var(--theme-text,#fff);
+  background:linear-gradient(145deg,rgba(255,255,255,.20),rgba(255,255,255,.065) 48%,rgba(255,255,255,.11));
+  box-shadow:0 22px 55px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(26px) saturate(145%);-webkit-backdrop-filter:blur(26px) saturate(145%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease;
+}
+.game-card::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 15%,rgba(255,255,255,.16) 42%,transparent 61%);transform:translateX(-120%);transition:transform .7s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.game-card::after{content:"";position:absolute;width:145px;height:145px;border-radius:50%;right:-75px;top:-78px;background:radial-gradient(circle,var(--game-glow),transparent 68%);opacity:.62;filter:blur(3px);pointer-events:none}
+.game-card:hover{transform:translateY(-5px) scale(1.012);box-shadow:0 30px 65px rgba(0,0,0,.23),inset 0 1px 0 rgba(255,255,255,.35);border-color:rgba(255,255,255,.38)}
+.game-card:hover::before{transform:translateX(120%)}
+.game-card:active{transform:translateY(-1px) scale(.985)}
+.game-card[data-game="name"]{--game-accent:#82aaff;--game-glow:rgba(100,146,255,.46)}
+.game-card[data-game="spy"]{--game-accent:#d99aff;--game-glow:rgba(210,119,255,.45)}
+.game-card[data-game="word"]{--game-accent:#62e3c0;--game-glow:rgba(64,222,184,.44)}
+.game-card-icon{
+  width:58px;height:58px;border-radius:20px;display:grid;place-items:center;margin-bottom:14px;
+  background:linear-gradient(145deg,rgba(255,255,255,.23),rgba(255,255,255,.055));
+  border:1px solid rgba(255,255,255,.25);box-shadow:0 12px 28px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.35);
+}
+.game-card-icon svg{width:36px;height:36px;filter:drop-shadow(0 6px 9px rgba(0,0,0,.20))}
+.game-card h3{position:relative;z-index:1;margin:0;font-size:18px;font-weight:900;letter-spacing:-.4px}
+.game-card p{position:relative;z-index:1;margin:7px 0 0;color:var(--theme-muted,#8d909a);font-size:10px;line-height:1.7;min-height:34px}
+.game-card-bottom{position:absolute;z-index:2;right:15px;left:15px;bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.game-status{display:inline-flex;align-items:center;gap:6px;height:29px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.075);font-size:8px;font-weight:850;color:var(--theme-muted,#9b9da6);backdrop-filter:blur(12px)}
+.game-status i{width:5px;height:5px;border-radius:50%;background:var(--game-accent);box-shadow:0 0 9px var(--game-accent);display:block}
+.game-arrow{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:var(--game-accent);font-size:16px;line-height:1;transition:transform .25s ease,background .25s ease}
+.game-card:hover .game-arrow{transform:translateX(-3px);background:rgba(255,255,255,.14)}
+.games-note{position:relative;z-index:1;max-width:920px;margin:15px auto 0;padding:12px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:var(--theme-muted,#888b95);font-size:9px;text-align:center;line-height:1.8}
+@media(max-width:760px){
+  .games-page{padding:18px 12px 118px}
+  .games-grid{grid-template-columns:repeat(3,minmax(178px,1fr));overflow-x:auto;scroll-snap-type:x mandatory;padding:3px 2px 12px;margin-inline:-2px;scrollbar-width:none}
+  .games-grid::-webkit-scrollbar{display:none}
+  .game-card{scroll-snap-align:start;min-height:225px}
+  .games-logo{width:64px;height:64px;flex-basis:64px;border-radius:22px}
+  .games-logo svg{width:38px;height:38px}
+}
+@media(max-width:430px){
+  .games-hero{align-items:center;justify-content:center}
+  .games-title{font-size:35px;letter-spacing:2.4px}
+  .games-grid{grid-template-columns:repeat(3,82vw)}
+  .game-card{min-height:232px;border-radius:28px}
+}
+</style>
+<script>
+function renderGames(){
+  const content=`
+    <section class="games-page" dir="rtl" aria-label="بازی‌ها">
+      <header class="games-hero">
+        <div class="games-title-wrap">
+          <h1 class="games-title">GAMES</h1>
+        </div>
+
+      </header>
+      <div class="games-grid">
+        <article class="game-card" data-game="name" tabindex="0" role="button" aria-label="بازی اسم و فامیل" onclick="gameCardTap('name')" onkeydown="if(event.key==='Enter'||event.key===' ')gameCardTap('name')">
+          <div class="game-card-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gn" x1="8" y1="7" x2="40" y2="42"><stop stop-color="#fff"/><stop offset=".45" stop-color="#8db4ff"/><stop offset="1" stop-color="#4e75ef"/></linearGradient></defs><rect x="7" y="6" width="34" height="36" rx="10" fill="url(#gn)" fill-opacity=".82"/><path d="M14 15h20M14 22h13M14 29h17M14 36h10" stroke="#18234e" stroke-width="2.2" stroke-linecap="round"/><circle cx="35" cy="29" r="3" fill="#fff" fill-opacity=".72"/></svg>
+          </div>
+          <h3>اسم و فامیل</h3>
+          <div class="game-card-bottom"><span class="game-status"><i></i>دو نفره</span><span class="game-arrow">‹</span></div>
+        </article>
+        <article class="game-card" data-game="spy" tabindex="0" role="button" aria-label="بازی نفوذی" onclick="gameCardTap('spy')" onkeydown="if(event.key==='Enter'||event.key===' ')gameCardTap('spy')">
+          <div class="game-card-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gs" x1="8" y1="6" x2="42" y2="42"><stop stop-color="#fff"/><stop offset=".45" stop-color="#e09bff"/><stop offset="1" stop-color="#8549d6"/></linearGradient></defs><path d="M24 7l14 5v10.2c0 9.2-5.75 15.15-14 19.8-8.25-4.65-14-10.6-14-19.8V12l14-5Z" fill="url(#gs)" fill-opacity=".82"/><path d="M16 23.5c2.55-3.35 5.18-5.02 8-5.02s5.45 1.67 8 5.02c-2.55 3.35-5.18 5.02-8 5.02s-5.45-1.67-8-5.02Z" stroke="#33204f" stroke-width="2"/><circle cx="24" cy="23.5" r="3" fill="#33204f"/><path d="M19 34h10" stroke="white" stroke-opacity=".58" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>نفوذی</h3>
+          <div class="game-card-bottom"><span class="game-status"><i></i>دو نفره</span><span class="game-arrow">‹</span></div>
+        </article>
+        <article class="game-card" data-game="word" tabindex="0" role="button" aria-label="بازی حدس کلمه" onclick="gameCardTap('word')" onkeydown="if(event.key==='Enter'||event.key===' ')gameCardTap('word')">
+          <div class="game-card-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gw2" x1="7" y1="6" x2="41" y2="43"><stop stop-color="#fff"/><stop offset=".44" stop-color="#72e8c7"/><stop offset="1" stop-color="#20a98d"/></linearGradient></defs><rect x="6" y="7" width="36" height="30" rx="9" fill="url(#gw2)" fill-opacity=".84"/><rect x="10" y="11" width="9" height="9" rx="2.8" fill="#0d3c35"/><rect x="20" y="11" width="9" height="9" rx="2.8" fill="#fff" fill-opacity=".86"/><rect x="30" y="11" width="8" height="9" rx="2.8" fill="#0d3c35" fill-opacity=".86"/><path d="M14.5 14.1v3.8M12.6 16h3.8" stroke="#72e8c7" stroke-width="1.6" stroke-linecap="round"/><path d="M23 15.4h3M33 14.7h2M33 17h2" stroke="#72e8c7" stroke-width="1.45" stroke-linecap="round"/><rect x="10" y="23" width="27" height="9" rx="3.5" fill="#fff" fill-opacity=".27"/><path d="M14 27.5h5M22 27.5h5M30 27.5h3" stroke="#0d3c35" stroke-width="1.8" stroke-linecap="round"/><circle cx="37" cy="36" r="6" fill="#0d3c35" fill-opacity=".9"/><path d="m40.5 39.5 3.2 3.2" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="37" cy="36" r="2.2" stroke="#72e8c7" stroke-width="1.5"/></svg>
+          </div>
+          <h3>حدس کلمه</h3>
+          <div class="game-card-bottom"><span class="game-status"><i></i>دو نفره</span><span class="game-arrow">‹</span></div>
+        </article>
+      </div>
+    </section>`;
+  document.getElementById('app').innerHTML=shell(content,'game');
+}
+
+function gameCardTap(type){
+  const card=document.querySelector(`.game-card[data-game="${type}"]`);
+  if(!card)return;
+  card.animate([
+    {transform:'translateY(-5px) scale(1.012)'},
+    {transform:'translateY(-2px) scale(.975)'},
+    {transform:'translateY(-5px) scale(1.012)'}
+  ],{duration:300,easing:'cubic-bezier(.2,.85,.2,1)'});
+  // UI-only for now: the actual game mechanics will be added without touching chat/database code.
+}
+</script>
 </body>
 </html>
