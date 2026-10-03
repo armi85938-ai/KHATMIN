@@ -10948,7 +10948,7 @@ function nfSaveFinalResult(rows){
   const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
   saveRecentGameResult('name',status+' · '+mine+' امتیاز', {resultStatus:status,score:mine,opponentScore:other,gameSessionId:NF.session.id});
 }
-window.nfFinishAndClose()=>{nfClose();try{renderRecentGames()}catch(e){}};
+window.nfFinishAndClose=()=>{nfClose();try{renderRecentGames()}catch(e){}};
 window.gameCardTap=(type)=>{if(type==='name'){nfStart();return}const card=document.querySelector(`.game-card[data-game="${type}"]`);if(card)card.animate([{transform:'translateY(-5px) scale(1.012)'},{transform:'translateY(-2px) scale(.975)'},{transform:'translateY(-5px) scale(1.012)'}],{duration:300,easing:'cubic-bezier(.2,.85,.2,1)'})};
 window.nfClose=nfClose;window.nfStart=nfStart;
 // Incoming pending requests for name & family: lightweight polling so it works even if Realtime publication isn't enabled.
