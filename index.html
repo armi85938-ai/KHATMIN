@@ -10237,13 +10237,14 @@ function getRecentGames(){
   }catch(e){ return []; }
 }
 
-function saveRecentGameResult(gameName,result){
+function saveRecentGameResult(gameName,result,meta={}){
   const gameLabels={name:'اسم و فامیل',spy:'نفوذی',word:'حدس کلمه'};
   const item={
     id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'_'+Math.random().toString(36).slice(2),
     game:gameLabels[gameName]||String(gameName||'بازی'),
     result:String(result??''),
-    time:Date.now()
+    resultStatus:meta.resultStatus||'',score:Number(meta.score)||0,opponentScore:Number(meta.opponentScore)||0,
+    gameSessionId:meta.gameSessionId||'',time:Date.now()
   };
   const current=getRecentGames().filter(x=>x&&x.game!==item.game);
   current.unshift(item);
@@ -10276,13 +10277,14 @@ function renderRecentGames(){
   };
   items.slice(0,5).forEach(item=>{
     const row=document.createElement('article');
-    row.className='recent-game-row';
+    row.className='recent-game-row '+(item.resultStatus==='برنده'?'recent-game-winner':item.resultStatus==='بازنده'?'recent-game-loser':item.resultStatus==='مساوی'?'recent-game-draw':'');
     row.innerHTML=`
       <div class="recent-game-icon">${icons[item.game]||'✦'}</div>
       <div class="recent-game-info"><strong></strong><span class="recent-game-result"></span></div>
       <button class="recent-game-delete" type="button" aria-label="حذف ${item.game}" title="حذف بازی">×</button>`;
     row.querySelector('strong').textContent=item.game||'بازی';
     row.querySelector('.recent-game-result').textContent=item.result||'بدون نتیجه';
+    if(item.resultStatus){ const badge=document.createElement('span'); badge.className='recent-game-status-badge'; badge.textContent=item.resultStatus; row.querySelector('.recent-game-info').appendChild(badge); }
     row.querySelector('.recent-game-delete').addEventListener('click',()=>{
       row.classList.add('recent-game-removing');
       setTimeout(()=>deleteRecentGame(item.id),180);
@@ -10318,13 +10320,22 @@ async function gwLoadDictionary(){
       from+=pageSize;
       if(from>50000)break;
     }
+    window.__gwDictionaryRows=rows;
     if(count)count.textContent=`${rows.length.toLocaleString('fa-IR')} واژه`;
-    root.innerHTML=rows.length?rows.map(r=>`<div class="gw-row"><div class="gw-row-main"><div class="gw-word">${gwEsc(r.word)}</div><div class="gw-cat">${gwEsc(GW_CATS[r.category]||r.category)}${r.verified?' · تأییدشده':''}</div></div><button class="gw-delete" type="button" title="حذف واژه" onclick="gwDeleteWord(${Number(r.id)})">×</button></div>`).join(''):'<div class="gw-empty">هنوز واژه‌ای ثبت نشده است.</div>';
+    gwFilterDictionary(document.getElementById('gwDictSearch')?.value||'');
   }catch(e){
     root.innerHTML='<div class="gw-empty">دریافت لغات انجام نشد.</div>';
     console.error('GW dictionary',e);
   }
 }
+function gwFilterDictionary(query=''){
+  const root=document.getElementById('gwDictList'); if(!root)return;
+  const q=String(query||'').trim().replace(/[يى]/g,'ی').replace(/ك/g,'ک').toLowerCase();
+  const rows=Array.isArray(window.__gwDictionaryRows)?window.__gwDictionaryRows:[];
+  const filtered=q?rows.filter(r=>{const w=String(r.word||'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').toLowerCase();const c=String(GW_CATS[r.category]||r.category||'').toLowerCase();return w.includes(q)||c.includes(q)}):rows;
+  root.innerHTML=filtered.length?filtered.map(r=>`<div class="gw-row"><div class="gw-row-main"><div class="gw-word">${gwEsc(r.word)}</div><div class="gw-cat">${gwEsc(GW_CATS[r.category]||r.category)}${r.verified?' · تأییدشده':''}</div></div><button class="gw-delete" type="button" title="حذف واژه" onclick="gwDeleteWord(${Number(r.id)})">×</button></div>`).join(''):`<div class="gw-empty">${q?'واژه‌ای با این جست‌وجو پیدا نشد.':'هنوز واژه‌ای ثبت نشده است.'}</div>`;
+}
+window.gwFilterDictionary=gwFilterDictionary;
 async function gwAddWord(){if(!gwIsArmin())return;const word=document.getElementById('gwAdminWord')?.value?.trim();const category=document.getElementById('gwAdminCategory')?.value;if(!word||!category){gwNotice('gwAdminNotice','کلمه و دسته را کامل انتخاب کن.','warn');return}try{const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();const {data:dup,error:de}=await supabaseClient.from('game_dictionary').select('id').eq('category',category).eq('normalized_word',normalized).maybeSingle();if(de)throw de;if(dup){gwNotice('gwAdminNotice','این کلمه قبلا در لغات وجود داشته است.','warn');return}const {error}=await supabaseClient.from('game_dictionary').insert({category,word,normalized_word:normalized,verified:true});if(error){if(String(error.message||'').toLowerCase().includes('duplicate')){gwNotice('gwAdminNotice','این کلمه تکراری میباشد.','warn');return}throw error}document.getElementById('gwAdminWord').value='';gwNotice('gwAdminNotice','کلمه با موفقیت به لغات اضافه شد.','ok');gwLoadDictionary()}catch(e){gwNotice('gwAdminNotice','افزودن کلمه انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 async function gwDeleteWord(id){if(!gwIsArmin())return;if(!confirm('این کلمه از لغات حذف شود؟'))return;try{const {error}=await supabaseClient.from('game_dictionary').delete().eq('id',id);if(error)throw error;gwLoadDictionary()}catch(e){gwNotice('gwAdminNotice','حذف کلمه انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
 async function gwSubmitSuggestion(){if(!gwIsKhatereh())return;const word=document.getElementById('gwSuggestWord')?.value?.trim();const category=document.getElementById('gwSuggestCategory')?.value;if(!word||!category){gwNotice('gwSuggestNotice','کلمه و دسته را کامل انتخاب کن.','warn');return}try{const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();const {data:dup,error:de}=await supabaseClient.from('game_dictionary').select('id').eq('category',category).eq('normalized_word',normalized).maybeSingle();if(de)throw de;if(dup){gwNotice('gwSuggestNotice','این کلمه قبلا در لغات وجود داشته است.','warn');return}const {data:pending,error:pe}=await supabaseClient.from('game_word_suggestions').select('id').eq('user_id',currentUser.id).eq('category',category).eq('normalized_word',normalized).eq('status','pending').maybeSingle();if(pe)throw pe;if(pending){gwNotice('gwSuggestNotice','این پیشنهاد قبلاً ارسال شده است.','warn');return}const {error}=await supabaseClient.from('game_word_suggestions').insert({user_id:currentUser.id,word,normalized_word:normalized,category,status:'pending'});if(error)throw error;document.getElementById('gwSuggestWord').value='';gwNotice('gwSuggestNotice','پیشنهاد شما ارسال شد.','ok');if(gwIsArmin())gwLoadSuggestions()}catch(e){gwNotice('gwSuggestNotice','ارسال پیشنهاد انجام نشد: '+(e.message||'خطای نامشخص'),'bad')}}
@@ -10391,13 +10402,13 @@ body[data-khat-theme^="light-"] .nf-paper{background:linear-gradient(180deg,#fff
 
 <script id="name-family-v1-js">
 (function(){
-const NF={session:null,channel:null,timer:null,requestTimer:null,selectedRounds:2,selectedOpponent:null,round:1,letter:null,starter:null,answers:{},startAt:null,turnDeadline:null};
+const NF={session:null,channel:null,timer:null,requestTimer:null,statePoll:null,selectedRounds:2,selectedOpponent:null,round:1,letter:null,starter:null,answers:{},startAt:null,turnDeadline:null,view:''};
 const NF_LETTERS=['ا','ب','پ','ت','ث','ج','چ','ح','خ','د','ذ','ر','ز','ژ','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ک','گ','ل','م','ن','و','ه','ی'];
 const NF_CATS=[['name','اسم'],['family','فامیل'],['place','شهر یا کشور'],['color','رنگ'],['body','عضو بدن'],['object','اشیاء']];
 const NF_LABELS={name:'اسم و فامیل',spy:'نفوذی',word:'حدس کلمه'};
 function nfEsc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function nfOpen(){document.getElementById('nfOverlay')?.classList.add('show')}
-function nfClose(){if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}catch(e){};NF.channel=null;clearInterval(NF.timer);clearInterval(NF.requestTimer);document.getElementById('nfOverlay')?.remove()}
+function nfClose(){if(NF.channel)try{supabaseClient.removeChannel(NF.channel)}catch(e){};NF.channel=null;clearInterval(NF.timer);clearInterval(NF.requestTimer);clearInterval(NF.statePoll);NF.statePoll=null;document.getElementById('nfOverlay')?.remove()}
 function nfShell(inner,title='اسم و فامیل'){let o=document.getElementById('nfOverlay');if(!o){o=document.createElement('div');o.id='nfOverlay';o.className='nf-overlay';document.body.appendChild(o)}o.innerHTML=`<div class="nf-shell"><div class="nf-top"><div class="nf-title">${title}</div><button class="nf-close" onclick="nfClose()" aria-label="بستن">×</button></div><div class="nf-body">${inner}</div></div>`;nfOpen();return o}
 async function nfProfiles(){try{const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).order('display_name');if(error)throw error;return data||[]}catch(e){console.error('NF profiles',e);return []}}
 function nfKhaterehWordSuggest(){if(!gwIsKhatereh())return '';return `<section class="nf-word-suggest" id="nfWordSuggest"><button class="nf-ws-toggle" type="button" onclick="document.getElementById('nfWordSuggest')?.classList.toggle('open')"><span>＋ افزودن کلمه</span><span>⌄</span></button><div class="nf-ws-form"><div class="nf-ws-inner"><div id="gwSuggestNotice" class="gw-notice nf-ws-notice"></div><div class="nf-ws-fields"><input id="gwSuggestWord" class="nf-ws-input" placeholder="کلمه پیشنهادی…" autocomplete="off"><select id="gwSuggestCategory" class="nf-ws-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select></div><button class="nf-ws-submit" type="button" onclick="gwSubmitSuggestion()">ثبت پیشنهاد</button><p class="nf-ws-help">کلمه و دسته را انتخاب کن و پیشنهادت را ثبت کن.</p></div></div></section>`}
@@ -10407,7 +10418,7 @@ function nfOpenDictionaryManager(){
     <div class="nf-hero nf-dict-hero"><div class="nf-mark">📚</div><h2>مدیریت لغات</h2><p>فهرست کامل لغات بازی را مدیریت کن.</p></div>
     <section class="gw-card nf-dict-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">✦</div><div><h2 class="gw-title">لغات ذخیره‌شده</h2><p class="gw-sub">افزودن، مشاهده و حذف کلمات</p></div></div><span id="gwDictCount" class="gw-count">— واژه</span></div>
       <div id="gwAdminNotice" class="gw-notice"></div>
-      <div class="nf-dict-intro">لغات بازی را از همین‌جا اضافه، جست‌وجو و مدیریت کن. این بخش فقط داخل صفحه اسم و فامیل در دسترس است.</div><div class="gw-toolbar"><input id="gwAdminWord" class="gw-input" placeholder="کلمه جدید…" autocomplete="off"><select id="gwAdminCategory" class="gw-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select><button class="gw-btn primary" onclick="gwAddWord()">＋ افزودن کلمه</button></div>
+      <div class="nf-dict-intro">لغات بازی را از همین‌جا اضافه، جست‌وجو و مدیریت کن. این بخش فقط داخل صفحه اسم و فامیل در دسترس است.</div><div class="nf-dict-search"><span>⌕</span><input id="gwDictSearch" type="search" placeholder="جست‌وجوی سریع بین لغات…" autocomplete="off" oninput="gwFilterDictionary(this.value)"></div><div class="gw-toolbar"><input id="gwAdminWord" class="gw-input" placeholder="کلمه جدید…" autocomplete="off"><select id="gwAdminCategory" class="gw-select"><option value="name">اسم</option><option value="family">فامیل</option><option value="place">شهر یا کشور</option><option value="color">رنگ</option><option value="body">اعضای بدن</option><option value="object">اشیاء</option></select><button class="gw-btn primary" onclick="gwAddWord()">＋ افزودن کلمه</button></div>
       <div id="gwDictList" class="gw-list"></div>
     </section>
     <section class="gw-card nf-dict-card"><div class="gw-head"><div class="gw-title-wrap"><div class="gw-icon">✉️</div><div><h2 class="gw-title">پیشنهادهای کاربران</h2><p class="gw-sub">پیشنهادهای جدید را بررسی کن.</p></div></div></div><div id="gwSuggestionList" class="gw-suggestion-list"></div></section>
@@ -10417,7 +10428,7 @@ function nfOpenDictionaryManager(){
 window.nfOpenDictionaryManager=nfOpenDictionaryManager;
 window.nfClose=nfClose;
 
-async function nfStart(){if(!currentUser?.id){alert('ابتدا وارد حساب کاربری شوید.');return}const profiles=await nfProfiles();if(!profiles.length){alert('کاربر دیگری برای شروع بازی پیدا نشد.');return}const users=profiles.map(p=>`<button class="nf-user" onclick='nfSelectOpponent(${JSON.stringify(p).replace(/'/g,"&#39;")},this)'><div class="nf-avatar">${p.avatar_url?`<img src="${nfEsc(p.avatar_url)}" alt="">`:nfEsc((p.display_name||p.username||'?').slice(0,1))}</div><div><strong>${nfEsc(p.display_name||p.username)}</strong><span>@${nfEsc(p.username||'')}</span></div></button>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">📝</div><h2>شروع بازی</h2><p>حریف و نوع راند را انتخاب کن</p></div><div class="nf-users">${users}</div><div style="text-align:center;margin-top:20px"><div style="font-size:12px;opacity:.62">تعداد راند</div><div class="nf-rounds"><button class="nf-round selected" id="nfR2" onclick="nfChooseRounds(2,this)">۲ راند</button><button class="nf-round" id="nfR4" onclick="nfChooseRounds(4,this)">۴ راند</button></div><button class="nf-btn primary" id="nfSendBtn" disabled onclick="nfSendRequest()">ارسال درخواست بازی</button></div>${gwIsArmin()?`<button class="nf-manage-words-btn" type="button" onclick="nfOpenDictionaryManager()">📚 مدیریت لغات بازی</button>`:''}${nfKhaterehWordSuggest()}</div>`)}
+async function nfStart(){if(!currentUser?.id){alert('ابتدا وارد حساب کاربری شوید.');return}const profiles=await nfProfiles();if(!profiles.length){alert('کاربر دیگری برای شروع بازی پیدا نشد.');return}const users=profiles.map(p=>`<button class="nf-user" onclick='nfSelectOpponent(${JSON.stringify(p).replace(/'/g,"&#39;")},this)'><div class="nf-avatar">${p.avatar_url?`<img src="${nfEsc(p.avatar_url)}" alt="">`:nfEsc((p.display_name||p.username||'?').slice(0,1))}</div><div><strong>${nfEsc(p.display_name||p.username)}</strong><span>@${nfEsc(p.username||'')}</span></div></button>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">📝</div><h2>شروع بازی</h2><p>حریف و نوع راند را انتخاب کن</p></div><div class="nf-users">${users}</div><div style="text-align:center;margin-top:20px"><div style="font-size:12px;opacity:.62">تعداد راند</div><div class="nf-rounds"><button class="nf-round selected" id="nfR2" onclick="nfChooseRounds(2,this)">۲ راند</button><button class="nf-round" id="nfR4" onclick="nfChooseRounds(4,this)">۴ راند</button></div><button class="nf-btn primary" id="nfSendBtn" disabled onclick="nfSendRequest()">ارسال درخواست بازی</button></div>${gwIsArmin()?`<button class="nf-manage-words-btn" type="button" onclick="nfOpenDictionaryManager()"><span class="nf-manage-icon">✦</span><span><b>مدیریت لغات</b><small>جست‌وجو و بررسی پیشنهادها</small></span><span class="nf-manage-arrow">‹</span></button>`:''}${nfKhaterehWordSuggest()}</div>`)}
 window.nfSelectOpponent=(p,el)=>{NF.selectedOpponent=p;document.querySelectorAll('.nf-user').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.getElementById('nfSendBtn').disabled=false};
 window.nfChooseRounds=(n,el)=>{NF.selectedRounds=n;document.querySelectorAll('.nf-round').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')};
 window.nfSendRequest=async()=>{if(!NF.selectedOpponent)return;const btn=document.getElementById('nfSendBtn');btn.disabled=true;btn.textContent='در حال ارسال...';let createdSessionId=null;try{if(!currentUser?.id)throw new Error('کاربر وارد نشده است');if(!NF.selectedOpponent?.id)throw new Error('شناسه حریف پیدا نشد');const sessionPayload={game_type:'name_family',status:'pending',rounds:Number(NF.selectedRounds)||2,creator_id:currentUser.id,expires_at:new Date(Date.now()+300000).toISOString()};const {data,error}=await supabaseClient.from('game_sessions').insert(sessionPayload).select('*').single();if(error)throw error;if(!data?.id)throw new Error('شناسه بازی از دیتابیس دریافت نشد');createdSessionId=data.id;NF.session=data;const players=[{session_id:data.id,user_id:currentUser.id,role:'creator',status:'accepted'},{session_id:data.id,user_id:NF.selectedOpponent.id,role:'opponent',status:'pending'}];const {error:e2}=await supabaseClient.from('game_players').insert(players);if(e2){try{await supabaseClient.from('game_sessions').delete().eq('id',data.id)}catch(_){};throw e2}nfSubscribe(data.id);nfWaiting('درخواست بازی ارسال شد',NF.selectedOpponent);nfStartRequestTimer(300)}catch(e){console.error('Name&Family send request error:',e);btn.disabled=false;btn.textContent='ارسال درخواست بازی';const msg=String(e?.message||e?.details||e?.hint||e||'خطای نامشخص');alert('ارسال درخواست انجام نشد.\n\nخطای دیتابیس:\n'+msg+'\n\nاگر خطای RLS می‌بینی، SQL رفع دسترسی بازی را در Supabase → SQL Editor اجرا کن.')}};
@@ -10450,7 +10461,8 @@ async function nfMaybeBegin(){
   }
   NF.session=session;
   NF.starter=session.starter_id;
-  if(session.status==='letter'||session.status==='playing')nfLetterScreen();
+  if(session.status==='letter')nfLetterScreen();
+  else if(session.status==='playing')nfPlayScreen();
 }
 window.nfAcceptRequest=async(id)=>{
   try{
@@ -10463,16 +10475,176 @@ window.nfAcceptRequest=async(id)=>{
   }catch(e){console.error('NF accept:',e);alert('پذیرش درخواست انجام نشد.\n\n'+(e.message||'خطای نامشخص'))}
 };
 window.nfRejectRequest=async(id)=>{try{const {error}=await supabaseClient.from('game_players').update({status:'rejected'}).eq('session_id',id).eq('user_id',currentUser.id);if(error)throw error;}catch(e){console.warn('NF reject:',e)}finally{nfRenderIncomingRequests((nfIncomingCache||[]).filter(x=>String(x.id)!==String(id)));if(document.getElementById('nfOverlay'))nfClose()}};
-function nfLetterScreen(){const mine=String(NF.starter)===String(currentUser.id);nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">✒️</div><h2>${mine?'تو شروع‌کننده‌ای!':'منتظر انتخاب حرف حریف باش'}</h2><p>${mine?'یک حرف انتخاب کن تا راند شروع شود.':'حریف در حال انتخاب حرف است.'}</p></div><div class="nf-letters">${NF_LETTERS.map(l=>`<button class="nf-letter" ${mine?'':'disabled'} onclick="nfPickLetter('${l}')">${l}</button>`).join('')}</div></div>`)}
-window.nfPickLetter=async(l)=>{if(String(NF.starter)!==String(currentUser.id))return;NF.letter=l;await supabaseClient.from('game_sessions').update({letter:l,status:'playing',round_started_at:new Date().toISOString()}).eq('id',NF.session.id);nfPlayScreen()};
-function nfPlayScreen(){NF.startAt=Date.now();NF.answers={};nfShell(`<div class="nf-paper"><h3>اسم و فامیل</h3><div class="nf-round-info">راند ${NF.session.current_round||1} از ${NF.session.rounds} · حرف: «${nfEsc(NF.session.letter||NF.letter)}»</div><div id="nf15" style="font-family:Impact,Arial;font-size:42px;color:#b33b61;text-align:center;margin:10px">15</div><div class="nf-fields">${NF_CATS.map(c=>`<div class="nf-field"><label>${c[1]}</label><input id="nf-${c[0]}" autocomplete="off" placeholder="با «${nfEsc(NF.session.letter||NF.letter)}»"></div>`).join('')}</div><button class="nf-stop" onclick="nfStopRound()">⛔ استپ!</button></div>`);let left=15;clearInterval(NF.timer);NF.timer=setInterval(()=>{left--;const e=document.getElementById('nf15');if(e)e.textContent=left;if(left<=0){clearInterval(NF.timer);nfAutoStop()}},1000)}
-function nfAutoStop(){document.querySelector('.nf-paper')?.classList.add('nf-auto');nfStopRound(true)}
-window.nfStopRound=async(auto=false)=>{clearInterval(NF.timer);const a={};NF_CATS.forEach(c=>a[c[0]]=document.getElementById('nf-'+c[0])?.value?.trim()||'');const letter=String(NF.session?.letter||NF.letter||'').trim();const validation={};for(const c of NF_CATS){const word=String(a[c[0]]||'').trim();if(!word){validation[c[0]]={status:'empty'};continue}const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();const first=normalized.charAt(0);const normalizedLetter=letter.replace(/[يى]/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();if(normalizedLetter&&first!==normalizedLetter){validation[c[0]]={status:'rejected',reason:'letter'};continue}try{const {data,error}=await supabaseClient.rpc('validate_game_answer',{p_category:c[0],p_word:word});if(error)throw error;validation[c[0]]=data||{status:'review',word};}catch(e){validation[c[0]]={status:'review',word};}}try{await supabaseClient.from('game_answers').upsert({session_id:NF.session.id,round_no:Number(NF.session.current_round||1),user_id:currentUser.id,answers:a,validation},{onConflict:'session_id,round_no,user_id'});for(const c of NF_CATS){const v=validation[c[0]];if(v?.status==='review')await supabaseClient.from('game_answer_reviews').upsert({session_id:NF.session.id,round_no:Number(NF.session.current_round||1),user_id:currentUser.id,category:c[0],word:a[c[0]],status:'pending'},{onConflict:'session_id,round_no,user_id,category'});}}catch(e){console.error(e)};nfResultsWait()};
-async function nfResultsWait(){const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',NF.session.current_round||1);if((answers||[]).length<2){nfShell(`<div class="nf-panel"><div class="nf-request-card"><div class="nf-mark">⏱️</div><h2>پاسخ ثبت شد</h2><p>منتظر پاسخ حریف بمان...</p></div></div>`);nfPollAnswers();return}nfShowResults(answers)}
-function nfPollAnswers(){clearInterval(NF.timer);NF.timer=setInterval(async()=>{const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',NF.session.current_round||1);if((answers||[]).length>=2){clearInterval(NF.timer);nfShowResults(answers)}},1200)}
-function nfShowResults(rows){const names={};rows.forEach(r=>names[r.user_id]=String(r.user_id)===String(currentUser.id)?'تو':'حریف');const cols=NF_CATS.map(c=>`<th>${c[1]}</th>`).join('');const status=(v)=>v?.status==='accepted'?'<div class="nf-status-ok">✓ معتبر</div>':v?.status==='rejected'?'<div class="nf-status-bad">× رد شد</div>':v?.status==='empty'?'<div class="nf-status-review">— خالی</div>':'<div class="nf-status-review">◌ نیاز به بررسی</div>';const body=rows.map(r=>`<tr><td><b>${nfEsc(names[r.user_id]||'بازیکن')}</b></td>${NF_CATS.map(c=>`<td>${nfEsc(r.answers?.[c[0]]||'—')}${status(r.validation?.[c[0]])}</td>`).join('')}</tr>`).join('');nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">🏆</div><h2>نتیجه راند</h2><p>کلمات هر دو بازیکن را ببین؛ کلمات ناشناخته اشتباهاً رد نمی‌شوند و برای بررسی علامت می‌خورند.</p></div><div class="nf-result-card"><table class="nf-table"><thead><tr><th>بازیکن</th>${cols}</tr></thead><tbody>${body}</tbody></table></div><div style="text-align:center;margin-top:18px"><button class="nf-btn primary" onclick="nfNextRound()">راند بعدی</button></div></div>`)}
-window.nfNextRound=async()=>{if(!NF.session)return;if(Number(NF.session.current_round||1)>=Number(NF.session.rounds||2)){await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id);saveRecentGameResult('name',`تمام شد · ${NF.session.rounds} راند`);nfFinalResults();return}const next=Number(NF.session.current_round||1)+1;const starter=NF.session.starter_id;await supabaseClient.from('game_sessions').update({current_round:next,status:'letter',letter:null,starter_id:starter}).eq('id',NF.session.id);NF.session.current_round=next;NF.session.letter=null;nfLetterScreen()};
-function nfFinalResults(){nfShell(`<div class="nf-panel"><div class="nf-hero"><div class="nf-mark">🏆</div><h2>بازی به پایان رسید</h2><p>نتیجه نهایی بازی ثبت شد.</p></div><div class="nf-request-card"><div style="font-size:32px">✨</div><p>هر دو بازیکن می‌توانند پاسخ‌های ثبت‌شده را ببینند.</p><button class="nf-btn primary" onclick="nfClose()">بازگشت به Games</button></div></div>`)}
+function nfLetterScreen(){
+  if(NF.view==='letter' && document.getElementById('nfLetterScreen'))return;
+  NF.view='letter';
+  clearInterval(NF.timer);clearInterval(NF.statePoll);
+  const mine=String(NF.starter)===String(currentUser.id);
+  nfShell(`<div class="nf-panel nf-game-panel" id="nfLetterScreen">
+    <div class="nf-game-topline"><span class="nf-live-pill"><i></i> آماده‌اید؟</span><span class="nf-round-pill">راند ${Number(NF.session?.current_round||1)} از ${Number(NF.session?.rounds||2)}</span></div>
+    <div class="nf-hero nf-letter-hero"><div class="nf-mark nf-mark-glow">✦</div><h2>${mine?'حرفت رو انتخاب کن':'حریف در حال انتخاب حرفه'}</h2><p>${mine?'۱۵ ثانیه فرصت داری یک حرف انتخاب کنی؛ اگر انتخاب نکنی، سیستم خودش انتخاب می‌کند.':'همین که حریف حرف را انتخاب کند، هر دو وارد برگه بازی می‌شوید.'}</p></div>
+    <div class="nf-letter-timer-wrap"><div class="nf-letter-timer" id="nfLetterTimer">15</div><span>ثانیه</span></div>
+    <div class="nf-letters nf-beautiful-letters">${NF_LETTERS.map((l,i)=>`<button class="nf-letter nf-letter-tile" ${mine?'':'disabled'} style="--d:${Math.min(i,12)*18}ms" onclick="nfPickLetter('${l}')"><span>${l}</span><small>${String(i+1).padStart(2,'0')}</small></button>`).join('')}</div>
+    ${mine?'':'<div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> منتظر انتخاب حرف حریف…</div>'}
+  </div>`);
+  if(mine){
+    let left=15;
+    const tick=()=>{const e=document.getElementById('nfLetterTimer');if(e)e.textContent=left;};
+    tick();
+    NF.timer=setInterval(()=>{left--;tick();if(left<=0){clearInterval(NF.timer);NF.timer=null;nfPickRandomLetter();}},1000);
+  }else{
+    NF.statePoll=setInterval(nfRefreshSessionState,900);
+  }
+}
+async function nfRefreshSessionState(){
+  if(!NF.session?.id)return;
+  const {data,error}=await supabaseClient.from('game_sessions').select('*').eq('id',NF.session.id).single();
+  if(error||!data)return;
+  NF.session=data;
+  NF.starter=data.starter_id||NF.starter;
+  if(data.status==='playing')nfPlayScreen();
+  else if(data.status==='finished')nfFinalResults();
+}
+async function nfPickRandomLetter(){
+  if(String(NF.starter)!==String(currentUser.id))return;
+  const l=NF_LETTERS[Math.floor(Math.random()*NF_LETTERS.length)];
+  await nfPickLetter(l,true);
+}
+window.nfPickLetter=async(l,auto=false)=>{
+  if(String(NF.starter)!==String(currentUser.id))return;
+  if(NF.session?.status==='playing')return;
+  clearInterval(NF.timer);NF.timer=null;
+  NF.letter=l;
+  const {data,error}=await supabaseClient.from('game_sessions').update({letter:l,status:'playing',round_started_at:new Date().toISOString()}).eq('id',NF.session.id).select('*').maybeSingle();
+  if(error){console.error('NF pick letter',error);nfLetterScreen();return;}
+  if(data)NF.session=data;
+  nfPlayScreen();
+};
+function nfRoundElapsed(){
+  const started=Date.parse(NF.session?.round_started_at||'');
+  return started?Math.max(0,Math.floor((Date.now()-started)/1000)):0;
+}
+function nfPlayScreen(){
+  if(!NF.session?.id)return;
+  NF.view='playing';clearInterval(NF.statePoll);NF.statePoll=null;
+  const started=Date.parse(NF.session.round_started_at||'')||Date.now();
+  NF.startAt=started;NF.answers={};
+  const letter=NF.session.letter||NF.letter||'—';
+  const elapsed=Math.max(0,Math.floor((Date.now()-started)/1000));
+  const remaining=Math.max(0,300-elapsed);
+  nfShell(`<div class="nf-panel nf-game-panel">
+    <div class="nf-game-topline"><span class="nf-live-pill active"><i></i> در حال بازی</span><span class="nf-round-pill">راند ${Number(NF.session.current_round||1)} از ${Number(NF.session.rounds||2)}</span></div>
+    <div class="nf-play-hero"><div><div class="nf-mini-label">حرف این راند</div><div class="nf-big-letter">${nfEsc(letter)}</div></div><div class="nf-time-box"><span>زمان باقی‌مانده</span><strong id="nfGameTimer">${nfFmt(remaining)}</strong><small>۵ دقیقه</small></div></div>
+    <div class="nf-paper nf-paper-modern"><div class="nf-paper-shine"></div><div class="nf-paper-head"><div><h3>برگه پاسخ</h3><p>همه جواب‌ها باید با «${nfEsc(letter)}» شروع شوند.</p></div><div class="nf-letter-chip">${nfEsc(letter)}</div></div><div class="nf-fields nf-fields-modern">${NF_CATS.map((c,i)=>`<div class="nf-field nf-field-modern"><label><span>${String(i+1).padStart(2,'0')}</span>${c[1]}</label><div class="nf-input-wrap"><input id="nf-${c[0]}" autocomplete="off" placeholder="پاسخ تو…" ${remaining<=0?'disabled':''}><span class="nf-input-glow"></span></div></div>`).join('')}</div><div class="nf-stop-zone"><button class="nf-stop nf-stop-spring" id="nfStopButton" onclick="nfStopRound()"><span>استپ!</span></button><p id="nfStopHint">از ثانیه ۱۰ می‌تونی استپ بزنی.</p></div></div>
+  </div>`);
+  let left=remaining;
+  clearInterval(NF.timer);
+  if(left<=0){nfAutoStop();return;}
+  const paint=()=>{const e=document.getElementById('nfGameTimer');if(e)e.textContent=nfFmt(left);const h=document.getElementById('nfStopHint');if(h)h.textContent=left>290?`هنوز ${Math.max(0,10-(300-left))} ثانیه ابتدایی بازی است؛ استپ بعد از ۱۰ ثانیه فعال می‌شود.`:'استپ فعاله — هر وقت آماده‌ای بزن!';};
+  paint();
+  NF.timer=setInterval(()=>{left--;paint();if(left<=0){clearInterval(NF.timer);NF.timer=null;nfAutoStop()}},1000);
+}
+function nfAutoStop(){nfStopRound(true)}
+window.nfStopRound=async(auto=false)=>{
+  if(NF.view!=='playing')return;
+  const elapsed=nfRoundElapsed();
+  if(!auto && elapsed<10){
+    const h=document.getElementById('nfStopHint');
+    if(h){h.textContent='⏳ هنوز ۱۰ ثانیه کامل نشده؛ استپ فعلاً قفل است.';h.classList.add('nf-stop-denied');}
+    const b=document.getElementById('nfStopButton');
+    if(b){b.classList.remove('nf-stop-shake');void b.offsetWidth;b.classList.add('nf-stop-shake');}
+    return;
+  }
+  clearInterval(NF.timer);NF.timer=null;
+  const a={};NF_CATS.forEach(c=>a[c[0]]=document.getElementById('nf-'+c[0])?.value?.trim()||'');
+  const letter=String(NF.session?.letter||NF.letter||'').trim();
+  const validation={};
+  for(const c of NF_CATS){
+    const word=String(a[c[0]]||'').trim();
+    if(!word){validation[c[0]]={status:'empty'};continue}
+    const normalized=word.replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200e\u200f]/g,'').trim().toLowerCase();
+    const first=normalized.charAt(0);
+    const normalizedLetter=letter.replace(/[يى]/g,'ی').replace(/ك/g,'ک').trim().toLowerCase();
+    if(normalizedLetter&&first!==normalizedLetter){validation[c[0]]={status:'rejected',reason:'letter'};continue}
+    try{const {data,error}=await supabaseClient.rpc('validate_game_answer',{p_category:c[0],p_word:word});if(error)throw error;validation[c[0]]=data||{status:'review',word};}
+    catch(e){validation[c[0]]={status:'review',word};}
+  }
+  try{
+    await supabaseClient.from('game_answers').upsert({session_id:NF.session.id,round_no:Number(NF.session.current_round||1),user_id:currentUser.id,answers:a,validation},{onConflict:'session_id,round_no,user_id'});
+    for(const c of NF_CATS){const v=validation[c[0]];if(v?.status==='review')await supabaseClient.from('game_answer_reviews').upsert({session_id:NF.session.id,round_no:Number(NF.session.current_round||1),user_id:currentUser.id,category:c[0],word:a[c[0]],status:'pending'},{onConflict:'session_id,round_no,user_id,category'});}
+  }catch(e){console.error('NF save answers',e)}
+  NF.view='waiting-results';
+  nfResultsWait();
+};
+async function nfResultsWait(){
+  const round=Number(NF.session.current_round||1);
+  const {data:answers}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);
+  if((answers||[]).length<2){
+    nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-wait"><div class="nf-result-orbit"><span>✓</span></div><h2>پاسخ ثبت شد</h2><p>حالا منتظر حریف بمان…</p><div class="nf-waiting-chip"><span class="nf-pulse-dot"></span> پاسخ حریف در حال دریافت است</div></div></div>`);
+    clearInterval(NF.timer);NF.timer=setInterval(async()=>{const {data:a}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id).eq('round_no',round);if((a||[]).length>=2){clearInterval(NF.timer);NF.timer=null;nfShowResults(a)}},1000);
+    return;
+  }
+  nfShowResults(answers);
+}
+function nfScoreRow(r){
+  let score=0;
+  NF_CATS.forEach(c=>{const v=r.validation?.[c[0]];if(v?.status==='accepted')score+=10;else if(v?.status==='duplicate')score+=5;});
+  return score;
+}
+function nfStatusMarkup(v){return v?.status==='accepted'?'<span class="nf-answer-status good">✓ معتبر</span>':v?.status==='rejected'?'<span class="nf-answer-status bad">× رد شده</span>':v?.status==='empty'?'<span class="nf-answer-status muted">— خالی</span>':'<span class="nf-answer-status review">◌ بررسی</span>'}
+function nfShowResults(rows){
+  const sorted=[...rows].sort((a,b)=>nfScoreRow(b)-nfScoreRow(a));
+  const myRow=sorted.find(r=>String(r.user_id)===String(currentUser.id));
+  const myScore=myRow?nfScoreRow(myRow):0;
+  const otherRow=sorted.find(r=>String(r.user_id)!==String(currentUser.id));
+  const otherScore=otherRow?nfScoreRow(otherRow):0;
+  const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
+  const final=round>=total;
+  const resultTitle=final?(myScore>otherScore?'تو بردی!':myScore<otherScore?'این راند به نفع حریف شد':'مساوی شد'):'نتیجه راند';
+  const resultIcon=final?(myScore>otherScore?'🏆':myScore<otherScore?'💫':'🤝'):'✦';
+  const cards=rows.map(r=>{const mine=String(r.user_id)===String(currentUser.id);const score=nfScoreRow(r);return `<article class="nf-score-card ${mine?'mine':''}"><div class="nf-score-avatar">${mine?'تو':'حریف'}</div><div class="nf-score-main"><strong>${mine?'تو':'حریف'}</strong><span>${score} امتیاز</span></div><div class="nf-score-ring">${score}</div></article>`}).join('');
+  const cols=NF_CATS.map(c=>`<th>${c[1]}</th>`).join('');
+  const body=rows.map(r=>`<tr><td><b>${String(r.user_id)===String(currentUser.id)?'تو':'حریف'}</b></td>${NF_CATS.map(c=>`<td><div class="nf-answer-word">${nfEsc(r.answers?.[c[0]]||'—')}</div>${nfStatusMarkup(r.validation?.[c[0]])}</td>`).join('')}</tr>`).join('');
+  nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-hero"><div class="nf-result-icon">${resultIcon}</div><div class="nf-result-kicker">${final?'نتیجه نهایی بازی':'نتیجه راند '+round}</div><h2>${resultTitle}</h2><p>${final?'امتیاز نهایی ثبت شد. نتیجه بازی در بازی‌های اخیر هم ذخیره می‌شود.':'جواب‌های هر دو بازیکن ثبت شد.'}</p></div><div class="nf-score-grid">${cards}</div><div class="nf-result-card nf-table-card"><div class="nf-result-card-title">کلمات این راند</div><div class="nf-table-scroll"><table class="nf-table"><thead><tr>${cols}</tr></thead><tbody>${body}</tbody></table></div></div><div class="nf-result-actions">${final?'<button class="nf-btn primary nf-result-main-btn" onclick="nfFinishAndClose()">بازگشت به Games</button>':'<button class="nf-btn primary nf-result-main-btn" onclick="nfNextRound()">راند بعدی</button>'}</div></div>`);
+  if(final){
+    nfSaveFinalResult(rows);
+    supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id).then(()=>{}).catch(()=>{});
+  }
+}
+async function nfNextRound(){
+  if(!NF.session)return;
+  const round=Number(NF.session.current_round||1), total=Number(NF.session.rounds||2);
+  if(round>=total){await nfFinishGame();return;}
+  const next=round+1;
+  const {data,error}=await supabaseClient.from('game_sessions').update({current_round:next,status:'letter',letter:null,round_started_at:null}).eq('id',NF.session.id).select('*').maybeSingle();
+  if(error){console.error('NF next round',error);return;}
+  if(data)NF.session=data;NF.letter=null;NF.view='';nfLetterScreen();
+}
+async function nfFinishGame(){
+  await supabaseClient.from('game_sessions').update({status:'finished'}).eq('id',NF.session.id);
+  NF.session.status='finished';
+  const {data:rows}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id);
+  nfSaveFinalResult(rows||[]);nfFinalResults(rows||[]);
+}
+function nfSaveFinalResult(rows){
+  const by={};(rows||[]).forEach(r=>{const k=String(r.user_id);by[k]=(by[k]||0)+nfScoreRow(r)});
+  const mine=by[String(currentUser.id)]||0;const vals=Object.entries(by).filter(([k])=>k!==String(currentUser.id)).map(x=>x[1]);const other=vals[0]||0;
+  const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
+  saveRecentGameResult('name',status+' · '+mine+' امتیاز', {resultStatus:status,score:mine,opponentScore:other,gameSessionId:NF.session.id});
+}
+async function nfFinalResultsFromServer(){
+  if(!NF.session?.id)return;
+  const {data:rows}=await supabaseClient.from('game_answers').select('*').eq('session_id',NF.session.id);
+  nfFinalResults(rows||[]);
+}
+
+function nfFinalResults(rows){
+  const by={};(rows||[]).forEach(r=>{const k=String(r.user_id);by[k]=(by[k]||0)+nfScoreRow(r)});
+  const mine=by[String(currentUser.id)]||0;const other=(Object.entries(by).find(([k])=>k!==String(currentUser.id))||['',0])[1];
+  const status=mine>other?'برنده':mine<other?'بازنده':'مساوی';
+  nfShell(`<div class="nf-panel nf-game-panel"><div class="nf-result-hero final ${status==='برنده'?'winner':status==='بازنده'?'loser':'draw'}"><div class="nf-result-icon">${status==='برنده'?'🏆':status==='بازنده'?'💫':'🤝'}</div><div class="nf-result-kicker">پایان بازی</div><h2>${status==='برنده'?'تو برنده شدی!':status==='بازنده'?'این بار حریف برنده شد':'بازی مساوی شد'}</h2><div class="nf-final-score"><div><span>امتیاز تو</span><strong>${mine}</strong></div><div class="vs">VS</div><div><span>امتیاز حریف</span><strong>${other}</strong></div></div></div><div class="nf-result-actions"><button class="nf-btn primary nf-result-main-btn" onclick="nfFinishAndClose()">بازگشت به Games</button></div></div>`);
+}
+window.nfFinishAndClose=()=>{nfClose();try{renderRecentGames()}catch(e){}};
 window.gameCardTap=(type)=>{if(type==='name'){nfStart();return}const card=document.querySelector(`.game-card[data-game="${type}"]`);if(card)card.animate([{transform:'translateY(-5px) scale(1.012)'},{transform:'translateY(-2px) scale(.975)'},{transform:'translateY(-5px) scale(1.012)'}],{duration:300,easing:'cubic-bezier(.2,.85,.2,1)'})};
 window.nfClose=nfClose;window.nfStart=nfStart;
 // Incoming pending requests for name & family: lightweight polling so it works even if Realtime publication isn't enabled.
@@ -10595,4 +10767,20 @@ setInterval(()=>{document.querySelectorAll('.nf-incoming-count').forEach(el=>{co
 </style>
 
 </body>
+
+<style id="name-family-v49-game-overhaul">
+/* V49: Name & Family game UI + synchronized two-player flow */
+.nf-game-panel{width:min(980px,100%);margin:0 auto}.nf-game-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 18px}.nf-live-pill,.nf-round-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);font-size:10px;font-weight:900}.nf-live-pill i{width:7px;height:7px;border-radius:50%;background:#72e8ba;box-shadow:0 0 0 5px rgba(114,232,186,.09),0 0 16px rgba(114,232,186,.45)}.nf-live-pill.active{color:#8ff0c5}.nf-round-pill{opacity:.72}.nf-letter-hero{padding-top:12px!important}.nf-mark-glow{box-shadow:0 0 0 10px rgba(154,118,255,.06),0 0 35px rgba(154,118,255,.24)}.nf-letter-timer-wrap{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:4px 0 15px}.nf-letter-timer{font:900 52px/1 Impact,"Arial Black",sans-serif;letter-spacing:1px;background:linear-gradient(180deg,#fff,#bfa8ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 12px 35px rgba(160,120,255,.22)}.nf-letter-timer-wrap>span{font-size:11px;opacity:.5}.nf-beautiful-letters{grid-template-columns:repeat(8,minmax(0,1fr));gap:11px;max-width:820px;margin:10px auto 0}.nf-letter-tile{position:relative;aspect-ratio:1.15;border-radius:22px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 30px rgba(0,0,0,.08);background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.035));border-color:rgba(255,255,255,.11);animation:nfLetterIn .5s both;animation-delay:var(--d)}.nf-letter-tile:before{content:"";position:absolute;inset:-30% 20% 45% -30%;background:radial-gradient(circle,rgba(172,131,255,.18),transparent 65%);pointer-events:none}.nf-letter-tile span{position:relative;font-size:27px}.nf-letter-tile small{position:absolute;bottom:7px;left:9px;font-size:7px;opacity:.25}.nf-letter-tile:hover:not(:disabled){transform:translateY(-5px) scale(1.03);border-color:rgba(171,133,255,.65);box-shadow:0 16px 38px rgba(121,88,208,.18),inset 0 1px 0 rgba(255,255,255,.28)}.nf-letter-tile:disabled{opacity:.62;cursor:wait}.nf-waiting-chip{width:max-content;max-width:100%;margin:17px auto 0;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);font-size:10px;opacity:.72}.nf-pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9e7aff;box-shadow:0 0 0 5px rgba(158,122,255,.09);margin-left:4px;animation:nfPulse 1.2s infinite}.nf-play-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px;padding:18px 20px;border:1px solid rgba(255,255,255,.1);border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(156,117,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}.nf-mini-label{font-size:10px;opacity:.48;margin-bottom:4px}.nf-big-letter{font-size:64px;font-weight:950;line-height:.9;background:linear-gradient(180deg,#fff,#b899ff);-webkit-background-clip:text;background-clip:text;color:transparent}.nf-time-box{min-width:145px;text-align:center;padding:12px 15px;border-radius:20px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.08)}.nf-time-box span,.nf-time-box small{display:block;font-size:9px;opacity:.5}.nf-time-box strong{display:block;font:900 28px/1.1 Impact,"Arial Black",sans-serif;margin:4px 0}.nf-paper-modern{padding:22px;background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.045))!important;color:inherit!important;border:1px solid rgba(255,255,255,.11);box-shadow:0 24px 70px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}.nf-paper-modern:before{display:none}.nf-paper-shine{position:absolute;inset:-50% 50% 45% -15%;background:radial-gradient(circle,rgba(178,137,255,.13),transparent 62%);pointer-events:none}.nf-paper-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}.nf-paper-head h3{font-family:inherit;font-size:19px;color:inherit;margin:0 0 5px}.nf-paper-head p{font-family:inherit;font-size:10px;opacity:.48;margin:0}.nf-letter-chip{width:54px;height:54px;display:grid;place-items:center;border-radius:18px;font-size:25px;font-weight:950;background:linear-gradient(145deg,rgba(171,132,255,.22),rgba(255,255,255,.06));border:1px solid rgba(179,145,255,.24);box-shadow:0 10px 30px rgba(126,91,220,.14)}.nf-fields-modern{position:relative;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.nf-field-modern{gap:7px}.nf-field-modern label{font-family:inherit;display:flex;align-items:center;gap:8px;font-size:11px;color:inherit}.nf-field-modern label span{display:grid;place-items:center;width:22px;height:22px;border-radius:8px;background:rgba(255,255,255,.07);font-size:8px;opacity:.5}.nf-input-wrap{position:relative}.nf-field-modern input{font-family:inherit;font-size:13px;color:inherit;border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(255,255,255,.12);background:rgba(255,255,255,.045);border-radius:15px;padding:0 13px;height:48px;transition:.2s}.nf-field-modern input::placeholder{color:inherit;opacity:.28}.nf-field-modern input:focus{border-color:rgba(172,133,255,.6);background:rgba(172,133,255,.07);box-shadow:0 0 0 4px rgba(172,133,255,.07)}.nf-stop-zone{text-align:center;margin-top:20px}.nf-stop{font-family:inherit}.nf-stop-spring{position:relative;min-width:190px;height:58px;padding:0 28px;border-radius:19px;border:1px solid rgba(255,255,255,.2);background:linear-gradient(180deg,#ff718d,#d83f66);box-shadow:0 8px 0 #a92e4e,0 18px 35px rgba(216,63,102,.22),inset 0 1px 0 rgba(255,255,255,.35);font-size:16px;letter-spacing:.2px;transition:transform .12s,box-shadow .12s}.nf-stop-spring:hover{transform:translateY(-2px);box-shadow:0 10px 0 #a92e4e,0 22px 40px rgba(216,63,102,.24),inset 0 1px 0 rgba(255,255,255,.35)}.nf-stop-spring:active{transform:translateY(6px);box-shadow:0 2px 0 #a92e4e,0 8px 16px rgba(216,63,102,.18),inset 0 1px 0 rgba(255,255,255,.25)}.nf-stop-hint,.nf-stop-zone p{margin:11px 0 0;font-size:10px;opacity:.45;transition:.2s}.nf-stop-denied{color:#ff9aac!important;opacity:1!important}.nf-stop-shake{animation:nfShake .38s}.nf-result-wait{text-align:center;padding:70px 15px}.nf-result-orbit{width:82px;height:82px;border-radius:50%;margin:0 auto 18px;display:grid;place-items:center;border:1px solid rgba(165,128,255,.25);background:radial-gradient(circle,rgba(165,128,255,.2),rgba(255,255,255,.04));box-shadow:0 0 50px rgba(151,112,240,.16);font-size:30px;color:#9ef0ca;animation:nfFloat 2.2s ease-in-out infinite}.nf-result-hero{text-align:center;padding:20px 10px 18px}.nf-result-icon{font-size:46px;filter:drop-shadow(0 12px 25px rgba(151,112,240,.18));margin-bottom:6px}.nf-result-kicker{font-size:10px;opacity:.45;font-weight:900}.nf-result-hero h2{margin:6px 0 7px;font-size:28px}.nf-result-hero p{margin:0;font-size:11px;opacity:.55}.nf-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:8px 0 14px}.nf-score-card{display:flex;align-items:center;gap:11px;padding:14px;border-radius:22px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045)}.nf-score-card.mine{border-color:rgba(166,130,255,.26);background:linear-gradient(135deg,rgba(166,130,255,.1),rgba(255,255,255,.04))}.nf-score-avatar{min-width:45px;height:45px;border-radius:15px;display:grid;place-items:center;font-size:11px;font-weight:950;background:rgba(255,255,255,.08)}.nf-score-main{flex:1}.nf-score-main strong{display:block;font-size:12px}.nf-score-main span{font-size:10px;opacity:.5}.nf-score-ring{font:900 20px Impact,"Arial Black",sans-serif}.nf-table-card{padding:15px!important}.nf-result-card-title{font-size:12px;font-weight:900;margin-bottom:8px}.nf-table-scroll{overflow:auto}.nf-table th,.nf-table td{text-align:center;min-width:86px}.nf-table td:first-child{min-width:80px}.nf-answer-word{font-weight:800;margin-bottom:3px}.nf-answer-status{font-size:8px}.nf-answer-status.good{color:#71e3b4}.nf-answer-status.bad{color:#ff8ea4}.nf-answer-status.review{color:#e8c46c}.nf-answer-status.muted{opacity:.35}.nf-result-actions{text-align:center;margin-top:18px}.nf-result-main-btn{min-width:210px}.nf-final-score{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:20px}.nf-final-score>div:not(.vs){min-width:105px;padding:13px;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09)}.nf-final-score span{display:block;font-size:9px;opacity:.5}.nf-final-score strong{display:block;font:900 30px Impact,"Arial Black",sans-serif;margin-top:3px}.nf-final-score .vs{font:900 13px Impact,"Arial Black",sans-serif;opacity:.3}.nf-result-hero.final.winner .nf-result-icon{filter:drop-shadow(0 0 25px rgba(82,224,164,.35))}.nf-result-hero.final.loser .nf-result-icon{filter:grayscale(.35)}
+@keyframes nfLetterIn{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}@keyframes nfPulse{50%{transform:scale(1.35);box-shadow:0 0 0 8px rgba(158,122,255,.04)}}@keyframes nfShake{25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}@keyframes nfFloat{50%{transform:translateY(-6px)}}
+.recent-game-row.recent-game-winner{border-color:rgba(76,221,157,.3)!important;background:linear-gradient(135deg,rgba(76,221,157,.1),rgba(255,255,255,.035))!important}.recent-game-row.recent-game-loser{border-color:rgba(255,94,125,.28)!important;background:linear-gradient(135deg,rgba(255,94,125,.08),rgba(255,255,255,.035))!important}.recent-game-row.recent-game-draw{border-color:rgba(224,188,92,.25)!important}.recent-game-status-badge{display:inline-flex;margin-top:5px;padding:4px 8px;border-radius:999px;font-size:8px;font-weight:950}.recent-game-winner .recent-game-status-badge{color:#72e5b5;background:rgba(76,221,157,.1)}.recent-game-loser .recent-game-status-badge{color:#ff91a6;background:rgba(255,94,125,.1)}.recent-game-draw .recent-game-status-badge{color:#e5c86f;background:rgba(224,188,92,.1)}
+@media(max-width:760px){.nf-beautiful-letters{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.nf-letter-tile{border-radius:18px}.nf-letter-tile span{font-size:22px}.nf-play-hero{padding:14px}.nf-big-letter{font-size:52px}.nf-time-box{min-width:120px}.nf-fields-modern{grid-template-columns:repeat(2,minmax(0,1fr))}.nf-score-grid{grid-template-columns:1fr}.nf-paper-modern{padding:15px}.nf-final-score{gap:10px}}
+@media(max-width:480px){.nf-beautiful-letters{grid-template-columns:repeat(4,minmax(0,1fr))}.nf-game-topline{margin-bottom:12px}.nf-live-pill,.nf-round-pill{font-size:8px;padding:7px 9px}.nf-play-hero{gap:8px}.nf-time-box{min-width:112px}.nf-time-box strong{font-size:23px}.nf-fields-modern{grid-template-columns:1fr}.nf-stop-spring{width:100%;min-width:0}.nf-final-score{gap:6px}.nf-final-score>div:not(.vs){min-width:92px}.nf-result-hero h2{font-size:23px}}
+body[data-khat-theme^="light-"] .nf-paper-modern,body[data-khat-theme^="light-"] .nf-play-hero{background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(246,242,252,.72))!important;border-color:rgba(70,60,95,.1)}
+
+/* V50 — Armin dictionary manager compact/mobile polish */
+.nf-manage-words-btn{width:100%!important;min-height:66px!important;margin:14px 0 4px!important;padding:10px 13px!important;display:flex!important;align-items:center!important;gap:12px!important;text-align:right!important;border:1px solid color-mix(in srgb,var(--theme-accent,#9b76e4) 22%,rgba(255,255,255,.12))!important;border-radius:20px!important;background:linear-gradient(135deg,color-mix(in srgb,var(--theme-accent,#9b76e4) 13%,rgba(255,255,255,.06)),rgba(255,255,255,.035))!important;box-shadow:0 12px 30px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.14)!important;color:inherit!important;transition:.22s ease!important}.nf-manage-words-btn:hover{transform:translateY(-2px)!important}.nf-manage-words-btn:active{transform:scale(.985)!important}.nf-manage-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;font-size:19px;background:linear-gradient(145deg,color-mix(in srgb,var(--theme-accent,#9b76e4) 30%,white),color-mix(in srgb,var(--theme-accent,#9b76e4) 78%,black));color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--theme-accent,#9b76e4) 20%,transparent)}.nf-manage-words-btn span:nth-child(2){min-width:0;flex:1}.nf-manage-words-btn b{display:block;font-size:13px}.nf-manage-words-btn small{display:block;margin-top:3px;font-size:9px;opacity:.52;font-weight:600}.nf-manage-arrow{font-size:23px;opacity:.35;transform:rotate(180deg)}
+.nf-dict-modal-panel{width:min(720px,100%)!important}.nf-dict-card{padding:15px!important;margin-top:10px!important}.nf-dict-card:first-of-type{margin-top:0!important}.nf-dict-search{position:relative;margin:0 0 9px}.nf-dict-search span{position:absolute;right:13px;top:50%;transform:translateY(-52%);font-size:18px;opacity:.45;pointer-events:none}.nf-dict-search input{width:100%;height:43px;padding:0 40px 0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.05);color:inherit;outline:none;font:inherit;font-size:12px}.nf-dict-search input:focus{border-color:color-mix(in srgb,var(--theme-accent,#9b76e4) 55%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--theme-accent,#9b76e4) 10%,transparent)}.nf-dict-card .gw-list{height:250px!important;max-height:250px!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;padding:3px!important;scrollbar-width:thin}.nf-dict-card .gw-row{min-height:46px!important}.nf-dict-card .gw-suggestion-list{height:220px!important;max-height:220px!important;overflow-y:auto!important;overflow-x:hidden!important;padding:2px!important;scrollbar-width:thin}.nf-dict-card+.nf-dict-card{margin-top:10px!important}.nf-dict-card+.nf-dict-card .gw-empty{min-height:90px;display:grid;place-items:center}.nf-dict-modal-panel .gw-title{font-size:14px!important}.nf-dict-modal-panel .gw-sub{font-size:9px!important}.nf-dict-modal-panel .gw-icon{width:38px!important;height:38px!important;border-radius:13px!important;font-size:17px!important}.nf-dict-intro{font-size:9px!important;line-height:1.8!important;opacity:.45!important;margin-bottom:9px!important;padding:8px 10px!important;border-radius:13px!important;background:rgba(255,255,255,.035)!important}
+@media(max-width:600px){.nf-manage-words-btn{min-height:62px!important;border-radius:18px!important}.nf-manage-icon{width:39px;height:39px;flex-basis:39px}.nf-dict-card{padding:11px!important;border-radius:19px!important}.nf-dict-card .gw-list{height:190px!important;max-height:190px!important}.nf-dict-card .gw-suggestion-list{height:185px!important;max-height:185px!important}.nf-dict-card .gw-row{min-height:44px!important;padding:7px 8px!important}.nf-dict-card .gw-word{font-size:12px!important}.nf-dict-card .gw-cat{font-size:8px!important}.nf-dict-card .gw-delete{width:29px!important;height:29px!important}.nf-dict-search input{height:41px!important;font-size:11px!important}}
+body[data-khat-theme^="light-"] .nf-dict-search input{background:rgba(255,255,255,.72)!important;border-color:rgba(65,58,88,.12)!important}
+</style>
 </html>
